@@ -69,3 +69,30 @@ test('loadPolicy rejects conflicting MCP denied-server aliases without leaking c
     },
   )
 })
+
+test('loadPolicy rejects conflicting nested MCP permission aliases without leaking contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    [
+      'mcp:',
+      '  permissions:',
+      '    deny_tools:',
+      '      - sk-abcdefghijklmnopqrstuvwxyz',
+      '    denied_tools:',
+      '      - github.delete_repository',
+    ].join('\n'),
+  )
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.match(error.message, /malformed policy file/)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      assert.doesNotMatch(error.message, /github.delete_repository/)
+      return true
+    },
+  )
+})

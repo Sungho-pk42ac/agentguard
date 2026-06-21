@@ -7,6 +7,8 @@ import { test } from 'node:test'
 import { z } from 'zod'
 
 const cliFindingsSchema = z.array(z.object({ id: z.string().optional(), file: z.string().optional() }))
+const cliPath = join(process.cwd(), 'src/index.ts')
+const tsxImport = import.meta.resolve('tsx')
 
 test('CLI applies denied read paths from --policy to scan-files', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
@@ -29,6 +31,21 @@ test('CLI applies denied read paths from --policy to scan-files', () => {
   assert.equal(result.status, 1)
   const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
   assert.ok(findings.some((finding) => finding.id === 'denied-read-path' && finding.file === 'private/session.txt'))
+})
+
+test('CLI uses local agent-policy.yaml when --policy is omitted', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  writeFileSync(join(dir, 'agent-policy.yaml'), ['deny_commands:', '  - agentguard-local-policy-command'].join('\n'))
+
+  const result = spawnSync(process.execPath, ['--import', tsxImport, cliPath, 'scan-log', '--json'], {
+    cwd: dir,
+    encoding: 'utf8',
+    input: 'agentguard-local-policy-command',
+  })
+
+  assert.equal(result.status, 0)
+  const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
+  assert.equal(findings[0]?.id, 'denied-command')
 })
 
 test('CLI accepts --policy=<path> for scan-log', () => {

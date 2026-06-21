@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { extname } from 'node:path'
 import { parse } from 'yaml'
 import { z } from 'zod'
 import { DEFAULT_POLICY, type McpPolicy, type Policy } from './rules.js'
@@ -51,7 +52,7 @@ export function loadPolicy(path?: string): Policy {
 
   let parsed: unknown
   try {
-    parsed = parse(contents)
+    parsed = parsePolicyContents(path, contents)
   } catch (error: unknown) {
     if (error instanceof Error) throw new PolicyLoadError(path, 'malformed')
     throw error
@@ -61,6 +62,11 @@ export function loadPolicy(path?: string): Policy {
   if (!result.success) throw new PolicyLoadError(path, 'malformed')
 
   return mergePolicy(DEFAULT_POLICY, result.data)
+}
+
+function parsePolicyContents(path: string, contents: string): unknown {
+  if (extname(path).toLowerCase() === '.json') return JSON.parse(contents)
+  return parse(contents)
 }
 
 function mergePolicy(defaultPolicy: Policy, userPolicy: PolicyFile): Policy {

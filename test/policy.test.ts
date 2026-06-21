@@ -100,6 +100,22 @@ test('loadPolicy reports malformed JSON files without leaking file contents', ()
   )
 })
 
+test('loadPolicy rejects YAML syntax in JSON policy files without leaking file contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.json')
+  writeFileSync(path, ['deny_commands:', '  - sk-abcdefghijklmnopqrstuvwxyz'].join('\n'))
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      return true
+    },
+  )
+})
+
 test('loadPolicy reports schema-invalid files without leaking file contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

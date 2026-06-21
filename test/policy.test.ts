@@ -116,6 +116,22 @@ test('loadPolicy reports schema-invalid files without leaking file contents', ()
   )
 })
 
+test('loadPolicy reports non-object policy files without leaking file contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, 'sk-abcdefghijklmnopqrstuvwxyz')
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      return true
+    },
+  )
+})
+
 test('loadPolicy can replace a default list and extend it in the same file', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')
@@ -186,6 +202,18 @@ test('CLI reports malformed --policy without leaking policy contents', () => {
   assert.equal(result.status, 2)
   assert.match(result.stderr, /Unable to load policy file: malformed policy file/)
   assert.doesNotMatch(result.stderr, /sk-abcdefghijklmnopqrstuvwxyz/)
+  assert.equal(result.stdout, '')
+})
+
+test('CLI rejects --policy without a path before another option', () => {
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'scan-log', '--policy', '--json'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    input: 'terraform destroy',
+  })
+
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /--policy <path>/)
   assert.equal(result.stdout, '')
 })
 

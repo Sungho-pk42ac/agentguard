@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { extname, join } from 'node:path'
+import { dirname, extname, join } from 'node:path'
 import { isAlias, parseDocument, visit } from 'yaml'
 import { z } from 'zod'
 import { hasDuplicateJsonObjectKey } from './json-policy.js'
@@ -83,11 +83,17 @@ export function loadPolicy(path?: string): Policy {
 }
 
 function discoverDefaultPolicyPath(): string | undefined {
-  for (const file of defaultPolicyFiles) {
-    const path = join(process.cwd(), file)
-    if (existsSync(path)) return path
+  let dir = process.cwd()
+  while (true) {
+    for (const file of defaultPolicyFiles) {
+      const path = join(dir, file)
+      if (existsSync(path)) return path
+    }
+
+    const parentDir = dirname(dir)
+    if (parentDir === dir) return undefined
+    dir = parentDir
   }
-  return undefined
 }
 
 function parsePolicyContents(path: string, contents: string): unknown {

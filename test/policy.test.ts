@@ -179,3 +179,19 @@ test('CLI preserves scan-files path when --policy is present', () => {
   assert.equal(findings[0]?.file, 'transcript.log')
   assert.equal(findings[0]?.id, 'denied-command')
 })
+
+test('CLI applies MCP approval rules from --policy', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const policyPath = join(dir, 'agent-policy.yaml')
+  writeFileSync(policyPath, ['mcp:', '  require_approval_tools:', '    - github.merge_pull_request'].join('\n'))
+
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'scan-mcp', '--policy', policyPath, '--json'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    input: '[mcp_servers.github]\ntools = ["github.merge_pull_request"]',
+  })
+
+  assert.equal(result.status, 0)
+  const findings = JSON.parse(result.stdout)
+  assert.ok(findings.some((finding: { readonly id?: string }) => finding.id === 'mcp-tool-approval-required'))
+})

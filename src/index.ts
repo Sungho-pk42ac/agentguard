@@ -29,13 +29,15 @@ const sarif = args.includes('--sarif')
 const outIdx = args.indexOf('--out')
 const out = outIdx >= 0 ? args[outIdx + 1] : undefined
 const policyIdx = args.indexOf('--policy')
-const rawPolicyPath = policyIdx >= 0 ? args[policyIdx + 1] : undefined
+const policyEqualsArg = args.find((arg) => arg.startsWith('--policy='))
+const rawPolicyPath = policyEqualsArg?.slice('--policy='.length) ?? (policyIdx >= 0 ? args[policyIdx + 1] : undefined)
 const policyPath = rawPolicyPath?.startsWith('--') ? undefined : rawPolicyPath
-if ((outIdx >= 0 && !out) || (policyIdx >= 0 && !policyPath)) usage()
+if ((outIdx >= 0 && !out) || ((policyIdx >= 0 || policyEqualsArg !== undefined) && !policyPath)) usage()
 const cleanArgs = args.filter(
   (a, i) =>
     a !== '--json' &&
     a !== '--sarif' &&
+    a !== policyEqualsArg &&
     !(outIdx >= 0 && (i === outIdx || i === outIdx + 1)) &&
     !(policyIdx >= 0 && (i === policyIdx || i === policyIdx + 1)),
 )

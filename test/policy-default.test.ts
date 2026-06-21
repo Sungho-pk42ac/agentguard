@@ -20,3 +20,19 @@ test('loadPolicy uses local agent-policy.yaml when policy path is omitted', () =
     process.chdir(previousCwd)
   }
 })
+
+test('loadPolicy uses local agent-policy.json when YAML policy is absent', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  writeFileSync(join(dir, 'agent-policy.json'), JSON.stringify({ deny_commands: ['local-json-policy-command'] }))
+  const previousCwd = process.cwd()
+
+  try {
+    process.chdir(dir)
+
+    const policy = loadPolicy()
+
+    assert.ok(policy.denyCommands.includes('local-json-policy-command'))
+  } finally {
+    process.chdir(previousCwd)
+  }
+})

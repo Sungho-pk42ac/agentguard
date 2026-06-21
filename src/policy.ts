@@ -17,7 +17,9 @@ const rawMcpPolicySchema = z
 const rawPolicySchema = z
   .object({
     deny_read: stringListSchema.optional(),
+    denied_reads: stringListSchema.optional(),
     deny_commands: stringListSchema.optional(),
+    denied_commands: stringListSchema.optional(),
     require_approval: stringListSchema.optional(),
     approval_required: stringListSchema.optional(),
     mcp: rawMcpPolicySchema.optional(),
@@ -72,7 +74,7 @@ export function loadPolicy(path?: string): Policy {
   }
 
   const result = policyFileSchema.safeParse(parsed)
-  if (hasUnsafeObjectKey(parsed) || !result.success || hasApprovalAliasConflict(result.data)) {
+  if (hasUnsafeObjectKey(parsed) || !result.success || hasPolicyAliasConflict(result.data)) {
     throw new PolicyLoadError(policyPath, 'malformed')
   }
 
@@ -135,23 +137,39 @@ function parseJsonPolicy(contents: string): unknown {
 function mergePolicy(defaultPolicy: Policy, userPolicy: PolicyFile): Policy {
   const overrides = userPolicy.overrides
   return {
-    denyRead: mergeList(defaultPolicy.denyRead, overrides?.deny_read, userPolicy.deny_read),
-    denyCommands: mergeList(defaultPolicy.denyCommands, overrides?.deny_commands, userPolicy.deny_commands),
+    denyRead: mergeList(defaultPolicy.denyRead, deniedReadRules(overrides), deniedReadRules(userPolicy)),
+    denyCommands: mergeList(defaultPolicy.denyCommands, deniedCommandRules(overrides), deniedCommandRules(userPolicy)),
     requireApproval: mergeList(defaultPolicy.requireApproval, approvalRules(overrides), approvalRules(userPolicy)),
     mcp: mergeMcpPolicy(defaultPolicy.mcp, overrides?.mcp, userPolicy.mcp),
   }
+}
+
+function deniedReadRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+  return policy?.deny_read ?? policy?.denied_reads
+}
+
+function deniedCommandRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+  return policy?.deny_commands ?? policy?.denied_commands
 }
 
 function approvalRules(policy: RawPolicy | undefined): readonly string[] | undefined {
   return policy?.require_approval ?? policy?.approval_required
 }
 
-function hasApprovalAliasConflict(policy: PolicyFile): boolean {
-  return hasRawApprovalAliasConflict(policy) || hasRawApprovalAliasConflict(policy.overrides)
+function hasPolicyAliasConflict(policy: PolicyFile): boolean {
+  return hasRawAliasConflict(policy) || hasRawAliasConflict(policy.overrides)
 }
 
-function hasRawApprovalAliasConflict(policy: RawPolicy | undefined): boolean {
-  return policy?.require_approval !== undefined && policy.approval_required !== undefined
+function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
+  return (
+    hasAliasConflict([policy?.deny_read, policy?.denied_reads]) ||
+    hasAliasConflict([policy?.deny_commands, policy?.denied_commands]) ||
+    hasAliasConflict([policy?.require_approval, policy?.approval_required])
+  )
+}
+
+function hasAliasConflict(values: readonly (readonly string[] | undefined)[]): boolean {
+  return values.filter((value) => value !== undefined).length > 1
 }
 
 function hasUnsafeObjectKey(value: unknown): boolean {

@@ -29,11 +29,12 @@ const defaultPolicyFiles = ['agent-policy.yaml', 'agent-policy.yml', 'agent-poli
 
 type RawPolicy = z.infer<typeof rawPolicySchema>
 type PolicyFile = z.infer<typeof policyFileSchema>
+type PolicyLoadErrorReason = 'malformed' | 'missing' | 'unreadable' | 'unsupported'
 
 export class PolicyLoadError extends Error {
   readonly path: string
 
-  constructor(path: string, reason: 'malformed' | 'unreadable' | 'unsupported') {
+  constructor(path: string, reason: PolicyLoadErrorReason) {
     super(`Unable to load policy file: ${reason} policy file`)
     this.name = 'PolicyLoadError'
     this.path = path
@@ -48,7 +49,11 @@ export function loadPolicy(path?: string): Policy {
   try {
     contents = readFileSync(policyPath, 'utf8')
   } catch (error: unknown) {
-    if (error instanceof Error) throw new PolicyLoadError(policyPath, 'unreadable')
+    if (error instanceof Error) {
+      const reason: PolicyLoadErrorReason =
+        'code' in error && error.code === 'ENOENT' ? 'missing' : 'unreadable'
+      throw new PolicyLoadError(policyPath, reason)
+    }
     throw error
   }
 

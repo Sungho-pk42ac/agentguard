@@ -32,7 +32,11 @@ const policyIdx = args.indexOf('--policy')
 const policyPath = policyIdx >= 0 ? args[policyIdx + 1] : undefined
 if ((outIdx >= 0 && !out) || (policyIdx >= 0 && !policyPath)) usage()
 const cleanArgs = args.filter(
-  (a, i) => a !== '--json' && a !== '--sarif' && i !== outIdx && i !== outIdx + 1 && i !== policyIdx && i !== policyIdx + 1,
+  (a, i) =>
+    a !== '--json' &&
+    a !== '--sarif' &&
+    !(outIdx >= 0 && (i === outIdx || i === outIdx + 1)) &&
+    !(policyIdx >= 0 && (i === policyIdx || i === policyIdx + 1)),
 )
 
 const stdin = () => readFileSync(0, 'utf8')

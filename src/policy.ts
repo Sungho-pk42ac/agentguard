@@ -71,7 +71,9 @@ export function loadPolicy(path?: string): Policy {
   }
 
   const result = policyFileSchema.safeParse(parsed)
-  if (!result.success || hasApprovalAliasConflict(result.data)) throw new PolicyLoadError(policyPath, 'malformed')
+  if (hasUnsafeObjectKey(parsed) || !result.success || hasApprovalAliasConflict(result.data)) {
+    throw new PolicyLoadError(policyPath, 'malformed')
+  }
 
   return mergePolicy(DEFAULT_POLICY, result.data)
 }
@@ -223,6 +225,21 @@ function hasApprovalAliasConflict(policy: PolicyFile): boolean {
 
 function hasRawApprovalAliasConflict(policy: RawPolicy | undefined): boolean {
   return policy?.require_approval !== undefined && policy.approval_required !== undefined
+}
+
+function hasUnsafeObjectKey(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasUnsafeObjectKey)
+  if (!isRecord(value)) return false
+
+  return Object.keys(value).some((key) => isUnsafePolicyKey(key) || hasUnsafeObjectKey(value[key]))
+}
+
+function isRecord(value: unknown): value is { readonly [key: string]: unknown } {
+  return typeof value === 'object' && value !== null
+}
+
+function isUnsafePolicyKey(key: string): boolean {
+  return key === '__proto__' || key === 'constructor' || key === 'prototype'
 }
 
 function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mcp'], extensionPolicy?: RawPolicy['mcp']): McpPolicy {

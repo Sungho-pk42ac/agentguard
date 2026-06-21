@@ -73,7 +73,7 @@ export function loadPolicy(path?: string): Policy {
 
   let parsed: unknown
   try {
-    parsed = parsePolicyContents(policyPath, contents)
+    parsed = normalizePolicyValue(parsePolicyContents(policyPath, contents))
   } catch (error: unknown) {
     if (error instanceof PolicyLoadError) throw error
     if (error instanceof Error) throw new PolicyLoadError(policyPath, 'malformed')
@@ -81,7 +81,7 @@ export function loadPolicy(path?: string): Policy {
   }
 
   const result = policyFileSchema.safeParse(parsed)
-  if (hasUnsafeObjectKey(parsed) || !result.success || hasPolicyAliasConflict(result.data)) {
+  if (!result.success || hasPolicyAliasConflict(result.data)) {
     throw new PolicyLoadError(policyPath, 'malformed')
   }
 
@@ -148,66 +148,69 @@ function parseJsonPolicy(contents: string): unknown {
 }
 
 function mergePolicy(defaultPolicy: Policy, userPolicy: PolicyFile): Policy {
-  const overrides = userPolicy.overrides
+  const overrides = ownPolicyValue(userPolicy, 'overrides')
   return {
     denyRead: mergeList(defaultPolicy.denyRead, deniedReadRules(overrides), deniedReadRules(userPolicy)),
     denyCommands: mergeList(defaultPolicy.denyCommands, deniedCommandRules(overrides), deniedCommandRules(userPolicy)),
     requireApproval: mergeList(defaultPolicy.requireApproval, approvalRules(overrides), approvalRules(userPolicy)),
-    mcp: mergeMcpPolicy(defaultPolicy.mcp, overrides?.mcp, userPolicy.mcp),
+    mcp: mergeMcpPolicy(defaultPolicy.mcp, ownPolicyValue(overrides, 'mcp'), ownPolicyValue(userPolicy, 'mcp')),
   }
 }
 
 function deniedReadRules(policy: RawPolicy | undefined): readonly string[] | undefined {
-  return policy?.deny_read ?? policy?.deny_reads ?? policy?.denied_reads
+  return ownPolicyValue(policy, 'deny_read') ?? ownPolicyValue(policy, 'deny_reads') ?? ownPolicyValue(policy, 'denied_reads')
 }
 
 function deniedCommandRules(policy: RawPolicy | undefined): readonly string[] | undefined {
-  return policy?.deny_commands ?? policy?.denied_commands
+  return ownPolicyValue(policy, 'deny_commands') ?? ownPolicyValue(policy, 'denied_commands')
 }
 
 function approvalRules(policy: RawPolicy | undefined): readonly string[] | undefined {
-  return policy?.require_approval ?? policy?.require_approval_operations ?? policy?.approval_required ?? policy?.approval_required_operations
+  return ownPolicyValue(policy, 'require_approval') ?? ownPolicyValue(policy, 'require_approval_operations') ?? ownPolicyValue(policy, 'approval_required') ?? ownPolicyValue(policy, 'approval_required_operations')
 }
 
 function hasPolicyAliasConflict(policy: PolicyFile): boolean {
-  return hasRawAliasConflict(policy) || hasRawAliasConflict(policy.overrides)
+  return hasRawAliasConflict(policy) || hasRawAliasConflict(ownPolicyValue(policy, 'overrides'))
 }
 
 function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
   return (
-    hasAliasConflict([policy?.deny_read, policy?.deny_reads, policy?.denied_reads]) ||
-    hasAliasConflict([policy?.deny_commands, policy?.denied_commands]) ||
-    hasAliasConflict([policy?.require_approval, policy?.require_approval_operations, policy?.approval_required, policy?.approval_required_operations]) ||
-    hasMcpAliasConflict(policy?.mcp)
+    hasAliasConflict([ownPolicyValue(policy, 'deny_read'), ownPolicyValue(policy, 'deny_reads'), ownPolicyValue(policy, 'denied_reads')]) ||
+    hasAliasConflict([ownPolicyValue(policy, 'deny_commands'), ownPolicyValue(policy, 'denied_commands')]) ||
+    hasAliasConflict([ownPolicyValue(policy, 'require_approval'), ownPolicyValue(policy, 'require_approval_operations'), ownPolicyValue(policy, 'approval_required'), ownPolicyValue(policy, 'approval_required_operations')]) ||
+    hasMcpAliasConflict(ownPolicyValue(policy, 'mcp'))
   )
 }
 
 function hasMcpAliasConflict(policy: RawMcpPolicy | undefined): boolean {
-  return hasMcpPermissionAliasConflict(policy) || hasMcpPermissionAliasConflict(policy?.permissions)
+  return hasMcpPermissionAliasConflict(policy) || hasMcpPermissionAliasConflict(ownPolicyValue(policy, 'permissions'))
 }
 
 function hasMcpPermissionAliasConflict(policy: RawMcpPermission | undefined): boolean {
   return (
-    hasAliasConflict([policy?.deny_servers, policy?.denied_servers]) ||
-    hasAliasConflict([policy?.deny_tools, policy?.denied_tools]) ||
+    hasAliasConflict([ownPolicyValue(policy, 'deny_servers'), ownPolicyValue(policy, 'denied_servers')]) ||
+    hasAliasConflict([ownPolicyValue(policy, 'deny_tools'), ownPolicyValue(policy, 'denied_tools')]) ||
     hasAliasConflict([
-      policy?.require_approval_tools,
-      policy?.approval_required_tools,
-      policy?.require_approval,
-      policy?.approval_required,
+      ownPolicyValue(policy, 'require_approval_tools'),
+      ownPolicyValue(policy, 'approval_required_tools'),
+      ownPolicyValue(policy, 'require_approval'),
+      ownPolicyValue(policy, 'approval_required'),
     ])
   )
 }
 
-function hasAliasConflict(values: readonly (readonly string[] | undefined)[]): boolean {
-  return values.filter((value) => value !== undefined).length > 1
-}
+function hasAliasConflict(values: readonly (readonly string[] | undefined)[]): boolean { return values.filter((value) => value !== undefined).length > 1 }
 
-function hasUnsafeObjectKey(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(hasUnsafeObjectKey)
-  if (!isRecord(value)) return false
+function normalizePolicyValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizePolicyValue)
+  if (!isRecord(value)) return value
 
-  return Object.keys(value).some((key) => isUnsafePolicyKey(key) || hasUnsafeObjectKey(value[key]))
+  const normalizedValue: Record<string, unknown> = Object.create(null)
+  for (const [key, childValue] of Object.entries(value)) {
+    if (isUnsafePolicyKey(key)) throw new SyntaxError('Unsafe policy key')
+    normalizedValue[key] = normalizePolicyValue(childValue)
+  }
+  return normalizedValue
 }
 
 function isRecord(value: unknown): value is { readonly [key: string]: unknown } {
@@ -218,44 +221,41 @@ function isUnsafePolicyKey(key: string): boolean {
   return key === '__proto__' || key === 'constructor' || key === 'prototype'
 }
 
+function ownPolicyValue<T extends object, K extends keyof T>(policy: T | undefined, key: K): T[K] | undefined {
+  if (policy === undefined || !Object.hasOwn(policy, key)) return undefined
+  return policy[key]
+}
+
 function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawMcpPolicy, extensionPolicy?: RawMcpPolicy): McpPolicy {
   return {
-    denyServers: unique(
-      mergeList(defaultPolicy.denyServers, mcpDeniedServerRules(overridePolicy), mcpDeniedServerRules(extensionPolicy)).map(
-        (server) => server.toLowerCase(),
-      ),
-    ),
+    denyServers: unique(mergeList(defaultPolicy.denyServers, mcpDeniedServerRules(overridePolicy), mcpDeniedServerRules(extensionPolicy)).map((server) => server.toLowerCase())),
     denyTools: mergeList(defaultPolicy.denyTools, mcpDeniedToolRules(overridePolicy), mcpDeniedToolRules(extensionPolicy)),
-    requireApprovalTools: mergeList(
-      defaultPolicy.requireApprovalTools,
-      mcpApprovalRules(overridePolicy),
-      mcpApprovalRules(extensionPolicy),
-    ),
+    requireApprovalTools: mergeList(defaultPolicy.requireApprovalTools, mcpApprovalRules(overridePolicy), mcpApprovalRules(extensionPolicy)),
   }
 }
 
 function mcpDeniedServerRules(policy: RawMcpPolicy | undefined): readonly string[] | undefined {
-  return combineRuleLists(mcpPermissionDeniedServerRules(policy), mcpPermissionDeniedServerRules(policy?.permissions))
+  return combineRuleLists(mcpPermissionDeniedServerRules(policy), mcpPermissionDeniedServerRules(ownPolicyValue(policy, 'permissions')))
 }
 
 function mcpDeniedToolRules(policy: RawMcpPolicy | undefined): readonly string[] | undefined {
-  return combineRuleLists(mcpPermissionDeniedToolRules(policy), mcpPermissionDeniedToolRules(policy?.permissions))
+  return combineRuleLists(mcpPermissionDeniedToolRules(policy), mcpPermissionDeniedToolRules(ownPolicyValue(policy, 'permissions')))
 }
 
 function mcpApprovalRules(policy: RawMcpPolicy | undefined): readonly string[] | undefined {
-  return combineRuleLists(mcpPermissionApprovalRules(policy), mcpPermissionApprovalRules(policy?.permissions))
+  return combineRuleLists(mcpPermissionApprovalRules(policy), mcpPermissionApprovalRules(ownPolicyValue(policy, 'permissions')))
 }
 
 function mcpPermissionDeniedServerRules(policy: RawMcpPermission | undefined): readonly string[] | undefined {
-  return policy?.deny_servers ?? policy?.denied_servers
+  return ownPolicyValue(policy, 'deny_servers') ?? ownPolicyValue(policy, 'denied_servers')
 }
 
 function mcpPermissionDeniedToolRules(policy: RawMcpPermission | undefined): readonly string[] | undefined {
-  return policy?.deny_tools ?? policy?.denied_tools
+  return ownPolicyValue(policy, 'deny_tools') ?? ownPolicyValue(policy, 'denied_tools')
 }
 
 function mcpPermissionApprovalRules(policy: RawMcpPermission | undefined): readonly string[] | undefined {
-  return policy?.require_approval_tools ?? policy?.approval_required_tools ?? policy?.require_approval ?? policy?.approval_required
+  return ownPolicyValue(policy, 'require_approval_tools') ?? ownPolicyValue(policy, 'approval_required_tools') ?? ownPolicyValue(policy, 'require_approval') ?? ownPolicyValue(policy, 'approval_required')
 }
 
 function mergeList(

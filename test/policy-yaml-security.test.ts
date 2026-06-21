@@ -106,3 +106,21 @@ test('loadPolicy rejects multi-document YAML policies without leaking contents',
     },
   )
 })
+
+test('loadPolicy ignores inherited prototype policy keys', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, '{}')
+  Reflect.defineProperty(Object.prototype, 'deny_commands', {
+    value: ['agentguard-prototype-command'],
+    configurable: true,
+  })
+
+  try {
+    const policy = loadPolicy(path)
+
+    assert.equal(policy.denyCommands.includes('agentguard-prototype-command'), false)
+  } finally {
+    Reflect.deleteProperty(Object.prototype, 'deny_commands')
+  }
+})

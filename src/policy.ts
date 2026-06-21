@@ -22,6 +22,7 @@ const rawMcpPolicySchema = z
 const rawPolicySchema = z
   .object({
     deny_read: stringListSchema.optional(),
+    deny_reads: stringListSchema.optional(),
     denied_reads: stringListSchema.optional(),
     deny_commands: stringListSchema.optional(),
     denied_commands: stringListSchema.optional(),
@@ -145,7 +146,7 @@ function mergePolicy(defaultPolicy: Policy, userPolicy: PolicyFile): Policy {
 }
 
 function deniedReadRules(policy: RawPolicy | undefined): readonly string[] | undefined {
-  return policy?.deny_read ?? policy?.denied_reads
+  return policy?.deny_read ?? policy?.deny_reads ?? policy?.denied_reads
 }
 
 function deniedCommandRules(policy: RawPolicy | undefined): readonly string[] | undefined {
@@ -162,7 +163,7 @@ function hasPolicyAliasConflict(policy: PolicyFile): boolean {
 
 function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
   return (
-    hasAliasConflict([policy?.deny_read, policy?.denied_reads]) ||
+    hasAliasConflict([policy?.deny_read, policy?.deny_reads, policy?.denied_reads]) ||
     hasAliasConflict([policy?.deny_commands, policy?.denied_commands]) ||
     hasAliasConflict([policy?.require_approval, policy?.approval_required, policy?.approval_required_operations]) ||
     hasMcpAliasConflict(policy?.mcp)

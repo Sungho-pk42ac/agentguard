@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -16,6 +16,24 @@ test('loadPolicy uses local agent-policy.yaml when policy path is omitted', () =
     const policy = loadPolicy()
 
     assert.ok(policy.denyCommands.includes('local-policy-command'))
+  } finally {
+    process.chdir(previousCwd)
+  }
+})
+
+test('loadPolicy uses nearest parent agent-policy.yaml when policy path is omitted', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const nestedDir = join(dir, 'packages', 'agent')
+  mkdirSync(nestedDir, { recursive: true })
+  writeFileSync(join(dir, 'agent-policy.yaml'), 'deny_commands:\n  - parent-policy-command\n')
+  const previousCwd = process.cwd()
+
+  try {
+    process.chdir(nestedDir)
+
+    const policy = loadPolicy()
+
+    assert.ok(policy.denyCommands.includes('parent-policy-command'))
   } finally {
     process.chdir(previousCwd)
   }

@@ -29,6 +29,9 @@ node dist/index.js scan-files .
 # Scan a PR diff
 git diff origin/main...HEAD | node dist/index.js scan-diff
 
+# Emit SARIF for GitHub code scanning
+git diff origin/main...HEAD | node dist/index.js scan-diff --sarif --out agentguard.sarif
+
 # Scan Codex/MCP config
 node dist/index.js scan-mcp < ~/.codex/config.toml
 ```
@@ -51,13 +54,13 @@ This first version is intentionally small:
 
 - deterministic regex/rule scanner
 - markdown/JSON report
+- SARIF 2.1.0 output for GitHub code scanning
 - no external network calls
 - no secrets are printed in full
 
 ## Roadmap
 
 - GitHub Action PR comment
-- SARIF output
 - Codex/Hermes transcript adapters
 - MCP permission graph
 - policy-as-code (`agent-policy.yaml`)

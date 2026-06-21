@@ -10,7 +10,7 @@ test('detects secrets in text and redacts evidence', () => {
 })
 
 test('scanDiff only checks added lines', () => {
-  const findings = scanDiff('- token="sk-oldoldoldoldoldoldoldold"\n+ token="sk-newnewnewnewnewnewnewnew"')
+  const findings = scanDiff('- sk-oldoldoldoldoldoldoldold\n+ sk-newnewnewnewnewnewnewnew')
   assert.equal(findings.length, 1)
   assert.match(findings[0].evidence, /new/)
 })

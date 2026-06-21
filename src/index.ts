@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { scanDiff, scanFiles, scanMcpConfig, scanText } from './scanner.js'
 import { toMarkdown } from './report.js'
+import type { Finding } from './rules.js'
 
 function usage() {
   console.error(`Usage:
@@ -26,7 +27,7 @@ const out = outIdx >= 0 ? args[outIdx + 1] : undefined
 const cleanArgs = args.filter((a, i) => a !== '--json' && i !== outIdx && i !== outIdx + 1)
 
 const stdin = () => readFileSync(0, 'utf8')
-let findings
+let findings: Finding[] = []
 switch (cmd) {
   case 'scan-files': findings = scanFiles(cleanArgs[0] ?? process.cwd()); break
   case 'scan-diff': findings = scanDiff(stdin()); break

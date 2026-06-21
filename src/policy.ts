@@ -76,14 +76,15 @@ function discoverDefaultPolicyPath(): string | undefined {
 }
 
 function parsePolicyContents(path: string, contents: string): unknown {
-  if (contents.trim().length === 0) return {}
+  const normalizedContents = contents.startsWith('\uFEFF') ? contents.slice(1) : contents
+  if (normalizedContents.trim().length === 0) return {}
 
   switch (extname(path).toLowerCase()) {
     case '.json':
-      return parseJsonPolicy(contents)
+      return parseJsonPolicy(normalizedContents)
     case '.yaml':
     case '.yml':
-      return parse(contents, { uniqueKeys: true })
+      return parse(normalizedContents, { uniqueKeys: true })
     default:
       throw new PolicyLoadError(path, 'unsupported')
   }

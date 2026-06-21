@@ -61,7 +61,7 @@ export function loadPolicy(path?: string): Policy {
     throw error
   }
 
-  const result = policyFileSchema.safeParse(parsed ?? {})
+  const result = policyFileSchema.safeParse(parsed)
   if (!result.success) throw new PolicyLoadError(policyPath, 'malformed')
 
   return mergePolicy(DEFAULT_POLICY, result.data)

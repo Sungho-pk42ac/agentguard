@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { DEFAULT_POLICY, type Finding, PII_PATTERNS, SECRET_PATTERNS, SENSITIVE_FILE_RE } from './rules.js'
+import { DEFAULT_POLICY, type Finding, PII_PATTERNS, type Policy, SECRET_PATTERNS, SENSITIVE_FILE_RE } from './rules.js'
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.next', 'dist', 'build', 'coverage', '.turbo', '.cache'])
 const MAX_FILE_BYTES = 512_000
@@ -23,7 +23,7 @@ export function walkFiles(root: string): string[] {
   return out
 }
 
-export function scanText(text: string, file = 'stdin'): Finding[] {
+export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_POLICY): Finding[] {
   const findings: Finding[] = []
   for (const p of SECRET_PATTERNS) {
     for (const m of text.matchAll(p.re)) {
@@ -51,7 +51,7 @@ export function scanText(text: string, file = 'stdin'): Finding[] {
       })
     }
   }
-  for (const cmd of DEFAULT_POLICY.denyCommands) {
+  for (const cmd of policy.denyCommands) {
     if (text.includes(cmd)) {
       findings.push({
         id: 'denied-command',
@@ -64,13 +64,38 @@ export function scanText(text: string, file = 'stdin'): Finding[] {
       })
     }
   }
+  for (const operation of policy.requireApproval) {
+    if (text.includes(operation)) {
+      findings.push({
+        id: 'approval-required',
+        title: `Approval-required operation: ${operation}`,
+        severity: 'medium',
+        category: 'agent-behavior',
+        file,
+        evidence: operation,
+        recommendation: 'Require explicit human approval before running this operation.',
+      })
+    }
+  }
   return findings
 }
 
-export function scanFiles(root: string): Finding[] {
+export function scanFiles(root: string, policy: Policy = DEFAULT_POLICY): Finding[] {
   const findings: Finding[] = []
   for (const file of walkFiles(root)) {
     const rel = relative(root, file)
+    if (matchesPolicyPattern(rel, policy.denyRead)) {
+      findings.push({
+        id: 'denied-read-path',
+        title: 'Policy-denied read path present in workspace',
+        severity: 'critical',
+        category: 'sensitive-file',
+        file: rel,
+        evidence: rel,
+        recommendation: 'Exclude this path from agent-readable workspace scans.',
+      })
+      continue
+    }
     if (SENSITIVE_FILE_RE.test(rel)) {
       findings.push({
         id: 'sensitive-file-present',
@@ -85,25 +110,24 @@ export function scanFiles(root: string): Finding[] {
     }
     if (/\.(png|jpg|jpeg|webp|gif|pdf|pptx|docx|hwpx|zip|sqlite|db)$/i.test(rel)) continue
     const text = readFileSync(file, 'utf8')
-    findings.push(...scanText(text, rel))
+    findings.push(...scanText(text, rel, policy))
   }
   return findings
 }
 
-export function scanDiff(diff: string): Finding[] {
+export function scanDiff(diff: string, policy: Policy = DEFAULT_POLICY): Finding[] {
   const added = diff
     .split('\n')
     .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
     .map((line) => line.slice(1))
     .join('\n')
-  return scanText(added, 'diff')
+  return scanText(added, 'diff', policy)
 }
 
-export function scanMcpConfig(text: string): Finding[] {
-  const findings: Finding[] = scanText(text, 'mcp-config')
+export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Finding[] {
+  const findings: Finding[] = scanText(text, 'mcp-config', policy)
   const lowered = text.toLowerCase()
-  const risky = ['filesystem', 'postgres', 'supabase', 'github', 'slack', 'google', 'drive']
-  for (const name of risky) {
+  for (const name of policy.mcp.denyServers) {
     if (lowered.includes(name)) {
       findings.push({
         id: `mcp-${name}`,
@@ -112,6 +136,19 @@ export function scanMcpConfig(text: string): Finding[] {
         category: 'mcp-risk',
         evidence: name,
         recommendation: 'Scope MCP permissions to read-only/minimal resources and log all tool calls.',
+      })
+    }
+  }
+  for (const tool of policy.mcp.requireApprovalTools) {
+    if (lowered.includes(tool.toLowerCase())) {
+      findings.push({
+        id: 'mcp-tool-approval-required',
+        title: `MCP tool requires approval: ${tool}`,
+        severity: 'high',
+        category: 'mcp-risk',
+        file: 'mcp-config',
+        evidence: tool,
+        recommendation: 'Require explicit human approval before allowing this MCP tool call.',
       })
     }
   }
@@ -153,4 +190,19 @@ export function scanMcpConfig(text: string): Finding[] {
 export function redact(s: string): string {
   if (s.length <= 8) return '<redacted>'
   return `${s.slice(0, 4)}…${s.slice(-4)}`
+}
+
+function matchesPolicyPattern(path: string, patterns: readonly string[]): boolean {
+  const normalizedPath = normalizePath(path)
+  return patterns.some((pattern) => globToRegExp(normalizePath(pattern)).test(normalizedPath))
+}
+
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/^\.\//, '')
+}
+
+function globToRegExp(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const globbed = escaped.replace(/\\\*\\\*/g, '.*').replace(/\\\*/g, '[^/]*')
+  return new RegExp(`(^|/)${globbed}$`)
 }

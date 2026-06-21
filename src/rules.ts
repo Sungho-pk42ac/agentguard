@@ -11,16 +11,26 @@ export interface Finding {
   recommendation: string
 }
 
+export interface McpPolicy {
+  readonly denyServers: readonly string[]
+  readonly requireApprovalTools: readonly string[]
+}
+
 export interface Policy {
-  denyRead: string[]
-  denyCommands: string[]
-  requireApproval: string[]
+  readonly denyRead: readonly string[]
+  readonly denyCommands: readonly string[]
+  readonly requireApproval: readonly string[]
+  readonly mcp: McpPolicy
 }
 
 export const DEFAULT_POLICY: Policy = {
   denyRead: ['.env', '.env.*', '**/.env*', '**/id_rsa', '**/auth.json', '**/credentials.json', '**/.ssh/**'],
   denyCommands: ['rm -rf', 'git push --force', 'gh secret view', 'printenv', 'cat .env'],
   requireApproval: ['deploy', 'db:migrate', 'supabase db push', 'vercel --prod', 'gh workflow edit'],
+  mcp: {
+    denyServers: ['filesystem', 'postgres', 'supabase', 'github', 'slack', 'google', 'drive'],
+    requireApprovalTools: [],
+  },
 }
 
 export const SECRET_PATTERNS: Array<{ id: string; title: string; re: RegExp }> = [

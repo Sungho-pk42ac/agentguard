@@ -139,6 +139,19 @@ export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Fi
       })
     }
   }
+  for (const tool of policy.mcp.denyTools) {
+    if (lowered.includes(tool.toLowerCase())) {
+      findings.push({
+        id: 'mcp-tool-denied',
+        title: `MCP tool denied by policy: ${tool}`,
+        severity: 'critical',
+        category: 'mcp-risk',
+        file: 'mcp-config',
+        evidence: tool,
+        recommendation: 'Remove this MCP tool from the agent configuration or isolate it behind a separate approval workflow.',
+      })
+    }
+  }
   for (const tool of policy.mcp.requireApprovalTools) {
     if (lowered.includes(tool.toLowerCase())) {
       findings.push({

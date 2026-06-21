@@ -21,3 +21,24 @@ test('loadPolicy preserves default MCP approval tools when overriding denied MCP
   assert.deepEqual(policy.mcp.denyServers, ['internal-db', 'browser'])
   assert.deepEqual(policy.mcp.requireApprovalTools, DEFAULT_POLICY.mcp.requireApprovalTools)
 })
+
+test('loadPolicy can replace and extend MCP denied tools', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    [
+      'overrides:',
+      '  mcp:',
+      '    deny_tools:',
+      '      - github.delete_repository',
+      'mcp:',
+      '  deny_tools:',
+      '    - slack.admin_invite',
+    ].join('\n'),
+  )
+
+  const policy = loadPolicy(path)
+
+  assert.deepEqual(policy.mcp.denyTools, ['github.delete_repository', 'slack.admin_invite'])
+})

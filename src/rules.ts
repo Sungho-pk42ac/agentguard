@@ -13,6 +13,7 @@ export interface Finding {
 
 export interface McpPolicy {
   readonly denyServers: readonly string[]
+  readonly denyTools: readonly string[]
   readonly requireApprovalTools: readonly string[]
 }
 
@@ -29,6 +30,7 @@ export const DEFAULT_POLICY: Policy = {
   requireApproval: ['deploy', 'db:migrate', 'supabase db push', 'vercel --prod', 'gh workflow edit'],
   mcp: {
     denyServers: ['filesystem', 'postgres', 'supabase', 'github', 'slack', 'google', 'drive'],
+    denyTools: [],
     requireApprovalTools: [],
   },
 }

@@ -11,6 +11,8 @@ const rawMcpPolicySchema = z
   .object({
     deny_servers: stringListSchema.optional(),
     require_approval_tools: stringListSchema.optional(),
+    require_approval: stringListSchema.optional(),
+    approval_required: stringListSchema.optional(),
   })
   .strict()
 
@@ -164,8 +166,13 @@ function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
   return (
     hasAliasConflict([policy?.deny_read, policy?.denied_reads]) ||
     hasAliasConflict([policy?.deny_commands, policy?.denied_commands]) ||
-    hasAliasConflict([policy?.require_approval, policy?.approval_required])
+    hasAliasConflict([policy?.require_approval, policy?.approval_required]) ||
+    hasMcpAliasConflict(policy?.mcp)
   )
+}
+
+function hasMcpAliasConflict(policy: RawPolicy['mcp'] | undefined): boolean {
+  return hasAliasConflict([policy?.require_approval_tools, policy?.require_approval, policy?.approval_required])
 }
 
 function hasAliasConflict(values: readonly (readonly string[] | undefined)[]): boolean {
@@ -196,10 +203,14 @@ function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mc
     ),
     requireApprovalTools: mergeList(
       defaultPolicy.requireApprovalTools,
-      overridePolicy?.require_approval_tools,
-      extensionPolicy?.require_approval_tools,
+      mcpApprovalRules(overridePolicy),
+      mcpApprovalRules(extensionPolicy),
     ),
   }
+}
+
+function mcpApprovalRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
+  return policy?.require_approval_tools ?? policy?.require_approval ?? policy?.approval_required
 }
 
 function mergeList(

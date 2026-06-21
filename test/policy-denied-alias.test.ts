@@ -32,3 +32,30 @@ test('loadPolicy rejects conflicting denied policy aliases without leaking conte
     },
   )
 })
+
+test('loadPolicy accepts denied_servers as an MCP deny list alias', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['mcp:', '  denied_servers:', '    - Linear'].join('\n'))
+
+  const policy = loadPolicy(path)
+
+  assert.ok(policy.mcp.denyServers.includes('linear'))
+})
+
+test('loadPolicy rejects conflicting MCP denied-server aliases without leaking contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['mcp:', '  deny_servers:', '    - sk-abcdefghijklmnopqrstuvwxyz', '  denied_servers:', '    - linear'].join('\n'))
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.match(error.message, /malformed policy file/)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      assert.doesNotMatch(error.message, /linear/)
+      return true
+    },
+  )
+})

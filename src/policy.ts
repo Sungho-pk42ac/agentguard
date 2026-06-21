@@ -33,7 +33,7 @@ type PolicyFile = z.infer<typeof policyFileSchema>
 export class PolicyLoadError extends Error {
   readonly path: string
 
-  constructor(path: string, reason: 'malformed' | 'unreadable') {
+  constructor(path: string, reason: 'malformed' | 'unreadable' | 'unsupported') {
     super(`Unable to load policy file: ${reason} policy file`)
     this.name = 'PolicyLoadError'
     this.path = path
@@ -56,6 +56,7 @@ export function loadPolicy(path?: string): Policy {
   try {
     parsed = parsePolicyContents(policyPath, contents)
   } catch (error: unknown) {
+    if (error instanceof PolicyLoadError) throw error
     if (error instanceof Error) throw new PolicyLoadError(policyPath, 'malformed')
     throw error
   }
@@ -75,8 +76,15 @@ function discoverDefaultPolicyPath(): string | undefined {
 }
 
 function parsePolicyContents(path: string, contents: string): unknown {
-  if (extname(path).toLowerCase() === '.json') return parseJsonPolicy(contents)
-  return parse(contents, { uniqueKeys: true })
+  switch (extname(path).toLowerCase()) {
+    case '.json':
+      return parseJsonPolicy(contents)
+    case '.yaml':
+    case '.yml':
+      return parse(contents, { uniqueKeys: true })
+    default:
+      throw new PolicyLoadError(path, 'unsupported')
+  }
 }
 
 function parseJsonPolicy(contents: string): unknown {

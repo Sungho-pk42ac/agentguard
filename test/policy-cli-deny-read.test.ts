@@ -51,6 +51,26 @@ test('CLI accepts --policy=<path> for scan-log', () => {
   assert.equal(findings[0]?.id, 'denied-command')
 })
 
+test('CLI accepts --policy before the command', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const policyPath = join(dir, 'agent-policy.yaml')
+  writeFileSync(policyPath, ['deny_commands:', '  - agentguard-global-policy-command'].join('\n'))
+
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', '--policy', policyPath, 'scan-log', '--json'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      input: 'agentguard-global-policy-command',
+    },
+  )
+
+  assert.equal(result.status, 0)
+  const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
+  assert.equal(findings[0]?.id, 'denied-command')
+})
+
 test('CLI applies approval-required operations from --policy to scan-log', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const policyPath = join(dir, 'agent-policy.yaml')

@@ -5,7 +5,16 @@ import { scanDiff, scanFiles, scanMcpConfig, scanText } from './scanner.js'
 import { toMarkdown, toSarif } from './report.js'
 import type { Finding } from './rules.js'
 
-function usage() {
+interface CliArgs {
+  readonly cmd: string
+  readonly cleanArgs: readonly string[]
+  readonly json: boolean
+  readonly sarif: boolean
+  readonly out?: string
+  readonly policyPath?: string
+}
+
+function usage(): never {
   console.error(`Usage:
   agentguard scan-files [path]
   agentguard scan-diff < diff.patch
@@ -21,26 +30,60 @@ Options:
   process.exit(2)
 }
 
-const args = process.argv.slice(2)
-const cmd = args.shift()
-if (!cmd) usage()
-const json = args.includes('--json')
-const sarif = args.includes('--sarif')
-const outIdx = args.indexOf('--out')
-const out = outIdx >= 0 ? args[outIdx + 1] : undefined
-const policyIdx = args.indexOf('--policy')
-const policyEqualsArg = args.find((arg) => arg.startsWith('--policy='))
-const rawPolicyPath = policyEqualsArg?.slice('--policy='.length) ?? (policyIdx >= 0 ? args[policyIdx + 1] : undefined)
-const policyPath = rawPolicyPath?.startsWith('--') ? undefined : rawPolicyPath
-if ((outIdx >= 0 && !out) || ((policyIdx >= 0 || policyEqualsArg !== undefined) && !policyPath)) usage()
-const cleanArgs = args.filter(
-  (a, i) =>
-    a !== '--json' &&
-    a !== '--sarif' &&
-    a !== policyEqualsArg &&
-    !(outIdx >= 0 && (i === outIdx || i === outIdx + 1)) &&
-    !(policyIdx >= 0 && (i === policyIdx || i === policyIdx + 1)),
-)
+function parseArgs(args: readonly string[]): CliArgs | undefined {
+  let cmd: string | undefined
+  const cleanArgs: string[] = []
+  let json = false
+  let sarif = false
+  let out: string | undefined
+  let policyPath: string | undefined
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === '--json') {
+      json = true
+      continue
+    }
+    if (arg === '--sarif') {
+      sarif = true
+      continue
+    }
+    if (arg === '--out') {
+      const value = args[index + 1]
+      if (!isOptionValue(value)) return undefined
+      out = value
+      index += 1
+      continue
+    }
+    if (arg === '--policy') {
+      const value = args[index + 1]
+      if (!isOptionValue(value)) return undefined
+      policyPath = value
+      index += 1
+      continue
+    }
+    if (arg.startsWith('--policy=')) {
+      const value = arg.slice('--policy='.length)
+      if (value.length === 0) return undefined
+      policyPath = value
+      continue
+    }
+    if (arg.startsWith('--')) return undefined
+    if (!cmd) cmd = arg
+    else cleanArgs.push(arg)
+  }
+
+  if (!cmd) return undefined
+  return { cmd, cleanArgs, json, sarif, out, policyPath }
+}
+
+function isOptionValue(value: string | undefined): value is string {
+  return value !== undefined && !value.startsWith('--')
+}
+
+const parsedArgs = parseArgs(process.argv.slice(2))
+if (!parsedArgs) usage()
+const { cmd, cleanArgs, json, sarif, out, policyPath } = parsedArgs
 
 const stdin = () => readFileSync(0, 'utf8')
 let findings: Finding[] = []

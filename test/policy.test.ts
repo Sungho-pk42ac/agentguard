@@ -58,6 +58,16 @@ test('loadPolicy parses YAML and extends the default policy', () => {
   assert.ok(policy.mcp.requireApprovalTools.includes('github.create_pull_request'))
 })
 
+test('loadPolicy treats an empty YAML policy file as defaults only', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, '')
+
+  const policy = loadPolicy(path)
+
+  assert.deepEqual(policy, DEFAULT_POLICY)
+})
+
 test('loadPolicy parses JSON policy files', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.json')

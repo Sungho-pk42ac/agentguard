@@ -76,6 +76,8 @@ function discoverDefaultPolicyPath(): string | undefined {
 }
 
 function parsePolicyContents(path: string, contents: string): unknown {
+  if (contents.trim().length === 0) return {}
+
   switch (extname(path).toLowerCase()) {
     case '.json':
       return parseJsonPolicy(contents)

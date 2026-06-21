@@ -152,6 +152,22 @@ test('loadPolicy reports schema-invalid files without leaking file contents', ()
   )
 })
 
+test('loadPolicy rejects blank policy list entries without leaking file contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['deny_commands:', '  - "   "', '  - sk-abcdefghijklmnopqrstuvwxyz'].join('\n'))
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      return true
+    },
+  )
+})
+
 test('loadPolicy reports non-object policy files without leaking file contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

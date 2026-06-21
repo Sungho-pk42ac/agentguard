@@ -4,7 +4,7 @@ import { isAlias, parseDocument, visit } from 'yaml'
 import { z } from 'zod'
 import { DEFAULT_POLICY, type McpPolicy, type Policy } from './rules.js'
 
-const stringListSchema = z.array(z.string().min(1))
+const stringListSchema = z.array(z.string().trim().min(1))
 
 const rawMcpPolicySchema = z
   .object({

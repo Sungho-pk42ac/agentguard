@@ -32,7 +32,7 @@ export class PolicyLoadError extends Error {
   readonly path: string
 
   constructor(path: string, reason: 'malformed' | 'unreadable') {
-    super(`Unable to load policy file ${path}: ${reason} policy file`)
+    super(`Unable to load policy file: ${reason} policy file`)
     this.name = 'PolicyLoadError'
     this.path = path
   }

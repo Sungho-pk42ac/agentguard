@@ -49,3 +49,21 @@ test('loadPolicy rejects YAML aliases without leaking expanded contents', () => 
     },
   )
 })
+
+test('loadPolicy rejects YAML custom tags without leaking tagged contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['deny_commands:', '  - !secret sk-abcdefghijklmnopqrstuvwxyz'].join('\n'))
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.match(error.message, /malformed policy file/)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      assert.doesNotMatch(error.message, /!secret/)
+      return true
+    },
+  )
+})

@@ -88,3 +88,26 @@ test('loadPolicy rejects YAML prototype pollution keys without leaking contents'
     },
   )
 })
+
+test('loadPolicy rejects multi-document YAML policies without leaking contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    ['deny_commands:', '  - sk-abcdefghijklmnopqrstuvwxyz', '---', 'deny_commands:', '  - rm -rf /tmp/demo'].join(
+      '\n',
+    ),
+  )
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.match(error.message, /malformed policy file/)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      assert.doesNotMatch(error.message, /rm -rf/)
+      return true
+    },
+  )
+})

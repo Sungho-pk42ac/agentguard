@@ -97,6 +97,32 @@ test('loadPolicy can replace a default list and extend it in the same file', () 
   assert.deepEqual(policy.denyCommands, ['custom-only', 'also-denied'])
 })
 
+test('loadPolicy can replace default MCP rules and extend them in the same file', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    [
+      'overrides:',
+      '  mcp:',
+      '    deny_servers:',
+      '      - internal-db',
+      '    require_approval_tools:',
+      '      - github.merge_pull_request',
+      'mcp:',
+      '  deny_servers:',
+      '    - browser',
+      '  require_approval_tools:',
+      '    - filesystem.write_file',
+    ].join('\n'),
+  )
+
+  const policy = loadPolicy(path)
+
+  assert.deepEqual(policy.mcp.denyServers, ['internal-db', 'browser'])
+  assert.deepEqual(policy.mcp.requireApprovalTools, ['github.merge_pull_request', 'filesystem.write_file'])
+})
+
 test('CLI accepts --policy for scan-log', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

@@ -57,6 +57,7 @@ export class PolicyLoadError extends Error {
 export function loadPolicy(path?: string): Policy {
   const policyPath = path ?? discoverDefaultPolicyPath()
   if (!policyPath) return clonePolicy(DEFAULT_POLICY)
+  if (!['.json', '.yaml', '.yml'].includes(extname(policyPath).toLowerCase())) throw new PolicyLoadError(policyPath, 'unsupported')
 
   let contents: string
   try {

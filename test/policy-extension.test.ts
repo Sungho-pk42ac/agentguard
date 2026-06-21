@@ -20,3 +20,17 @@ test('loadPolicy rejects unsupported policy extensions without leaking contents'
     },
   )
 })
+
+test('loadPolicy rejects unsupported policy extensions before checking the filesystem', () => {
+  const path = join(tmpdir(), `agentguard-policy-missing-sk-abcdefghijklmnopqrstuvwxyz-${process.pid}.txt`)
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.match(error.message, /unsupported policy file/)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      return true
+    },
+  )
+})

@@ -29,7 +29,7 @@ const rawPolicySchema = z
     denied_reads: stringListSchema.optional(),
     deny_commands: stringListSchema.optional(),
     denied_commands: stringListSchema.optional(),
-    require_approval: stringListSchema.optional(),
+    require_approval: stringListSchema.optional(), require_approval_operations: stringListSchema.optional(),
     approval_required: stringListSchema.optional(),
     approval_required_operations: stringListSchema.optional(),
     mcp: rawMcpPolicySchema.optional(),
@@ -166,7 +166,7 @@ function deniedCommandRules(policy: RawPolicy | undefined): readonly string[] | 
 }
 
 function approvalRules(policy: RawPolicy | undefined): readonly string[] | undefined {
-  return policy?.require_approval ?? policy?.approval_required ?? policy?.approval_required_operations
+  return policy?.require_approval ?? policy?.require_approval_operations ?? policy?.approval_required ?? policy?.approval_required_operations
 }
 
 function hasPolicyAliasConflict(policy: PolicyFile): boolean {
@@ -177,7 +177,7 @@ function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
   return (
     hasAliasConflict([policy?.deny_read, policy?.deny_reads, policy?.denied_reads]) ||
     hasAliasConflict([policy?.deny_commands, policy?.denied_commands]) ||
-    hasAliasConflict([policy?.require_approval, policy?.approval_required, policy?.approval_required_operations]) ||
+    hasAliasConflict([policy?.require_approval, policy?.require_approval_operations, policy?.approval_required, policy?.approval_required_operations]) ||
     hasMcpAliasConflict(policy?.mcp)
   )
 }

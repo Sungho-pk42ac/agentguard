@@ -88,6 +88,39 @@ test('CLI accepts --policy before the command', () => {
   assert.equal(findings[0]?.id, 'denied-command')
 })
 
+test('CLI rejects duplicate --policy flags without leaking policy paths', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const firstPolicyPath = join(dir, 'agent-policy-sk-abcdefghijklmnopqrstuvwxyz.yaml')
+  const secondPolicyPath = join(dir, 'agent-policy.json')
+  writeFileSync(firstPolicyPath, ['deny_commands:', '  - first-policy-command'].join('\n'))
+  writeFileSync(secondPolicyPath, JSON.stringify({ deny_commands: ['second-policy-command'] }))
+
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--import',
+      'tsx',
+      'src/index.ts',
+      'scan-log',
+      '--policy',
+      firstPolicyPath,
+      '--policy',
+      secondPolicyPath,
+      '--json',
+    ],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      input: 'second-policy-command',
+    },
+  )
+
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /--policy <path>/)
+  assert.doesNotMatch(result.stderr, /sk-abcdefghijklmnopqrstuvwxyz/)
+  assert.equal(result.stdout, '')
+})
+
 test('CLI applies approval-required operations from --policy to scan-log', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const policyPath = join(dir, 'agent-policy.yaml')

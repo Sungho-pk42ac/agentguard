@@ -20,6 +20,21 @@ test('loadPolicy reports missing policy files without leaking the requested path
   )
 })
 
+test('PolicyLoadError does not serialize a secret-bearing requested path', () => {
+  const path = join(tmpdir(), `agentguard-policy-missing-sk-abcdefghijklmnopqrstuvwxyz-${process.pid}.yaml`)
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.equal(Object.keys(error).includes('path'), false)
+      assert.doesNotMatch(JSON.stringify(error), /sk-abcdefghijklmnopqrstuvwxyz/)
+      return true
+    },
+  )
+})
+
 test('CLI reports missing --policy files without leaking the requested path', () => {
   const path = join(tmpdir(), `agentguard-policy-missing-sk-abcdefghijklmnopqrstuvwxyz-${process.pid}.yaml`)
 

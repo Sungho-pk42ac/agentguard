@@ -101,24 +101,26 @@ function parsePolicyContents(path: string, contents: string): unknown {
 
 function parseYamlPolicy(contents: string): unknown {
   const document = parseDocument(contents, { uniqueKeys: true })
-  if (document.errors.length > 0 || hasYamlAnchorOrAlias(document)) throw new SyntaxError('Malformed YAML policy')
+  if (document.errors.length > 0 || document.warnings.length > 0 || hasUnsafeYamlNode(document)) {
+    throw new SyntaxError('Malformed YAML policy')
+  }
   return document.toJSON()
 }
 
-function hasYamlAnchorOrAlias(document: ReturnType<typeof parseDocument>): boolean {
-  let hasReference = false
+function hasUnsafeYamlNode(document: ReturnType<typeof parseDocument>): boolean {
+  let hasUnsafeNode = false
   visit(document, (_key, node) => {
-    if (isAlias(node)) {
-      hasReference = true
-      return visit.BREAK
-    }
-    if (node && typeof node === 'object' && 'anchor' in node && typeof node.anchor === 'string') {
-      hasReference = true
+    if (
+      isAlias(node) ||
+      (node && typeof node === 'object' && 'anchor' in node && typeof node.anchor === 'string') ||
+      (node && typeof node === 'object' && 'tag' in node && typeof node.tag === 'string')
+    ) {
+      hasUnsafeNode = true
       return visit.BREAK
     }
     return undefined
   })
-  return hasReference
+  return hasUnsafeNode
 }
 
 function parseJsonPolicy(contents: string): unknown {

@@ -84,6 +84,22 @@ test('loadPolicy reports malformed files without leaking file contents', () => {
   )
 })
 
+test('loadPolicy reports schema-invalid files without leaking file contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, 'deny_commands: sk-abcdefghijklmnopqrstuvwxyz')
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      return true
+    },
+  )
+})
+
 test('loadPolicy can replace a default list and extend it in the same file', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

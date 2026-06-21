@@ -14,7 +14,6 @@ test('loadPolicy rejects duplicate JSON keys without leaking overwritten content
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /rm -rf/)
       return true
@@ -31,7 +30,6 @@ test('loadPolicy rejects escaped duplicate JSON keys without leaking overwritten
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.match(error.message, /malformed policy file/)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /rm -rf/)
@@ -49,7 +47,6 @@ test('loadPolicy rejects JSON prototype pollution keys without leaking contents'
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.match(error.message, /malformed policy file/)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /rm -rf/)

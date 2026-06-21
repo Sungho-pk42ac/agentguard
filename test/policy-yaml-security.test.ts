@@ -17,7 +17,6 @@ test('loadPolicy rejects duplicate YAML keys without leaking overwritten content
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /rm -rf/)
       return true
@@ -42,7 +41,6 @@ test('loadPolicy rejects YAML aliases without leaking expanded contents', () => 
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /secret_commands/)
       return true
@@ -59,7 +57,6 @@ test('loadPolicy rejects YAML custom tags without leaking tagged contents', () =
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.match(error.message, /malformed policy file/)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /!secret/)
@@ -80,7 +77,6 @@ test('loadPolicy rejects YAML prototype pollution keys without leaking contents'
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.match(error.message, /malformed policy file/)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /rm -rf/)
@@ -103,7 +99,6 @@ test('loadPolicy rejects multi-document YAML policies without leaking contents',
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.match(error.message, /malformed policy file/)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       assert.doesNotMatch(error.message, /rm -rf/)

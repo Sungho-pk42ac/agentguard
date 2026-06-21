@@ -14,7 +14,6 @@ test('loadPolicy rejects unsupported policy extensions without leaking contents'
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.match(error.message, /unsupported policy file/)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true

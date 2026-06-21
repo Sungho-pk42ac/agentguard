@@ -1,0 +1,28 @@
+{
+  "name": "agentguard",
+  "version": "0.1.0",
+  "description": "AgentOps security scanner for AI coding agents, MCP configs, transcripts, and PR diffs",
+  "main": "index.js",
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bin": {
+    "agentguard": "./dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

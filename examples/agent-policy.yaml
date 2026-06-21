@@ -1,0 +1,15 @@
+deny_read:
+  - .env*
+  - ~/.ssh/**
+  - auth.json
+  - credentials.json
+  - node_modules/**
+  - .git/**
+deny_commands:
+  - rm -rf
+  - git push --force
+  - gh secret view
+require_approval:
+  - deploy
+  - db:migrate
+  - vercel --prod

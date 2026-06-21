@@ -11,6 +11,11 @@ type SarifReportingDescriptor = {
   readonly help: {
     readonly text: string
   }
+  readonly properties: {
+    readonly 'security-severity': string
+    readonly precision: 'high'
+    readonly tags: readonly ['security', 'agentguard']
+  }
 }
 
 type SarifResult = {
@@ -105,9 +110,27 @@ function sarifRules(findings: Finding[]): SarifReportingDescriptor[] {
       name: finding.category,
       shortDescription: { text: finding.title },
       help: { text: finding.recommendation },
+      properties: {
+        'security-severity': sarifSecuritySeverity(finding),
+        precision: 'high',
+        tags: ['security', 'agentguard'],
+      },
     })
   }
   return rules
+}
+
+function sarifSecuritySeverity(finding: Finding): string {
+  switch (finding.severity) {
+    case 'critical':
+      return '9.0'
+    case 'high':
+      return '7.0'
+    case 'medium':
+      return '5.0'
+    case 'low':
+      return '3.0'
+  }
 }
 
 function toSarifResult(finding: Finding): SarifResult {

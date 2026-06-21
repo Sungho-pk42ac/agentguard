@@ -27,6 +27,19 @@ test('detects secrets embedded in MCP config env blocks', () => {
   assert.ok(findings.some((f) => f.id === 'openai-key' && f.file === 'mcp-config'))
 })
 
+test('flags broad MCP filesystem roots and access tokens', () => {
+  const config = [
+    '[mcp_servers.filesystem]',
+    'args = ["/", "--allow-write"]',
+    '[mcp_servers.github.env]',
+    'GITHUB_TOKEN = "ghp_abcdefghijklmnopqrstuvwxyz"',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+  assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+})
+
 test('emits SARIF for GitHub code scanning', () => {
   const findings = scanDiff('+ const token = "ghp_abcdefghijklmnopqrstuvwxyz"')
   const sarif = JSON.parse(toSarif(findings))

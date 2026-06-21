@@ -4,6 +4,9 @@ import { DEFAULT_POLICY, type Finding, PII_PATTERNS, SECRET_PATTERNS, SENSITIVE_
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.next', 'dist', 'build', 'coverage', '.turbo', '.cache'])
 const MAX_FILE_BYTES = 512_000
+const MCP_WIDE_FILESYSTEM_ROOT_RE =
+  /(?:root|roots|args|allow(?:ed)?_directories|directories|paths?)\s*[:=]\s*(?:\[[^\]\n]*(?:"\/"|'\/'|[A-Za-z]:[\\/])|(?:"\/"|'\/'|[A-Za-z]:[\\/]))/i
+const MCP_ENV_TOKEN_RE = /(?:^|\n)\s*[A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*\s*=/i
 
 export function walkFiles(root: string): string[] {
   const out: string[] = []
@@ -120,6 +123,28 @@ export function scanMcpConfig(text: string): Finding[] {
       category: 'mcp-risk',
       evidence: 'full access',
       recommendation: 'Use workspace-scoped access and require approval for destructive operations.',
+    })
+  }
+  if (MCP_WIDE_FILESYSTEM_ROOT_RE.test(text)) {
+    findings.push({
+      id: 'mcp-filesystem-wide-root',
+      title: 'MCP filesystem server exposes a broad root path',
+      severity: 'critical',
+      category: 'mcp-risk',
+      file: 'mcp-config',
+      evidence: 'filesystem root',
+      recommendation: 'Restrict filesystem MCP roots to the repository or a dedicated read-only working directory.',
+    })
+  }
+  if (MCP_ENV_TOKEN_RE.test(text)) {
+    findings.push({
+      id: 'mcp-env-token',
+      title: 'MCP server receives credential-like environment variables',
+      severity: 'high',
+      category: 'mcp-risk',
+      file: 'mcp-config',
+      evidence: 'credential env',
+      recommendation: 'Use least-privilege tokens, avoid write scopes, and rotate credentials after agent sessions.',
     })
   }
   return findings

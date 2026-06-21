@@ -172,6 +172,23 @@ test('CLI accepts --policy for scan-log', () => {
   assert.match(findings[0]?.title ?? '', /terraform destroy/)
 })
 
+test('CLI reports malformed --policy without leaking policy contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, 'deny_commands: [sk-abcdefghijklmnopqrstuvwxyz')
+
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'scan-log', '--policy', path], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    input: 'terraform destroy',
+  })
+
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /Unable to load policy file: malformed policy file/)
+  assert.doesNotMatch(result.stderr, /sk-abcdefghijklmnopqrstuvwxyz/)
+  assert.equal(result.stdout, '')
+})
+
 test('CLI preserves scan-files path when --policy is present', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const workspace = join(dir, 'workspace')

@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { extname } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { extname, join } from 'node:path'
 import { parse } from 'yaml'
 import { z } from 'zod'
 import { DEFAULT_POLICY, type McpPolicy, type Policy } from './rules.js'
@@ -25,6 +25,7 @@ const rawPolicySchema = z
 const policyFileSchema = rawPolicySchema.extend({
   overrides: rawPolicySchema.optional(),
 })
+const defaultPolicyFiles = ['agent-policy.yaml', 'agent-policy.json'] as const
 
 type RawPolicy = z.infer<typeof rawPolicySchema>
 type PolicyFile = z.infer<typeof policyFileSchema>
@@ -40,28 +41,37 @@ export class PolicyLoadError extends Error {
 }
 
 export function loadPolicy(path?: string): Policy {
-  if (!path) return clonePolicy(DEFAULT_POLICY)
+  const policyPath = path ?? discoverDefaultPolicyPath()
+  if (!policyPath) return clonePolicy(DEFAULT_POLICY)
 
   let contents: string
   try {
-    contents = readFileSync(path, 'utf8')
+    contents = readFileSync(policyPath, 'utf8')
   } catch (error: unknown) {
-    if (error instanceof Error) throw new PolicyLoadError(path, 'unreadable')
+    if (error instanceof Error) throw new PolicyLoadError(policyPath, 'unreadable')
     throw error
   }
 
   let parsed: unknown
   try {
-    parsed = parsePolicyContents(path, contents)
+    parsed = parsePolicyContents(policyPath, contents)
   } catch (error: unknown) {
-    if (error instanceof Error) throw new PolicyLoadError(path, 'malformed')
+    if (error instanceof Error) throw new PolicyLoadError(policyPath, 'malformed')
     throw error
   }
 
   const result = policyFileSchema.safeParse(parsed ?? {})
-  if (!result.success) throw new PolicyLoadError(path, 'malformed')
+  if (!result.success) throw new PolicyLoadError(policyPath, 'malformed')
 
   return mergePolicy(DEFAULT_POLICY, result.data)
+}
+
+function discoverDefaultPolicyPath(): string | undefined {
+  for (const file of defaultPolicyFiles) {
+    const path = join(process.cwd(), file)
+    if (existsSync(path)) return path
+  }
+  return undefined
 }
 
 function parsePolicyContents(path: string, contents: string): unknown {

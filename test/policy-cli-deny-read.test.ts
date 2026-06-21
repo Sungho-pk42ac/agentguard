@@ -6,7 +6,9 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { z } from 'zod'
 
-const cliFindingsSchema = z.array(z.object({ id: z.string().optional(), file: z.string().optional() }))
+const cliFindingsSchema = z.array(
+  z.object({ id: z.string().optional(), file: z.string().optional(), title: z.string().optional() }),
+)
 const cliPath = join(process.cwd(), 'src/index.ts')
 const tsxImport = import.meta.resolve('tsx')
 
@@ -66,6 +68,36 @@ test('CLI accepts --policy=<path> for scan-log', () => {
   assert.equal(result.status, 0)
   const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
   assert.equal(findings[0]?.id, 'denied-command')
+})
+
+test('CLI applies JSON policy overrides and extensions from --policy', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const policyPath = join(dir, 'agent-policy.json')
+  writeFileSync(
+    policyPath,
+    JSON.stringify({
+      overrides: { deny_commands: ['agentguard-json-override-command'] },
+      deny_commands: ['agentguard-json-extension-command'],
+    }),
+  )
+
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-log', '--policy', policyPath, '--json'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      input: ['rm -rf', 'agentguard-json-override-command', 'agentguard-json-extension-command'].join('\n'),
+    },
+  )
+
+  assert.equal(result.status, 0)
+  const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
+  const titles = findings.map((finding) => finding.title ?? '')
+  assert.deepEqual(titles, [
+    'Denied command pattern: agentguard-json-override-command',
+    'Denied command pattern: agentguard-json-extension-command',
+  ])
 })
 
 test('CLI accepts --policy before the command', () => {

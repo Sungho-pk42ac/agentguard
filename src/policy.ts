@@ -18,6 +18,7 @@ const rawPolicySchema = z
     deny_read: stringListSchema.optional(),
     deny_commands: stringListSchema.optional(),
     require_approval: stringListSchema.optional(),
+    approval_required: stringListSchema.optional(),
     mcp: rawMcpPolicySchema.optional(),
   })
   .strict()
@@ -70,7 +71,7 @@ export function loadPolicy(path?: string): Policy {
   }
 
   const result = policyFileSchema.safeParse(parsed)
-  if (!result.success) throw new PolicyLoadError(policyPath, 'malformed')
+  if (!result.success || hasApprovalAliasConflict(result.data)) throw new PolicyLoadError(policyPath, 'malformed')
 
   return mergePolicy(DEFAULT_POLICY, result.data)
 }
@@ -205,9 +206,21 @@ function mergePolicy(defaultPolicy: Policy, userPolicy: PolicyFile): Policy {
   return {
     denyRead: mergeList(defaultPolicy.denyRead, overrides?.deny_read, userPolicy.deny_read),
     denyCommands: mergeList(defaultPolicy.denyCommands, overrides?.deny_commands, userPolicy.deny_commands),
-    requireApproval: mergeList(defaultPolicy.requireApproval, overrides?.require_approval, userPolicy.require_approval),
+    requireApproval: mergeList(defaultPolicy.requireApproval, approvalRules(overrides), approvalRules(userPolicy)),
     mcp: mergeMcpPolicy(defaultPolicy.mcp, overrides?.mcp, userPolicy.mcp),
   }
+}
+
+function approvalRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+  return policy?.require_approval ?? policy?.approval_required
+}
+
+function hasApprovalAliasConflict(policy: PolicyFile): boolean {
+  return hasRawApprovalAliasConflict(policy) || hasRawApprovalAliasConflict(policy.overrides)
+}
+
+function hasRawApprovalAliasConflict(policy: RawPolicy | undefined): boolean {
+  return policy?.require_approval !== undefined && policy.approval_required !== undefined
 }
 
 function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mcp'], extensionPolicy?: RawPolicy['mcp']): McpPolicy {

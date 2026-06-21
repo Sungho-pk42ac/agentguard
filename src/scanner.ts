@@ -97,7 +97,7 @@ export function scanDiff(diff: string): Finding[] {
 }
 
 export function scanMcpConfig(text: string): Finding[] {
-  const findings: Finding[] = []
+  const findings: Finding[] = scanText(text, 'mcp-config')
   const lowered = text.toLowerCase()
   const risky = ['filesystem', 'postgres', 'supabase', 'github', 'slack', 'google', 'drive']
   for (const name of risky) {

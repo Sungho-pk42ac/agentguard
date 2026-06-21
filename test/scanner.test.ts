@@ -21,6 +21,12 @@ test('detects full access MCP config', () => {
   assert.ok(riskScore(findings) >= 4)
 })
 
+test('detects secrets embedded in MCP config env blocks', () => {
+  const findings = scanMcpConfig('[mcp_servers.github.env]\nOPENAI_API_KEY = "sk-abcdefghijklmnopqrstuvwxyz"')
+
+  assert.ok(findings.some((f) => f.id === 'openai-key' && f.file === 'mcp-config'))
+})
+
 test('emits SARIF for GitHub code scanning', () => {
   const findings = scanDiff('+ const token = "ghp_abcdefghijklmnopqrstuvwxyz"')
   const sarif = JSON.parse(toSarif(findings))

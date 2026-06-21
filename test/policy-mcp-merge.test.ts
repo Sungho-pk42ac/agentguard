@@ -42,3 +42,34 @@ test('loadPolicy can replace and extend MCP denied tools', () => {
 
   assert.deepEqual(policy.mcp.denyTools, ['github.delete_repository', 'slack.admin_invite'])
 })
+
+test('loadPolicy merges MCP permissions blocks with direct MCP rules', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    [
+      'overrides:',
+      '  mcp:',
+      '    permissions:',
+      '      deny_servers:',
+      '        - internal-db',
+      '      require_approval_tools:',
+      '        - github.merge_pull_request',
+      'mcp:',
+      '  deny_tools:',
+      '    - slack.admin_invite',
+      '  permissions:',
+      '    deny_servers:',
+      '      - browser',
+      '    require_approval_tools:',
+      '      - filesystem.write_file',
+    ].join('\n'),
+  )
+
+  const policy = loadPolicy(path)
+
+  assert.deepEqual(policy.mcp.denyServers, ['internal-db', 'browser'])
+  assert.deepEqual(policy.mcp.denyTools, ['slack.admin_invite'])
+  assert.deepEqual(policy.mcp.requireApprovalTools, ['github.merge_pull_request', 'filesystem.write_file'])
+})

@@ -7,7 +7,7 @@ import { DEFAULT_POLICY, type McpPolicy, type Policy } from './rules.js'
 
 const stringListSchema = z.array(z.string().trim().min(1))
 
-const rawMcpPolicySchema = z
+const rawMcpPermissionSchema = z
   .object({
     deny_servers: stringListSchema.optional(),
     denied_servers: stringListSchema.optional(),
@@ -19,6 +19,8 @@ const rawMcpPolicySchema = z
     approval_required: stringListSchema.optional(),
   })
   .strict()
+
+const rawMcpPolicySchema = rawMcpPermissionSchema.extend({ permissions: rawMcpPermissionSchema.optional() }).strict()
 
 const rawPolicySchema = z
   .object({
@@ -40,6 +42,8 @@ const policyFileSchema = rawPolicySchema.extend({
 const defaultPolicyFiles = ['agent-policy.yaml', 'agent-policy.yml', 'agent-policy.json'] as const
 
 type RawPolicy = z.infer<typeof rawPolicySchema>
+type RawMcpPermission = z.infer<typeof rawMcpPermissionSchema>
+type RawMcpPolicy = z.infer<typeof rawMcpPolicySchema>
 type PolicyFile = z.infer<typeof policyFileSchema>
 type PolicyLoadErrorReason = 'malformed' | 'missing' | 'unreadable' | 'unsupported'
 
@@ -177,7 +181,11 @@ function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
   )
 }
 
-function hasMcpAliasConflict(policy: RawPolicy['mcp'] | undefined): boolean {
+function hasMcpAliasConflict(policy: RawMcpPolicy | undefined): boolean {
+  return hasMcpPermissionAliasConflict(policy) || hasMcpPermissionAliasConflict(policy?.permissions)
+}
+
+function hasMcpPermissionAliasConflict(policy: RawMcpPermission | undefined): boolean {
   return (
     hasAliasConflict([policy?.deny_servers, policy?.denied_servers]) ||
     hasAliasConflict([policy?.deny_tools, policy?.denied_tools]) ||
@@ -209,7 +217,7 @@ function isUnsafePolicyKey(key: string): boolean {
   return key === '__proto__' || key === 'constructor' || key === 'prototype'
 }
 
-function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mcp'], extensionPolicy?: RawPolicy['mcp']): McpPolicy {
+function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawMcpPolicy, extensionPolicy?: RawMcpPolicy): McpPolicy {
   return {
     denyServers: unique(
       mergeList(defaultPolicy.denyServers, mcpDeniedServerRules(overridePolicy), mcpDeniedServerRules(extensionPolicy)).map(
@@ -225,15 +233,27 @@ function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mc
   }
 }
 
-function mcpDeniedServerRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
+function mcpDeniedServerRules(policy: RawMcpPolicy | undefined): readonly string[] | undefined {
+  return combineRuleLists(mcpPermissionDeniedServerRules(policy), mcpPermissionDeniedServerRules(policy?.permissions))
+}
+
+function mcpDeniedToolRules(policy: RawMcpPolicy | undefined): readonly string[] | undefined {
+  return combineRuleLists(mcpPermissionDeniedToolRules(policy), mcpPermissionDeniedToolRules(policy?.permissions))
+}
+
+function mcpApprovalRules(policy: RawMcpPolicy | undefined): readonly string[] | undefined {
+  return combineRuleLists(mcpPermissionApprovalRules(policy), mcpPermissionApprovalRules(policy?.permissions))
+}
+
+function mcpPermissionDeniedServerRules(policy: RawMcpPermission | undefined): readonly string[] | undefined {
   return policy?.deny_servers ?? policy?.denied_servers
 }
 
-function mcpDeniedToolRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
+function mcpPermissionDeniedToolRules(policy: RawMcpPermission | undefined): readonly string[] | undefined {
   return policy?.deny_tools ?? policy?.denied_tools
 }
 
-function mcpApprovalRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
+function mcpPermissionApprovalRules(policy: RawMcpPermission | undefined): readonly string[] | undefined {
   return policy?.require_approval_tools ?? policy?.approval_required_tools ?? policy?.require_approval ?? policy?.approval_required
 }
 
@@ -244,6 +264,14 @@ function mergeList(
 ): readonly string[] {
   const baseValues = overrideValues ?? defaultValues
   return unique([...baseValues, ...(extensionValues ?? [])])
+}
+
+function combineRuleLists(
+  directValues: readonly string[] | undefined,
+  permissionValues: readonly string[] | undefined,
+): readonly string[] | undefined {
+  if (directValues === undefined && permissionValues === undefined) return undefined
+  return unique([...(directValues ?? []), ...(permissionValues ?? [])])
 }
 
 function clonePolicy(policy: Policy): Policy {

@@ -25,7 +25,7 @@ const rawPolicySchema = z
 const policyFileSchema = rawPolicySchema.extend({
   overrides: rawPolicySchema.optional(),
 })
-const defaultPolicyFiles = ['agent-policy.yaml', 'agent-policy.json'] as const
+const defaultPolicyFiles = ['agent-policy.yaml', 'agent-policy.yml', 'agent-policy.json'] as const
 
 type RawPolicy = z.infer<typeof rawPolicySchema>
 type PolicyFile = z.infer<typeof policyFileSchema>

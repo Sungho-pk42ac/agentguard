@@ -21,6 +21,22 @@ test('loadPolicy uses local agent-policy.yaml when policy path is omitted', () =
   }
 })
 
+test('loadPolicy uses local agent-policy.yml when YAML policy uses the short extension', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  writeFileSync(join(dir, 'agent-policy.yml'), 'deny_commands:\n  - local-yml-policy-command\n')
+  const previousCwd = process.cwd()
+
+  try {
+    process.chdir(dir)
+
+    const policy = loadPolicy()
+
+    assert.ok(policy.denyCommands.includes('local-yml-policy-command'))
+  } finally {
+    process.chdir(previousCwd)
+  }
+})
+
 test('loadPolicy uses local agent-policy.json when YAML policy is absent', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   writeFileSync(join(dir, 'agent-policy.json'), JSON.stringify({ deny_commands: ['local-json-policy-command'] }))

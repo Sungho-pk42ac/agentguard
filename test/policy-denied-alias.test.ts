@@ -16,6 +16,16 @@ test('loadPolicy accepts denied_* policy-as-code aliases', () => {
   assert.ok(policy.denyCommands.includes('terraform destroy'))
 })
 
+test('loadPolicy accepts deny_reads as a denied-read list alias', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['deny_reads:', '  - private/**'].join('\n'))
+
+  const policy = loadPolicy(path)
+
+  assert.ok(policy.denyRead.includes('private/**'))
+})
+
 test('loadPolicy rejects conflicting denied policy aliases without leaking contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

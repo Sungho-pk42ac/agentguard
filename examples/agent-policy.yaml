@@ -13,3 +13,10 @@ require_approval:
   - deploy
   - db:migrate
   - vercel --prod
+mcp:
+  deny_servers:
+    - filesystem
+    - postgres
+    - github
+  require_approval_tools:
+    - github.merge_pull_request

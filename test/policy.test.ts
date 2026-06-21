@@ -68,6 +68,16 @@ test('loadPolicy parses JSON policy files', () => {
   assert.ok(policy.denyCommands.includes('pnpm publish --no-git-checks'))
 })
 
+test('loadPolicy parses the example policy as the full policy surface', () => {
+  const policy = loadPolicy(join(process.cwd(), 'examples', 'agent-policy.yaml'))
+
+  assert.ok(policy.denyRead.includes('node_modules/**'))
+  assert.ok(policy.denyCommands.includes('gh secret view'))
+  assert.ok(policy.requireApproval.includes('vercel --prod'))
+  assert.ok(policy.mcp.denyServers.includes('filesystem'))
+  assert.ok(policy.mcp.requireApprovalTools.includes('github.merge_pull_request'))
+})
+
 test('loadPolicy reports malformed files without leaking file contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

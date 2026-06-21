@@ -10,6 +10,7 @@ const stringListSchema = z.array(z.string().trim().min(1))
 const rawMcpPolicySchema = z
   .object({
     deny_servers: stringListSchema.optional(),
+    denied_servers: stringListSchema.optional(),
     require_approval_tools: stringListSchema.optional(),
     require_approval: stringListSchema.optional(),
     approval_required: stringListSchema.optional(),
@@ -167,7 +168,10 @@ function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
 }
 
 function hasMcpAliasConflict(policy: RawPolicy['mcp'] | undefined): boolean {
-  return hasAliasConflict([policy?.require_approval_tools, policy?.require_approval, policy?.approval_required])
+  return (
+    hasAliasConflict([policy?.deny_servers, policy?.denied_servers]) ||
+    hasAliasConflict([policy?.require_approval_tools, policy?.require_approval, policy?.approval_required])
+  )
 }
 
 function hasAliasConflict(values: readonly (readonly string[] | undefined)[]): boolean {
@@ -192,8 +196,8 @@ function isUnsafePolicyKey(key: string): boolean {
 function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mcp'], extensionPolicy?: RawPolicy['mcp']): McpPolicy {
   return {
     denyServers: unique(
-      mergeList(defaultPolicy.denyServers, overridePolicy?.deny_servers, extensionPolicy?.deny_servers).map((server) =>
-        server.toLowerCase(),
+      mergeList(defaultPolicy.denyServers, mcpDeniedServerRules(overridePolicy), mcpDeniedServerRules(extensionPolicy)).map(
+        (server) => server.toLowerCase(),
       ),
     ),
     requireApprovalTools: mergeList(
@@ -202,6 +206,10 @@ function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mc
       mcpApprovalRules(extensionPolicy),
     ),
   }
+}
+
+function mcpDeniedServerRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
+  return policy?.deny_servers ?? policy?.denied_servers
 }
 
 function mcpApprovalRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {

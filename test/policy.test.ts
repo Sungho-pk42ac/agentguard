@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -11,6 +11,20 @@ test('loadPolicy returns defaults when policy path is missing', () => {
   const policy = loadPolicy()
 
   assert.deepEqual(policy, DEFAULT_POLICY)
+})
+
+test('loadPolicy reports a missing policy file without leaking file contents', () => {
+  const path = join(tmpdir(), `agentguard-policy-missing-${process.pid}.yaml`)
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.doesNotMatch(error.message, /secret|token|password/i)
+      return true
+    },
+  )
 })
 
 test('loadPolicy parses YAML and extends the default policy', () => {
@@ -97,4 +111,28 @@ test('CLI accepts --policy for scan-log', () => {
   const findings = JSON.parse(result.stdout)
   assert.equal(findings[0]?.id, 'denied-command')
   assert.match(findings[0]?.title ?? '', /terraform destroy/)
+})
+
+test('CLI preserves scan-files path when --policy is present', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const workspace = join(dir, 'workspace')
+  const policyPath = join(dir, 'agent-policy.yaml')
+  writeFileSync(policyPath, ['deny_commands:', '  - agentguard-custom-denied-command'].join('\n'))
+  mkdirSync(workspace)
+  writeFileSync(join(workspace, 'transcript.log'), 'agentguard-custom-denied-command')
+
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-files', workspace, '--policy', policyPath, '--json'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    },
+  )
+
+  assert.equal(result.status, 0)
+  const findings = JSON.parse(result.stdout)
+  assert.equal(findings.length, 1)
+  assert.equal(findings[0]?.file, 'transcript.log')
+  assert.equal(findings[0]?.id, 'denied-command')
 })

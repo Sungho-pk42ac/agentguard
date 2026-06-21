@@ -192,3 +192,19 @@ test('CLI applies MCP deny server rules from --policy case-insensitively', () =>
   const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
   assert.ok(findings.some((finding) => finding.id === 'mcp-linear'))
 })
+
+test('CLI applies MCP deny tool rules from --policy', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const policyPath = join(dir, 'agent-policy.yaml')
+  writeFileSync(policyPath, ['mcp:', '  deny_tools:', '    - github.delete_repository'].join('\n'))
+
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'scan-mcp', '--policy', policyPath, '--json'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    input: '[mcp_servers.github]\ntools = ["github.delete_repository"]',
+  })
+
+  assert.equal(result.status, 1)
+  const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
+  assert.ok(findings.some((finding) => finding.id === 'mcp-tool-denied'))
+})

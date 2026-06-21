@@ -11,6 +11,8 @@ const rawMcpPolicySchema = z
   .object({
     deny_servers: stringListSchema.optional(),
     denied_servers: stringListSchema.optional(),
+    deny_tools: stringListSchema.optional(),
+    denied_tools: stringListSchema.optional(),
     require_approval_tools: stringListSchema.optional(),
     require_approval: stringListSchema.optional(),
     approval_required: stringListSchema.optional(),
@@ -170,6 +172,7 @@ function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
 function hasMcpAliasConflict(policy: RawPolicy['mcp'] | undefined): boolean {
   return (
     hasAliasConflict([policy?.deny_servers, policy?.denied_servers]) ||
+    hasAliasConflict([policy?.deny_tools, policy?.denied_tools]) ||
     hasAliasConflict([policy?.require_approval_tools, policy?.require_approval, policy?.approval_required])
   )
 }
@@ -200,6 +203,7 @@ function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mc
         (server) => server.toLowerCase(),
       ),
     ),
+    denyTools: mergeList(defaultPolicy.denyTools, mcpDeniedToolRules(overridePolicy), mcpDeniedToolRules(extensionPolicy)),
     requireApprovalTools: mergeList(
       defaultPolicy.requireApprovalTools,
       mcpApprovalRules(overridePolicy),
@@ -210,6 +214,10 @@ function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mc
 
 function mcpDeniedServerRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
   return policy?.deny_servers ?? policy?.denied_servers
+}
+
+function mcpDeniedToolRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
+  return policy?.deny_tools ?? policy?.denied_tools
 }
 
 function mcpApprovalRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
@@ -232,6 +240,7 @@ function clonePolicy(policy: Policy): Policy {
     requireApproval: [...policy.requireApproval],
     mcp: {
       denyServers: [...policy.mcp.denyServers],
+      denyTools: [...policy.mcp.denyTools],
       requireApprovalTools: [...policy.mcp.requireApprovalTools],
     },
   }

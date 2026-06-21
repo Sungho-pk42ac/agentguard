@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
-import { parse } from 'yaml'
+import { isAlias, parseDocument, visit } from 'yaml'
 import { z } from 'zod'
 import { DEFAULT_POLICY, type McpPolicy, type Policy } from './rules.js'
 
@@ -92,10 +92,32 @@ function parsePolicyContents(path: string, contents: string): unknown {
       return parseJsonPolicy(normalizedContents)
     case '.yaml':
     case '.yml':
-      return parse(normalizedContents, { uniqueKeys: true })
+      return parseYamlPolicy(normalizedContents)
     default:
       throw new PolicyLoadError(path, 'unsupported')
   }
+}
+
+function parseYamlPolicy(contents: string): unknown {
+  const document = parseDocument(contents, { uniqueKeys: true })
+  if (document.errors.length > 0 || hasYamlAnchorOrAlias(document)) throw new SyntaxError('Malformed YAML policy')
+  return document.toJSON()
+}
+
+function hasYamlAnchorOrAlias(document: ReturnType<typeof parseDocument>): boolean {
+  let hasReference = false
+  visit(document, (_key, node) => {
+    if (isAlias(node)) {
+      hasReference = true
+      return visit.BREAK
+    }
+    if (node && typeof node === 'object' && 'anchor' in node && typeof node.anchor === 'string') {
+      hasReference = true
+      return visit.BREAK
+    }
+    return undefined
+  })
+  return hasReference
 }
 
 function parseJsonPolicy(contents: string): unknown {

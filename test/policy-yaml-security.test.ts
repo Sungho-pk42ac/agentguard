@@ -24,3 +24,28 @@ test('loadPolicy rejects duplicate YAML keys without leaking overwritten content
     },
   )
 })
+
+test('loadPolicy rejects YAML aliases without leaking expanded contents', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    [
+      'overrides:',
+      '  deny_commands: &secret_commands',
+      '    - sk-abcdefghijklmnopqrstuvwxyz',
+      'deny_commands: *secret_commands',
+    ].join('\n'),
+  )
+
+  assert.throws(
+    () => loadPolicy(path),
+    (error: unknown) => {
+      assert.ok(error instanceof PolicyLoadError)
+      assert.equal(error.path, path)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+      assert.doesNotMatch(error.message, /secret_commands/)
+      return true
+    },
+  )
+})

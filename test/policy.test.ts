@@ -20,7 +20,6 @@ test('loadPolicy reports a missing policy file without leaking file contents', (
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /secret|token|password/i)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
@@ -97,7 +96,6 @@ test('loadPolicy reports malformed files without leaking file contents', () => {
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
     },
@@ -113,7 +111,6 @@ test('loadPolicy reports malformed JSON files without leaking file contents', ()
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
     },
@@ -129,7 +126,6 @@ test('loadPolicy rejects YAML syntax in JSON policy files without leaking file c
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
     },
@@ -145,7 +141,6 @@ test('loadPolicy reports schema-invalid files without leaking file contents', ()
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
     },
@@ -161,7 +156,6 @@ test('loadPolicy rejects blank policy list entries without leaking file contents
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
     },
@@ -177,7 +171,6 @@ test('loadPolicy reports non-object policy files without leaking file contents',
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
     },

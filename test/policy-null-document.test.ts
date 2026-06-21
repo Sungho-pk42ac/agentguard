@@ -14,7 +14,6 @@ test('loadPolicy reports null policy documents as malformed files', () => {
     () => loadPolicy(path),
     (error: unknown) => {
       assert.ok(error instanceof PolicyLoadError)
-      assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /null/)
       return true
     },

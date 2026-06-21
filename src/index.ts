@@ -58,6 +58,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
     if (arg === '--policy') {
       const value = args[index + 1]
       if (!isOptionValue(value)) return undefined
+      if (policyPath !== undefined) return undefined
       policyPath = value
       index += 1
       continue
@@ -65,6 +66,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
     if (arg.startsWith('--policy=')) {
       const value = arg.slice('--policy='.length)
       if (value.length === 0) return undefined
+      if (policyPath !== undefined) return undefined
       policyPath = value
       continue
     }

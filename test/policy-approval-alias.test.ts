@@ -43,6 +43,25 @@ test('loadPolicy accepts approval_required_operations as an approval list alias'
   assert.deepEqual(policy.requireApproval, ['baseline-review', 'production-release'])
 })
 
+test('loadPolicy accepts require_approval_operations as an approval list alias', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    [
+      'overrides:',
+      '  require_approval_operations:',
+      '    - baseline-review',
+      'require_approval_operations:',
+      '  - production-release',
+    ].join('\n'),
+  )
+
+  const policy = loadPolicy(path)
+
+  assert.deepEqual(policy.requireApproval, ['baseline-review', 'production-release'])
+})
+
 test('loadPolicy rejects conflicting approval list aliases without leaking contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

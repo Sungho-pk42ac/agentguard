@@ -171,7 +171,11 @@ function mergePolicy(defaultPolicy: Policy, userPolicy: PolicyFile): Policy {
 
 function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawPolicy['mcp'], extensionPolicy?: RawPolicy['mcp']): McpPolicy {
   return {
-    denyServers: mergeList(defaultPolicy.denyServers, overridePolicy?.deny_servers, extensionPolicy?.deny_servers),
+    denyServers: unique(
+      mergeList(defaultPolicy.denyServers, overridePolicy?.deny_servers, extensionPolicy?.deny_servers).map((server) =>
+        server.toLowerCase(),
+      ),
+    ),
     requireApprovalTools: mergeList(
       defaultPolicy.requireApprovalTools,
       overridePolicy?.require_approval_tools,

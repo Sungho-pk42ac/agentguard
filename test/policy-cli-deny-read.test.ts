@@ -70,3 +70,23 @@ test('CLI applies approval-required operations from --policy to scan-log', () =>
   const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
   assert.equal(findings[0]?.id, 'approval-required')
 })
+
+test('CLI applies MCP deny server rules from --policy case-insensitively', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const policyPath = join(dir, 'agent-policy.yaml')
+  writeFileSync(policyPath, ['mcp:', '  deny_servers:', '    - Linear'].join('\n'))
+
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-mcp', '--policy', policyPath, '--json'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      input: '[mcp_servers.linear]\ncommand = "linear-mcp"',
+    },
+  )
+
+  assert.equal(result.status, 0)
+  const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
+  assert.ok(findings.some((finding) => finding.id === 'mcp-linear'))
+})

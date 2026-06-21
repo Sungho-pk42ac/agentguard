@@ -89,6 +89,27 @@ test('loadPolicy accepts MCP approval_required as a tool approval alias', () => 
   assert.deepEqual(policy.mcp.requireApprovalTools, ['github.merge_pull_request', 'filesystem.write_file'])
 })
 
+test('loadPolicy accepts MCP approval_required_tools as a tool approval alias', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(
+    path,
+    [
+      'overrides:',
+      '  mcp:',
+      '    approval_required_tools:',
+      '      - github.merge_pull_request',
+      'mcp:',
+      '  approval_required_tools:',
+      '    - filesystem.write_file',
+    ].join('\n'),
+  )
+
+  const policy = loadPolicy(path)
+
+  assert.deepEqual(policy.mcp.requireApprovalTools, ['github.merge_pull_request', 'filesystem.write_file'])
+})
+
 test('loadPolicy rejects conflicting MCP approval aliases without leaking contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

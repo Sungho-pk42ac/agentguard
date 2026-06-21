@@ -14,6 +14,7 @@ const rawMcpPolicySchema = z
     deny_tools: stringListSchema.optional(),
     denied_tools: stringListSchema.optional(),
     require_approval_tools: stringListSchema.optional(),
+    approval_required_tools: stringListSchema.optional(),
     require_approval: stringListSchema.optional(),
     approval_required: stringListSchema.optional(),
   })
@@ -180,7 +181,12 @@ function hasMcpAliasConflict(policy: RawPolicy['mcp'] | undefined): boolean {
   return (
     hasAliasConflict([policy?.deny_servers, policy?.denied_servers]) ||
     hasAliasConflict([policy?.deny_tools, policy?.denied_tools]) ||
-    hasAliasConflict([policy?.require_approval_tools, policy?.require_approval, policy?.approval_required])
+    hasAliasConflict([
+      policy?.require_approval_tools,
+      policy?.approval_required_tools,
+      policy?.require_approval,
+      policy?.approval_required,
+    ])
   )
 }
 
@@ -228,7 +234,7 @@ function mcpDeniedToolRules(policy: RawPolicy['mcp'] | undefined): readonly stri
 }
 
 function mcpApprovalRules(policy: RawPolicy['mcp'] | undefined): readonly string[] | undefined {
-  return policy?.require_approval_tools ?? policy?.require_approval ?? policy?.approval_required
+  return policy?.require_approval_tools ?? policy?.approval_required_tools ?? policy?.require_approval ?? policy?.approval_required
 }
 
 function mergeList(

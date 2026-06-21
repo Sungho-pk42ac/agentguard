@@ -76,7 +76,7 @@ function discoverDefaultPolicyPath(): string | undefined {
 
 function parsePolicyContents(path: string, contents: string): unknown {
   if (extname(path).toLowerCase() === '.json') return JSON.parse(contents)
-  return parse(contents)
+  return parse(contents, { uniqueKeys: true })
 }
 
 function mergePolicy(defaultPolicy: Policy, userPolicy: PolicyFile): Policy {

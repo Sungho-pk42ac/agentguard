@@ -14,7 +14,7 @@ test('loadPolicy returns defaults when policy path is missing', () => {
 })
 
 test('loadPolicy reports a missing policy file without leaking file contents', () => {
-  const path = join(tmpdir(), `agentguard-policy-missing-${process.pid}.yaml`)
+  const path = join(tmpdir(), `agentguard-policy-missing-sk-abcdefghijklmnopqrstuvwxyz-${process.pid}.yaml`)
 
   assert.throws(
     () => loadPolicy(path),
@@ -22,6 +22,7 @@ test('loadPolicy reports a missing policy file without leaking file contents', (
       assert.ok(error instanceof PolicyLoadError)
       assert.equal(error.path, path)
       assert.doesNotMatch(error.message, /secret|token|password/i)
+      assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
       return true
     },
   )

@@ -32,12 +32,15 @@ type PolicyFile = z.infer<typeof policyFileSchema>
 type PolicyLoadErrorReason = 'malformed' | 'missing' | 'unreadable' | 'unsupported'
 
 export class PolicyLoadError extends Error {
-  readonly path: string
+  declare readonly path: string
 
   constructor(path: string, reason: PolicyLoadErrorReason) {
     super(`Unable to load policy file: ${reason} policy file`)
     this.name = 'PolicyLoadError'
-    this.path = path
+    Object.defineProperty(this, 'path', {
+      enumerable: false,
+      value: path,
+    })
   }
 }
 

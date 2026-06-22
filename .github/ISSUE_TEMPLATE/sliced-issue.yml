@@ -1,0 +1,60 @@
+name: Sliced AgentGuard issue
+description: One functional slice for the AgentGuard harness
+title: "<verb> <small outcome>"
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep this issue small enough for one branch and one PR. If behavior changes, add a failing test first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What risk, user workflow, or repo quality gap does this solve?
+      placeholder: AgentGuard currently...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable conditions that make this issue complete.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope boundary
+      description: What is explicitly out of scope for this slice?
+      placeholder: |
+        In scope:
+        - ...
+
+        Out of scope:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: Commands, CI checks, screenshots, or artifacts that will prove completion.
+      value: |
+        - [ ] npm test
+        - [ ] npm run typecheck
+        - [ ] npm run build
+    validations:
+      required: true
+  - type: dropdown
+    id: behavior_change
+    attributes:
+      label: Does this change scanner/CLI behavior?
+      options:
+        - "Yes — add RED/GREEN test evidence"
+        - "No — docs/config/CI-only slice"
+    validations:
+      required: true

@@ -58,6 +58,10 @@ This first version is intentionally small:
 - no external network calls
 - no secrets are printed in full
 
+## Development harness
+
+AgentGuard is maintained through a small-slice agentic workflow: one issue, one branch, one PR, and executable verification for every change. See [`docs/harness-workflow.md`](docs/harness-workflow.md) before starting new work.
+
 ## Roadmap
 
 - GitHub Action PR comment

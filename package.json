@@ -2,10 +2,15 @@
   "name": "agentguard",
   "version": "0.1.0",
   "description": "AgentOps security scanner for AI coding agents, MCP configs, transcripts, and PR diffs",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "examples",
+    "README.md"
+  ],
   "directories": {
-    "example": "examples",
-    "test": "test"
+    "example": "examples"
   },
   "scripts": {
     "test": "tsx --test test/*.test.ts",

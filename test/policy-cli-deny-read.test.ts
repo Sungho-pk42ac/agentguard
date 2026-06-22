@@ -173,6 +173,27 @@ test('CLI applies approval-required operations from --policy to scan-log', () =>
   assert.equal(findings[0]?.id, 'approval-required')
 })
 
+test('CLI redacts secret-shaped policy values in findings', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const policyPath = join(dir, 'agent-policy.yaml')
+  writeFileSync(policyPath, ['deny_commands:', '  - sk-abcdefghijklmnopqrstuvwxyz'].join('\n'))
+
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-log', '--policy', policyPath, '--json'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      input: 'sk-abcdefghijklmnopqrstuvwxyz',
+    },
+  )
+
+  assert.equal(result.status, 1)
+  assert.doesNotMatch(result.stdout, /sk-abcdefghijklmnopqrstuvwxyz/)
+  const findings = cliFindingsSchema.parse(JSON.parse(result.stdout))
+  assert.ok(findings.some((finding) => finding.id === 'denied-command'))
+})
+
 test('CLI applies MCP deny server rules from --policy case-insensitively', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const policyPath = join(dir, 'agent-policy.yaml')

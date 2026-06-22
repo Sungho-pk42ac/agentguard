@@ -214,6 +214,15 @@ test('structured MCP JSON scanner ignores writable booleans alongside generic ar
   assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
 })
 
+test('structured MCP JSON scanner returns normally for excessive nesting', () => {
+  let config = '{"root":"/"}'
+  for (let depth = 0; depth < 20_000; depth += 1) {
+    config = `{"child":${config}}`
+  }
+
+  assert.doesNotThrow(() => scanMcpConfig(config))
+})
+
 test('structured MCP TOML-ish scanner flags writable boolean filesystem settings', () => {
   const config = [
     '[mcp_servers.file-system]',

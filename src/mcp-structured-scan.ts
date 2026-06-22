@@ -13,6 +13,13 @@ const EMPTY_SIGNALS: StructuredMcpConfigSignals = {
 const STRUCTURED_KEYS = new Set(['args', 'root', 'roots', 'alloweddirectories', 'directories', 'paths', 'path'])
 const PATH_CONTEXT_KEYS = new Set(['root', 'roots', 'alloweddirectories', 'directories', 'paths', 'path'])
 const WRITABLE_PATH_FLAGS = new Set(['--allow-write', '--writable'])
+const MAX_JSON_SCAN_DEPTH = 1_000
+
+interface JsonScanFrame {
+  readonly value: unknown
+  readonly key: string
+  readonly depth: number
+}
 
 export function scanStructuredMcpConfig(text: string): StructuredMcpConfigSignals {
   return mergeSignals(scanJsonMcpConfig(text), scanTomlishMcpConfig(text))
@@ -33,27 +40,41 @@ function parseJson(text: string): unknown | undefined {
 }
 
 function scanJsonValue(value: unknown, key: string): StructuredMcpConfigSignals {
-  if (typeof value === 'string') return signalsFromJsonTokens(key, [value])
-  if (Array.isArray(value)) {
-    let signals = signalsFromJsonTokens(key, value.filter(isString))
-    for (const childValue of value) {
-      // Preserve the array key as context so path entries like { path, writable } stay path-scoped.
-      if (!isString(childValue)) signals = mergeSignals(signals, scanJsonValue(childValue, key))
-    }
-    return signals
-  }
-  if (!isRecord(value)) return EMPTY_SIGNALS
-
+  const stack: JsonScanFrame[] = [{ value, key, depth: 0 }]
   let signals = EMPTY_SIGNALS
-  for (const [childKey, childValue] of Object.entries(value)) {
-    if (isEnvKey(childKey) && isRecord(childValue) && hasCredentialEnvKey(childValue)) {
-      signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
+
+  while (stack.length > 0) {
+    const frame = stack.pop()
+    if (frame === undefined) break
+
+    if (typeof frame.value === 'string') {
+      signals = mergeSignals(signals, signalsFromJsonTokens(frame.key, [frame.value]))
+      continue
     }
-    if (isJsonWritableSetting(childKey, childValue, value, key)) {
-      signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: true, hasCredentialEnv: false })
+
+    if (Array.isArray(frame.value)) {
+      signals = mergeSignals(signals, signalsFromJsonTokens(frame.key, frame.value.filter(isString)))
+      if (frame.depth >= MAX_JSON_SCAN_DEPTH) continue
+      for (const childValue of frame.value) {
+        // Preserve the array key as context so path entries like { path, writable } stay path-scoped.
+        if (!isString(childValue)) stack.push({ value: childValue, key: frame.key, depth: frame.depth + 1 })
+      }
+      continue
     }
-    signals = mergeSignals(signals, scanJsonValue(childValue, childKey))
+
+    if (!isRecord(frame.value)) continue
+
+    for (const [childKey, childValue] of Object.entries(frame.value)) {
+      if (isEnvKey(childKey) && isRecord(childValue) && hasCredentialEnvKey(childValue)) {
+        signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
+      }
+      if (isJsonWritableSetting(childKey, childValue, frame.value, frame.key)) {
+        signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: true, hasCredentialEnv: false })
+      }
+      if (frame.depth < MAX_JSON_SCAN_DEPTH) stack.push({ value: childValue, key: childKey, depth: frame.depth + 1 })
+    }
   }
+
   return signals
 }
 

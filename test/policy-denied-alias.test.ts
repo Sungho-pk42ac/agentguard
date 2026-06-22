@@ -26,6 +26,16 @@ test('loadPolicy accepts deny_reads as a denied-read list alias', () => {
   assert.ok(policy.denyRead.includes('private/**'))
 })
 
+test('loadPolicy accepts denied_read as a denied-read list alias', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['denied_read:', '  - private/**'].join('\n'))
+
+  const policy = loadPolicy(path)
+
+  assert.ok(policy.denyRead.includes('private/**'))
+})
+
 test('loadPolicy rejects conflicting denied policy aliases without leaking contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

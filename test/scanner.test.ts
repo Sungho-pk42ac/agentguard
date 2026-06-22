@@ -74,6 +74,22 @@ test('structured MCP JSON scanner flags credential env and Windows drive roots',
   assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
 })
 
+test('structured MCP JSON scanner flags trailing slash home roots', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      filesystemRootProperty: {
+        root: '~/',
+      },
+      filesystemRootArgument: {
+        args: ['--root=~/'],
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+})
+
 test('structured MCP JSON scanner flags explicit readOnly false filesystem settings', () => {
   const config = JSON.stringify({
     mcpServers: {

@@ -1,0 +1,95 @@
+name: AgentGuard PR diff scan
+description: Scan a pull request diff with AgentGuard and emit a markdown report for PR comments.
+inputs:
+  base-sha:
+    description: Base commit SHA for the pull request diff.
+    required: true
+  head-sha:
+    description: Head commit SHA for the pull request diff.
+    required: true
+  report-path:
+    description: Markdown report file path to write.
+    required: false
+    default: agent-risk-report.md
+  json-path:
+    description: JSON findings file path to write.
+    required: false
+    default: agent-risk-findings.json
+  policy-path:
+    description: Optional agent-policy.yaml/json path.
+    required: false
+    default: ''
+outputs:
+  report-path:
+    description: Path to the markdown AgentGuard report artifact
+    value: ${{ steps.scan.outputs.report-path }}
+  conclusion:
+    description: pass, review, or block based on AgentGuard findings
+    value: ${{ steps.scan.outputs.conclusion }}
+runs:
+  using: composite
+  steps:
+    - name: Install AgentGuard dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Build AgentGuard CLI
+      shell: bash
+      run: npm run build
+
+    - name: Scan PR diff
+      id: scan
+      shell: bash
+      env:
+        BASE_SHA: ${{ inputs.base-sha }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        REPORT_PATH: ${{ inputs.report-path }}
+        JSON_PATH: ${{ inputs.json-path }}
+        POLICY_PATH: ${{ inputs.policy-path }}
+      run: |
+        set -euo pipefail
+
+        # Default report artifact: agent-risk-report.md
+        report_path="$REPORT_PATH"
+        json_path="$JSON_PATH"
+        policy_path="$POLICY_PATH"
+        diff_path="${RUNNER_TEMP:-/tmp}/agentguard-pr.diff"
+
+        git diff --no-ext-diff --unified=0 "$BASE_SHA" "$HEAD_SHA" > "$diff_path"
+
+        policy_args=()
+        if [[ -n "$policy_path" ]]; then
+          policy_args=(--policy "$policy_path")
+        fi
+
+        set +e
+        node dist/index.js scan-diff "${policy_args[@]}" --json --out "$json_path" < "$diff_path"
+        json_status=$?
+        node dist/index.js scan-diff "${policy_args[@]}" --out "$report_path" < "$diff_path"
+        markdown_status=$?
+        set -e
+
+        if [[ $json_status -gt 1 || $markdown_status -gt 1 ]]; then
+          echo "AgentGuard failed to scan the PR diff" >&2
+          exit 2
+        fi
+
+        conclusion=$(node --input-type=module -e "
+          import { readFileSync } from 'node:fs'
+          const findings = JSON.parse(readFileSync(process.argv[1], 'utf8'))
+          if (findings.some((finding) => finding.severity === 'critical')) console.log('block')
+          else if (findings.length > 0) console.log('review')
+          else console.log('pass')
+        " "$json_path")
+
+        {
+          echo "report-path=$report_path"
+          echo "conclusion=$conclusion"
+        } >> "$GITHUB_OUTPUT"
+
+        cat "$report_path" >> "$GITHUB_STEP_SUMMARY"
+
+        if [[ "$conclusion" == "block" ]]; then
+          echo "AgentGuard found critical PR-diff findings; failing this check." >&2
+          exit 1
+        fi

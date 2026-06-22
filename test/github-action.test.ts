@@ -42,3 +42,17 @@ test('README documents copy-paste PR comment workflow using the local action', (
   assert.match(readme, /agent-risk-report\.md/)
   assert.match(readme, /github\.event\.pull_request\.base\.sha/)
 })
+
+test('README documents SARIF upload workflow and sample output', () => {
+  const readme = readFileSync('README.md', 'utf8')
+
+  assert.match(readme, /node dist\/index\.js scan-diff --sarif --out agentguard\.sarif/)
+  assert.match(readme, /github\/codeql-action\/upload-sarif@v3/)
+  assert.match(readme, /sarif_file: agentguard\.sarif/)
+  assert.match(readme, /examples\/agentguard\.sarif/)
+
+  const sample = JSON.parse(readFileSync('examples/agentguard.sarif', 'utf8'))
+  assert.equal(sample.version, '2.1.0')
+  assert.equal(sample.runs[0].tool.driver.name, 'AgentGuard')
+  assert.equal(sample.runs[0].tool.driver.rules[0].id, 'github-token')
+})

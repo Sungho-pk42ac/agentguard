@@ -28,6 +28,7 @@ const rawMcpPolicySchema = rawMcpPermissionSchema.extend({ permissions: rawMcpPe
 const rawPolicySchema = z
   .object({
     deny_read: stringListSchema.optional(),
+    denied_read: stringListSchema.optional(),
     deny_reads: stringListSchema.optional(),
     denied_reads: stringListSchema.optional(),
     denyRead: stringListSchema.optional(),
@@ -59,6 +60,7 @@ export type PolicyFile = z.infer<typeof policyFileSchema>
 export function deniedReadRules(policy: RawPolicy | undefined): readonly string[] | undefined {
   return (
     ownPolicyValue(policy, 'deny_read') ??
+    ownPolicyValue(policy, 'denied_read') ??
     ownPolicyValue(policy, 'deny_reads') ??
     ownPolicyValue(policy, 'denied_reads') ??
     ownPolicyValue(policy, 'denyRead')
@@ -112,6 +114,7 @@ function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
   return (
     hasAliasConflict([
       ownPolicyValue(policy, 'deny_read'),
+      ownPolicyValue(policy, 'denied_read'),
       ownPolicyValue(policy, 'deny_reads'),
       ownPolicyValue(policy, 'denied_reads'),
       ownPolicyValue(policy, 'denyRead'),

@@ -21,6 +21,26 @@ test('loadPolicy uses local agent-policy.yaml when policy path is omitted', () =
   }
 })
 
+test('loadPolicy prefers agent-policy.yaml over alternate default policy filenames', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  writeFileSync(join(dir, 'agent-policy.yaml'), 'deny_commands:\n  - yaml-policy-command\n')
+  writeFileSync(join(dir, 'agent-policy.yml'), 'deny_commands:\n  - yml-policy-command\n')
+  writeFileSync(join(dir, 'agent-policy.json'), JSON.stringify({ deny_commands: ['json-policy-command'] }))
+  const previousCwd = process.cwd()
+
+  try {
+    process.chdir(dir)
+
+    const policy = loadPolicy()
+
+    assert.ok(policy.denyCommands.includes('yaml-policy-command'))
+    assert.equal(policy.denyCommands.includes('yml-policy-command'), false)
+    assert.equal(policy.denyCommands.includes('json-policy-command'), false)
+  } finally {
+    process.chdir(previousCwd)
+  }
+})
+
 test('loadPolicy uses nearest parent agent-policy.yaml when policy path is omitted', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const nestedDir = join(dir, 'packages', 'agent')

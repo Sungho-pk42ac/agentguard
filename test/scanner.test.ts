@@ -74,6 +74,193 @@ test('structured MCP JSON scanner flags credential env and Windows drive roots',
   assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
 })
 
+test('structured MCP JSON scanner flags explicit readOnly false filesystem settings', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      filesystem: {
+        root: './workspace',
+        readOnly: false,
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+})
+
+test('structured MCP JSON scanner flags writable true with path context', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      filesystem: {
+        root: './workspace',
+        writable: true,
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+})
+
+test('structured MCP JSON scanner flags read-only key variants', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      dashCaseFilesystem: {
+        root: './workspace-a',
+        'read-only': false,
+      },
+      snakeCaseFilesystem: {
+        root: './workspace-b',
+        read_only: false,
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+})
+
+test('structured MCP JSON scanner flags allowedDirectories and path key variants', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      filesystem: {
+        allowedDirectories: [
+          {
+            path: './workspace',
+            writable: 'true',
+          },
+        ],
+      },
+      directPath: {
+        path: '/',
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+})
+
+test('structured MCP JSON scanner flags writable settings inside path arrays', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      projectFiles: {
+        paths: [
+          {
+            path: './project',
+            writable: true,
+          },
+        ],
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+})
+
+test('structured MCP JSON scanner ignores explicit read-only filesystem settings', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      filesystem: {
+        root: './workspace',
+        readOnly: true,
+        writable: false,
+      },
+      dashCaseFilesystem: {
+        root: './workspace-a',
+        'read-only': true,
+      },
+      snakeCaseFilesystem: {
+        root: './workspace-b',
+        read_only: true,
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
+test('structured MCP JSON scanner ignores unrelated writable booleans', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      logging: {
+        command: 'npx',
+        config: {
+          writable: true,
+        },
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
+test('structured MCP JSON scanner ignores writable booleans alongside generic args', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      logging: {
+        command: 'npx',
+        args: ['my-mcp-server'],
+        writable: true,
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
+test('structured MCP TOML-ish scanner flags writable boolean filesystem settings', () => {
+  const config = [
+    '[mcp_servers.file-system]',
+    'root = "./workspace"',
+    'writable = true',
+    '[mcp_servers.file_system_alt]',
+    'path = "./workspace-alt"',
+    'read_only = false',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+})
+
+test('structured MCP TOML-ish scanner flags writable booleans in generic MCP sections', () => {
+  const config = [
+    '[mcp_servers.storage]',
+    'path = "./workspace"',
+    'writable = true',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+})
+
+test('structured MCP TOML-ish scanner ignores writable booleans without path context', () => {
+  const config = [
+    '[mcp_servers.cache]',
+    'writable = true',
+    'readonly = false',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
+test('structured MCP TOML-ish scanner ignores explicit read-only booleans', () => {
+  const config = [
+    '[mcp_servers.cache]',
+    'writable = false',
+    'readonly = true',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
 test('structured MCP TOML-ish scanner flags home roots and credential env without prose false positives', () => {
   const riskyConfig = [
     '[mcp_servers.filesystem]',

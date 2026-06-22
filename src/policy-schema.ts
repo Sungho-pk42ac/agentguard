@@ -25,7 +25,7 @@ const rawMcpPermissionSchema = z
 
 const rawMcpPolicySchema = rawMcpPermissionSchema.extend({ permissions: rawMcpPermissionSchema.optional() }).strict()
 
-const rawPolicySchema = z
+const rawPolicyPermissionSchema = z
   .object({
     deny_read: stringListSchema.optional(),
     denied_read: stringListSchema.optional(),
@@ -44,7 +44,13 @@ const rawPolicySchema = z
     requireApprovalOperations: stringListSchema.optional(),
     approvalRequired: stringListSchema.optional(),
     approvalRequiredOperations: stringListSchema.optional(),
+  })
+  .strict()
+
+const rawPolicySchema = rawPolicyPermissionSchema
+  .extend({
     mcp: rawMcpPolicySchema.optional(),
+    permissions: rawPolicyPermissionSchema.optional(),
   })
   .strict()
 
@@ -53,11 +59,36 @@ export const policyFileSchema = rawPolicySchema.extend({
 })
 
 export type RawPolicy = z.infer<typeof rawPolicySchema>
+export type RawPolicyPermission = z.infer<typeof rawPolicyPermissionSchema>
 export type RawMcpPermission = z.infer<typeof rawMcpPermissionSchema>
 export type RawMcpPolicy = z.infer<typeof rawMcpPolicySchema>
 export type PolicyFile = z.infer<typeof policyFileSchema>
 
 export function deniedReadRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+  return combineRuleLists(deniedReadPermissionRules(policy), deniedReadPermissionRules(ownPolicyValue(policy, 'permissions')))
+}
+
+export function deniedCommandRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+  return combineRuleLists(
+    deniedCommandPermissionRules(policy),
+    deniedCommandPermissionRules(ownPolicyValue(policy, 'permissions')),
+  )
+}
+
+export function approvalRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+  return combineRuleLists(approvalPermissionRules(policy), approvalPermissionRules(ownPolicyValue(policy, 'permissions')))
+}
+
+export function hasPolicyAliasConflict(policy: PolicyFile): boolean {
+  return hasRawAliasConflict(policy) || hasRawAliasConflict(ownPolicyValue(policy, 'overrides'))
+}
+
+export function ownPolicyValue<T extends object, K extends keyof T>(policy: T | undefined, key: K): T[K] | undefined {
+  if (policy === undefined || !Object.hasOwn(policy, key)) return undefined
+  return policy[key]
+}
+
+function deniedReadPermissionRules(policy: RawPolicyPermission | undefined): readonly string[] | undefined {
   return (
     ownPolicyValue(policy, 'deny_read') ??
     ownPolicyValue(policy, 'denied_read') ??
@@ -67,7 +98,7 @@ export function deniedReadRules(policy: RawPolicy | undefined): readonly string[
   )
 }
 
-export function deniedCommandRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+function deniedCommandPermissionRules(policy: RawPolicyPermission | undefined): readonly string[] | undefined {
   return (
     ownPolicyValue(policy, 'deny_commands') ??
     ownPolicyValue(policy, 'denied_commands') ??
@@ -76,7 +107,7 @@ export function deniedCommandRules(policy: RawPolicy | undefined): readonly stri
   )
 }
 
-export function approvalRules(policy: RawPolicy | undefined): readonly string[] | undefined {
+function approvalPermissionRules(policy: RawPolicyPermission | undefined): readonly string[] | undefined {
   return (
     ownPolicyValue(policy, 'require_approval') ??
     ownPolicyValue(policy, 'require_approval_operations') ??
@@ -87,15 +118,6 @@ export function approvalRules(policy: RawPolicy | undefined): readonly string[] 
     ownPolicyValue(policy, 'approvalRequired') ??
     ownPolicyValue(policy, 'approvalRequiredOperations')
   )
-}
-
-export function hasPolicyAliasConflict(policy: PolicyFile): boolean {
-  return hasRawAliasConflict(policy) || hasRawAliasConflict(ownPolicyValue(policy, 'overrides'))
-}
-
-export function ownPolicyValue<T extends object, K extends keyof T>(policy: T | undefined, key: K): T[K] | undefined {
-  if (policy === undefined || !Object.hasOwn(policy, key)) return undefined
-  return policy[key]
 }
 
 export function mcpDeniedServerRules(policy: RawMcpPolicy | undefined): readonly string[] | undefined {
@@ -111,6 +133,14 @@ export function mcpApprovalRules(policy: RawMcpPolicy | undefined): readonly str
 }
 
 function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
+  return (
+    hasPolicyPermissionAliasConflict(policy) ||
+    hasPolicyPermissionAliasConflict(ownPolicyValue(policy, 'permissions')) ||
+    hasMcpAliasConflict(ownPolicyValue(policy, 'mcp'))
+  )
+}
+
+function hasPolicyPermissionAliasConflict(policy: RawPolicyPermission | undefined): boolean {
   return (
     hasAliasConflict([
       ownPolicyValue(policy, 'deny_read'),
@@ -134,8 +164,7 @@ function hasRawAliasConflict(policy: RawPolicy | undefined): boolean {
       ownPolicyValue(policy, 'requireApprovalOperations'),
       ownPolicyValue(policy, 'approvalRequired'),
       ownPolicyValue(policy, 'approvalRequiredOperations'),
-    ]) ||
-    hasMcpAliasConflict(ownPolicyValue(policy, 'mcp'))
+    ])
   )
 }
 

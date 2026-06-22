@@ -151,7 +151,11 @@ function stripTomlishComment(line: string): string {
 }
 
 function isWideFilesystemRoot(token: string): boolean {
-  return token === '/' || token === '~' || /^[A-Za-z]:[\\/]?$/.test(token)
+  const rootArgumentValue = token.match(
+    /^(?:--?)?(?:root|roots?|path|paths?|allow(?:ed)?[-_]?directories|directories)=(.+)$/i,
+  )?.[1]
+  const rootValue = rootArgumentValue ?? token
+  return rootValue === '/' || rootValue === '~' || /^[A-Za-z]:[\\/]?$/.test(rootValue)
 }
 
 function isWritablePathFlag(token: string): boolean {

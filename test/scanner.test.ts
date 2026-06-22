@@ -289,6 +289,26 @@ test('structured MCP TOML-ish scanner preserves hash characters inside quoted va
   assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
 })
 
+test('structured MCP scanner flags equals-form broad root arguments', () => {
+  const jsonConfig = JSON.stringify({
+    mcpServers: {
+      filesystem: {
+        args: ['--root=/', '--root=C:\\'],
+      },
+    },
+  })
+  const tomlishConfig = [
+    '[mcp_servers.filesystem]',
+    'args = ["--root=/"]',
+  ].join('\n')
+
+  const jsonFindings = scanMcpConfig(jsonConfig)
+  const tomlishFindings = scanMcpConfig(tomlishConfig)
+
+  assert.ok(jsonFindings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+  assert.ok(tomlishFindings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+})
+
 test('emits SARIF for GitHub code scanning', () => {
   const findings = scanDiff('+ const token = "ghp_abcdefghijklmnopqrstuvwxyz"')
   const sarif = JSON.parse(toSarif(findings))

@@ -58,6 +58,8 @@ node dist/index.js scan-mcp < ~/.codex/config.toml
 
 A sample SARIF payload is available at [`examples/agentguard.sarif`](examples/agentguard.sarif).
 
+A standalone static landing page asset is available in the source repository, not the npm package payload: [`docs/landing.html`](https://github.com/Sungho-pk42ac/agentguard/blob/main/docs/landing.html).
+
 ## Package smoke
 
 Before publishing, verify the npm package contains only the built CLI and intended metadata/assets:

@@ -53,26 +53,28 @@ export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_
   }
   for (const cmd of policy.denyCommands) {
     if (text.includes(cmd)) {
+      const displayCommand = redactPolicyValue(cmd)
       findings.push({
         id: 'denied-command',
-        title: `Denied command pattern: ${cmd}`,
+        title: `Denied command pattern: ${displayCommand}`,
         severity: 'high',
         category: 'dangerous-command',
         file,
-        evidence: cmd,
+        evidence: displayCommand,
         recommendation: 'Require human approval or replace with a safer scoped command.',
       })
     }
   }
   for (const operation of policy.requireApproval) {
     if (text.includes(operation)) {
+      const displayOperation = redactPolicyValue(operation)
       findings.push({
         id: 'approval-required',
-        title: `Approval-required operation: ${operation}`,
+        title: `Approval-required operation: ${displayOperation}`,
         severity: 'medium',
         category: 'agent-behavior',
         file,
-        evidence: operation,
+        evidence: displayOperation,
         recommendation: 'Require explicit human approval before running this operation.',
       })
     }
@@ -129,38 +131,41 @@ export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Fi
   const lowered = text.toLowerCase()
   for (const name of policy.mcp.denyServers) {
     if (lowered.includes(name)) {
+      const displayName = redactPolicyValue(name)
       findings.push({
-        id: `mcp-${name}`,
-        title: `Potentially sensitive MCP integration: ${name}`,
+        id: `mcp-${displayName === name ? name : 'redacted'}`,
+        title: `Potentially sensitive MCP integration: ${displayName}`,
         severity: ['postgres', 'supabase', 'filesystem'].includes(name) ? 'high' : 'medium',
         category: 'mcp-risk',
-        evidence: name,
+        evidence: displayName,
         recommendation: 'Scope MCP permissions to read-only/minimal resources and log all tool calls.',
       })
     }
   }
   for (const tool of policy.mcp.denyTools) {
     if (lowered.includes(tool.toLowerCase())) {
+      const displayTool = redactPolicyValue(tool)
       findings.push({
         id: 'mcp-tool-denied',
-        title: `MCP tool denied by policy: ${tool}`,
+        title: `MCP tool denied by policy: ${displayTool}`,
         severity: 'critical',
         category: 'mcp-risk',
         file: 'mcp-config',
-        evidence: tool,
+        evidence: displayTool,
         recommendation: 'Remove this MCP tool from the agent configuration or isolate it behind a separate approval workflow.',
       })
     }
   }
   for (const tool of policy.mcp.requireApprovalTools) {
     if (lowered.includes(tool.toLowerCase())) {
+      const displayTool = redactPolicyValue(tool)
       findings.push({
         id: 'mcp-tool-approval-required',
-        title: `MCP tool requires approval: ${tool}`,
+        title: `MCP tool requires approval: ${displayTool}`,
         severity: 'high',
         category: 'mcp-risk',
         file: 'mcp-config',
-        evidence: tool,
+        evidence: displayTool,
         recommendation: 'Require explicit human approval before allowing this MCP tool call.',
       })
     }
@@ -203,6 +208,14 @@ export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Fi
 export function redact(s: string): string {
   if (s.length <= 8) return '<redacted>'
   return `${s.slice(0, 4)}…${s.slice(-4)}`
+}
+
+function redactPolicyValue(value: string): string {
+  let redacted = value
+  for (const pattern of SECRET_PATTERNS) {
+    redacted = redacted.replace(pattern.re, (match) => redact(match))
+  }
+  return redacted
 }
 
 function matchesPolicyPattern(path: string, patterns: readonly string[]): boolean {

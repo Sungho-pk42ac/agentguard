@@ -36,6 +36,50 @@ git diff origin/main...HEAD | node dist/index.js scan-diff --sarif --out agentgu
 node dist/index.js scan-mcp < ~/.codex/config.toml
 ```
 
+A sample SARIF payload is available at [`examples/agentguard.sarif`](examples/agentguard.sarif).
+
+## GitHub code scanning workflow
+
+Copy this workflow into `.github/workflows/agentguard-sarif.yml` to scan pull request diffs, write `agentguard.sarif`, and upload the result to GitHub code scanning. The `scan-diff --sarif --out agentguard.sarif` command matches the implemented CLI flags.
+
+```yaml
+name: AgentGuard code scanning
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  agentguard-sarif:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Emit AgentGuard SARIF
+        run: |
+          git diff --unified=0 ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} \
+            | node dist/index.js scan-diff --sarif --out agentguard.sarif || true
+
+      - name: Upload AgentGuard SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: agentguard.sarif
+```
+
 ## Example report
 
 ```bash

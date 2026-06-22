@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { setImmediate as waitImmediate } from 'node:timers/promises'
 import { loadPolicy, PolicyLoadError } from '../src/policy.js'
 
 test('loadPolicy rejects duplicate YAML keys without leaking overwritten contents', () => {
@@ -83,6 +85,49 @@ test('loadPolicy rejects YAML prototype pollution keys without leaking contents'
       return true
     },
   )
+})
+
+test('loadPolicy rejects YAML non-scalar keys without leaking parser warnings', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['? [sk-abcdefghijklmnopqrstuvwxyz]', ': deny_commands'].join('\n'))
+  const warnings: string[] = []
+  const onWarning = (warning: Error) => warnings.push(warning.message)
+
+  process.prependListener('warning', onWarning)
+  try {
+    assert.throws(
+      () => loadPolicy(path),
+      (error: unknown) => {
+        assert.ok(error instanceof PolicyLoadError)
+        assert.match(error.message, /malformed policy file/)
+        assert.doesNotMatch(error.message, /sk-abcdefghijklmnopqrstuvwxyz/)
+        return true
+      },
+    )
+    await waitImmediate()
+  } finally {
+    process.removeListener('warning', onWarning)
+  }
+
+  assert.equal(warnings.some((warning) => /sk-abcdefghijklmnopqrstuvwxyz/.test(warning)), false)
+})
+
+test('CLI rejects YAML non-scalar keys without leaking parser warnings', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
+  const path = join(dir, 'agent-policy.yaml')
+  writeFileSync(path, ['? [sk-abcdefghijklmnopqrstuvwxyz]', ': deny_commands'].join('\n'))
+
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'scan-log', '--policy', path], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    input: 'terraform destroy',
+  })
+
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /Unable to load policy file: malformed policy file/)
+  assert.doesNotMatch(result.stderr, /sk-abcdefghijklmnopqrstuvwxyz/)
+  assert.equal(result.stdout, '')
 })
 
 test('loadPolicy rejects multi-document YAML policies without leaking contents', () => {

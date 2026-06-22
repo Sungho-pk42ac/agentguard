@@ -118,7 +118,7 @@ function parsePolicyContents(path: string, contents: string): unknown {
 }
 
 function parseYamlPolicy(contents: string): unknown {
-  const document = parseDocument(contents, { uniqueKeys: true })
+  const document = parseDocument(contents, { merge: false, prettyErrors: false, resolveKnownTags: false, stringKeys: true, uniqueKeys: true })
   if (document.errors.length > 0 || document.warnings.length > 0 || hasUnsafeYamlNode(document)) {
     throw new SyntaxError('Malformed YAML policy')
   }

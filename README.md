@@ -48,6 +48,57 @@ Verdicts:
 - `REVIEW`: non-critical findings, human review recommended
 - `BLOCK`: high aggregate risk or critical secret/full-access finding
 
+## GitHub PR comment workflow
+
+Copy this workflow into `.github/workflows/agentguard-pr.yml` to scan pull request diffs, persist the markdown report as an artifact, and post the same report as a PR comment. Critical findings fail the check; review-level findings keep the check green for human review.
+
+```yaml
+name: AgentGuard PR scan
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  agentguard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Run AgentGuard on PR diff
+        id: agentguard
+        uses: ./.github/actions/agentguard
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+          report-path: agent-risk-report.md
+
+      - name: Upload AgentGuard report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentguard-pr-report
+          path: agent-risk-report.md
+
+      - name: Comment AgentGuard report on PR
+        if: ${{ !cancelled() }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: agent-risk-report.md
+```
+
 ## MVP scope
 
 This first version is intentionally small:

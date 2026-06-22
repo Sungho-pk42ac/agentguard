@@ -19,6 +19,26 @@ AgentGuard focuses on **agent behavior risk**.
 
 ## Quick start
 
+Install the published CLI:
+
+```bash
+npm install -g agentguard
+
+# Scan a repo/workspace
+agentguard scan-files .
+
+# Scan a PR diff
+git diff origin/main...HEAD | agentguard scan-diff
+
+# Emit SARIF for GitHub code scanning
+git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sarif
+
+# Scan Codex/MCP config
+agentguard scan-mcp < ~/.codex/config.toml
+```
+
+For local development:
+
 ```bash
 npm install
 npm run build
@@ -37,6 +57,26 @@ node dist/index.js scan-mcp < ~/.codex/config.toml
 ```
 
 A sample SARIF payload is available at [`examples/agentguard.sarif`](examples/agentguard.sarif).
+
+## Package smoke
+
+Before publishing, verify the npm package contains only the built CLI and intended metadata/assets:
+
+```bash
+npm run build
+npm pack --dry-run
+```
+
+The dry run should list `dist/`, `README.md`, `package.json`, and examples, without `src/` or `test/` files.
+
+## Release checklist
+
+- Run `npm test`
+- Run `npm run typecheck`
+- Run `npm run build`
+- Run `npm pack --dry-run`
+- Install the packed tarball in a temporary project and run `npx agentguard scan-log`
+- Publish with `npm publish --provenance --access public`
 
 ## GitHub code scanning workflow
 

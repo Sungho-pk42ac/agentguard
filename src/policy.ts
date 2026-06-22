@@ -18,6 +18,24 @@ import {
 import { DEFAULT_POLICY, type McpPolicy, type Policy } from './rules.js'
 
 const defaultPolicyFiles = ['agent-policy.yaml', 'agent-policy.yml', 'agent-policy.json'] as const
+const policyKeyAliases: Readonly<Record<string, string>> = {
+  'deny-read': 'deny_read',
+  'denied-read': 'denied_read',
+  'deny-reads': 'deny_reads',
+  'denied-reads': 'denied_reads',
+  'deny-commands': 'deny_commands',
+  'denied-commands': 'denied_commands',
+  'require-approval': 'require_approval',
+  'require-approval-operations': 'require_approval_operations',
+  'approval-required': 'approval_required',
+  'approval-required-operations': 'approval_required_operations',
+  'deny-servers': 'deny_servers',
+  'denied-servers': 'denied_servers',
+  'deny-tools': 'deny_tools',
+  'denied-tools': 'denied_tools',
+  'require-approval-tools': 'require_approval_tools',
+  'approval-required-tools': 'approval_required_tools',
+} as const
 
 type PolicyLoadErrorReason = 'malformed' | 'missing' | 'unreadable' | 'unsupported'
 
@@ -137,8 +155,11 @@ function normalizePolicyValue(value: unknown): unknown {
 
   const normalizedValue: Record<string, unknown> = Object.create(null)
   for (const [key, childValue] of Object.entries(value)) {
-    if (isUnsafePolicyKey(key)) throw new SyntaxError('Unsafe policy key')
-    normalizedValue[key] = normalizePolicyValue(childValue)
+    const normalizedKey = normalizePolicyKey(key)
+    if (isUnsafePolicyKey(normalizedKey) || Object.hasOwn(normalizedValue, normalizedKey)) {
+      throw new SyntaxError('Unsafe policy key')
+    }
+    normalizedValue[normalizedKey] = normalizePolicyValue(childValue)
   }
   return normalizedValue
 }
@@ -149,6 +170,10 @@ function isRecord(value: unknown): value is { readonly [key: string]: unknown } 
 
 function isUnsafePolicyKey(key: string): boolean {
   return key === '__proto__' || key === 'constructor' || key === 'prototype'
+}
+
+function normalizePolicyKey(key: string): string {
+  return policyKeyAliases[key] ?? key
 }
 
 function mergeMcpPolicy(defaultPolicy: McpPolicy, overridePolicy?: RawMcpPolicy, extensionPolicy?: RawMcpPolicy): McpPolicy {

@@ -32,12 +32,74 @@ test('flags broad MCP filesystem roots and access tokens', () => {
     '[mcp_servers.filesystem]',
     'args = ["/", "--allow-write"]',
     '[mcp_servers.github.env]',
-    'GITHUB_TOKEN = "ghp_abcdefghijklmnopqrstuvwxyz"',
+    'GITHUB_TOKEN = "ghp_ab...wxyz"',
   ].join('\n')
   const findings = scanMcpConfig(config)
 
   assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
   assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+})
+
+test('structured MCP JSON scanner flags filesystem roots and writable paths', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      filesystem: {
+        command: 'mcp-server-filesystem',
+        args: ['--root', '/', '--allow-write', '/tmp'],
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+})
+
+test('structured MCP JSON scanner flags credential env and Windows drive roots', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      filesystem: {
+        args: ['--root', 'C:\\'],
+      },
+      github: {
+        env: {
+          GITHUB_TOKEN: '$GITHUB_TOKEN',
+        },
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+  assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+})
+
+test('structured MCP TOML-ish scanner flags home roots and credential env without prose false positives', () => {
+  const riskyConfig = [
+    '[mcp_servers.filesystem]',
+    'args = ["--root", "~", "--writable", "./workspace"]',
+    '[mcp_servers.github.env]',
+    'GITHUB_TOKEN = "$GITHUB_TOKEN"',
+  ].join('\n')
+  const prose = 'Documentation says GITHUB_TOKEN can exist in a shell, but this sentence is not an env assignment.'
+
+  const findings = scanMcpConfig(riskyConfig)
+  const proseFindings = scanMcpConfig(prose)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
+  assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(!proseFindings.some((f) => f.id === 'mcp-env-token'))
+})
+
+test('structured MCP TOML-ish scanner preserves hash characters inside quoted values', () => {
+  const config = [
+    '[mcp_servers.filesystem]',
+    'args = ["--root", "/safe#anchor", "--allow-write=./workspace"] # real comment',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
 })
 
 test('emits SARIF for GitHub code scanning', () => {

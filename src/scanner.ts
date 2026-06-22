@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { scanStructuredMcpConfig } from './mcp-structured-scan.js'
 import { DEFAULT_POLICY, type Finding, PII_PATTERNS, type Policy, SECRET_PATTERNS, SENSITIVE_FILE_RE } from './rules.js'
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.next', 'dist', 'build', 'coverage', '.turbo', '.cache'])
@@ -129,6 +130,7 @@ export function scanDiff(diff: string, policy: Policy = DEFAULT_POLICY): Finding
 export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Finding[] {
   const findings: Finding[] = scanText(text, 'mcp-config', policy)
   const lowered = text.toLowerCase()
+  const structured = scanStructuredMcpConfig(text)
   for (const name of policy.mcp.denyServers) {
     if (lowered.includes(name)) {
       const displayName = redactPolicyValue(name)
@@ -180,7 +182,7 @@ export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Fi
       recommendation: 'Use workspace-scoped access and require approval for destructive operations.',
     })
   }
-  if (MCP_WIDE_FILESYSTEM_ROOT_RE.test(text)) {
+  if (structured.hasWideFilesystemRoot || MCP_WIDE_FILESYSTEM_ROOT_RE.test(text)) {
     findings.push({
       id: 'mcp-filesystem-wide-root',
       title: 'MCP filesystem server exposes a broad root path',
@@ -191,7 +193,18 @@ export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Fi
       recommendation: 'Restrict filesystem MCP roots to the repository or a dedicated read-only working directory.',
     })
   }
-  if (MCP_ENV_TOKEN_RE.test(text)) {
+  if (structured.hasWritablePath) {
+    findings.push({
+      id: 'mcp-filesystem-writable-path',
+      title: 'MCP filesystem server allows writable paths',
+      severity: 'high',
+      category: 'mcp-risk',
+      file: 'mcp-config',
+      evidence: 'writable filesystem path',
+      recommendation: 'Prefer read-only filesystem MCP roots and require approval for write-capable paths.',
+    })
+  }
+  if (structured.hasCredentialEnv || MCP_ENV_TOKEN_RE.test(text)) {
     findings.push({
       id: 'mcp-env-token',
       title: 'MCP server receives credential-like environment variables',

@@ -55,6 +55,12 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
       index += 1
       continue
     }
+    if (arg.startsWith('--out=')) {
+      const value = arg.slice('--out='.length)
+      if (value.length === 0) return undefined
+      out = value
+      continue
+    }
     if (arg === '--policy') {
       const value = args[index + 1]
       if (!isOptionValue(value)) return undefined

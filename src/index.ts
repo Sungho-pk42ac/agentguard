@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { loadPolicy, PolicyLoadError } from './policy.js'
 import { scanDiff, scanFiles, scanMcpConfig, scanText } from './scanner.js'
 import { toMarkdown, toSarif } from './report.js'
@@ -116,6 +117,14 @@ switch (cmd) {
 }
 
 const output = sarif ? toSarif(findings) : json ? JSON.stringify(findings, null, 2) : toMarkdown(findings)
-if (out) writeFileSync(out, output + '\n')
-else console.log(output)
+if (out) {
+  try {
+    mkdirSync(dirname(out), { recursive: true })
+    writeFileSync(out, output + '\n')
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`Could not write output: ${message}`)
+    process.exit(2)
+  }
+} else console.log(output)
 process.exit(findings.some((f) => f.severity === 'critical') ? 1 : 0)

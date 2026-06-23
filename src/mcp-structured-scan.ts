@@ -135,7 +135,7 @@ function scanTomlishMcpConfig(text: string): StructuredMcpConfigSignals {
     if (section.endsWith('.env') && isCredentialName(key)) {
       signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
     }
-    if (isEnvKey(key) && tomlishInlineTableKeys(value).some(isCredentialName)) {
+    if (tomlishKeyHasEnvCredential(key) || (isEnvKey(key) && tomlishInlineTableKeys(value).some(isCredentialName))) {
       signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
     }
     if (tomlishInlineTableHasCredentialEnv(value)) {
@@ -180,6 +180,7 @@ function tomlishInlineTableKeys(value: string): readonly string[] {
 function tomlishInlineTableHasCredentialEnv(value: string, depth = 0): boolean {
   if (depth >= MAX_JSON_SCAN_DEPTH || !value.trim().startsWith('{')) return false
   return tomlishInlineTableEntries(value).some((entry) => {
+    if (tomlishKeyHasEnvCredential(entry.key)) return true
     if (isEnvKey(entry.key) && tomlishInlineTableKeys(entry.value).some(isCredentialName)) return true
     return tomlishInlineTableHasCredentialEnv(entry.value, depth + 1)
   })
@@ -342,10 +343,18 @@ function isCredentialName(name: string): boolean {
 }
 
 function isEnvKey(key: string): boolean {
+  return tomlishKeyParts(key).includes('env')
+}
+
+function tomlishKeyHasEnvCredential(key: string): boolean {
+  const parts = tomlishKeyParts(key)
+  return parts.some((part, index) => part === 'env' && isCredentialName(parts[index + 1] ?? ''))
+}
+
+function tomlishKeyParts(key: string): string[] {
   return key
     .split('.')
     .map((part) => normalizeConfigKey(unquoteTomlishInlineKey(part.trim())))
-    .includes('env')
 }
 
 function hasCredentialEnvKey(value: Record<string, unknown>): boolean {

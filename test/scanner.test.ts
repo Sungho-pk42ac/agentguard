@@ -495,23 +495,36 @@ test('structured MCP TOML-ish scanner handles nested inline env tables without c
   const arrayConfig = [
     '[mcp_servers.github]',
     'command = "github-mcp-server"',
-    'env = { SAFE_LIST = ["a", "b"], GITHUB_TOKEN=*** }',
+    'env = { SAFE_LIST = ["a", "b"], GITHUB_TOKEN = "redacted" }',
   ].join('\n')
   const inlineServerConfig = [
-    'mcp_servers.github = { command = "github-mcp-server", env = { GITHUB_TOKEN=*** } }',
+    'mcp_servers.github = { command = "github-mcp-server", env = { GITHUB_TOKEN = "redacted" } }',
   ].join('\n')
   const dottedEnvConfig = [
-    'mcp_servers.github.env = { GITHUB_TOKEN=*** }',
-    'mcp_servers = { github.env = { OPENAI_API_KEY=*** } }',
+    'mcp_servers.github.env = { GITHUB_TOKEN = "redacted" }',
+    'mcp_servers = { github.env = { OPENAI_API_KEY = "redacted" } }',
+  ].join('\n')
+  const dottedEnvLeafConfig = [
+    '[mcp_servers.github]',
+    'env.GITHUB_TOKEN = "redacted"',
+  ].join('\n')
+  const tripleQuotedValueConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { DESCRIPTION = """A "quote", and GITHUB_TOKEN = redacted""", LOG_LEVEL = "info" }',
   ].join('\n')
 
   const arrayFindings = scanMcpConfig(arrayConfig)
   const inlineServerFindings = scanMcpConfig(inlineServerConfig)
   const dottedEnvFindings = scanMcpConfig(dottedEnvConfig)
+  const dottedEnvLeafFindings = scanMcpConfig(dottedEnvLeafConfig)
+  const tripleQuotedValueFindings = scanMcpConfig(tripleQuotedValueConfig)
 
   assert.ok(arrayFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
   assert.ok(inlineServerFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
   assert.ok(dottedEnvFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(dottedEnvLeafFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(!tripleQuotedValueFindings.some((f) => f.id === 'mcp-env-token'))
 })
 
 test('structured MCP TOML-ish scanner returns normally for excessive inline table nesting', () => {

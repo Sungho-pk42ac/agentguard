@@ -30,10 +30,10 @@ function usage(exitCode = 2): never {
   agentguard report < input.txt
 
 Options:
-  --json           Print JSON findings
-  --sarif          Print SARIF 2.1.0 for GitHub code scanning
-  --policy <path>  Load agent-policy.yaml/json
-  --out <file>     Write output to file`
+  --json                         Print JSON findings
+  --sarif                        Print SARIF 2.1.0 for GitHub code scanning
+  --policy <path>, --policy=<path>  Load agent-policy.yaml/json
+  --out <file>, --out=<file>        Write output to file`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)

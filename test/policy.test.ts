@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -260,6 +260,21 @@ test('CLI rejects --policy without a path before another option', () => {
   assert.equal(result.status, 2)
   assert.match(result.stderr, /--policy <path>/)
   assert.equal(result.stdout, '')
+})
+
+test('CLI accepts --out=<file> for scan-log reports', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-out-'))
+  const outPath = join(dir, 'agent-risk-report.md')
+
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'scan-log', `--out=${outPath}`], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    input: 'safe transcript without findings',
+  })
+
+  assert.equal(result.status, 0)
+  assert.equal(result.stdout, '')
+  assert.match(readFileSync(outPath, 'utf8'), /# AgentGuard Risk Report/)
 })
 
 test('CLI preserves scan-files path when --policy is present', () => {

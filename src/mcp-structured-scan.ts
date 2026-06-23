@@ -53,7 +53,11 @@ function scanJsonValue(value: unknown, key: string): StructuredMcpConfigSignals 
     }
 
     if (Array.isArray(frame.value)) {
-      signals = mergeSignals(signals, signalsFromJsonTokens(frame.key, frame.value.filter(isString)))
+      const stringValues = frame.value.filter(isString)
+      signals = mergeSignals(signals, signalsFromJsonTokens(frame.key, stringValues))
+      if (isEnvKey(frame.key) && stringValues.some(isCredentialEnvAssignment)) {
+        signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
+      }
       if (frame.depth >= MAX_JSON_SCAN_DEPTH) continue
       for (const childValue of frame.value) {
         // Preserve the array key as context so path entries like { path, writable } stay path-scoped.
@@ -235,6 +239,11 @@ function isEnvKey(key: string): boolean {
 
 function hasCredentialEnvKey(value: Record<string, unknown>): boolean {
   return Object.keys(value).some(isCredentialName)
+}
+
+function isCredentialEnvAssignment(value: string): boolean {
+  const key = value.trim().match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=/)?.[1]
+  return key !== undefined && isCredentialName(key)
 }
 
 function isString(value: unknown): value is string {

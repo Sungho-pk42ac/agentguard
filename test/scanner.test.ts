@@ -98,6 +98,32 @@ test('structured MCP JSON scanner flags credential env and Windows drive roots',
   assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
 })
 
+test('structured MCP JSON scanner flags credential env string arrays', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      github: {
+        env: ['GITHUB_TOKEN=$GITHUB_TOKEN', 'SAFE_MODE=true'],
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+})
+
+test('structured MCP JSON scanner ignores non-credential env string arrays', () => {
+  const config = JSON.stringify({
+    mcpServers: {
+      local: {
+        env: ['SAFE_MODE=true', 'LOG_LEVEL=debug'],
+      },
+    },
+  })
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-env-token'))
+})
+
 test('structured MCP JSON scanner flags trailing slash home roots', () => {
   const config = JSON.stringify({
     mcpServers: {

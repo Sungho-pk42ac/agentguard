@@ -480,6 +480,17 @@ test('structured MCP TOML-ish scanner flags credential keys in inline env tables
   assert.ok(!safeFindings.some((f) => f.id === 'mcp-env-token'))
 })
 
+test('structured MCP TOML-ish scanner ignores credential-like text inside inline env values', () => {
+  const config = [
+    '[mcp_servers.database]',
+    'command = "db-mcp-server"',
+    'env = { CONNECTION_STRING = "Host=localhost, Password=redacted", LOG_LEVEL = "info" }',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-env-token'))
+})
+
 test('structured MCP scanner flags equals-form broad root arguments', () => {
   const jsonConfig = JSON.stringify({
     mcpServers: {

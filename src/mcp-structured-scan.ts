@@ -13,8 +13,6 @@ const EMPTY_SIGNALS: StructuredMcpConfigSignals = {
 const STRUCTURED_KEYS = new Set(['args', 'root', 'roots', 'alloweddirectories', 'directories', 'paths', 'path'])
 const PATH_CONTEXT_KEYS = new Set(['root', 'roots', 'alloweddirectories', 'directories', 'paths', 'path'])
 const WRITABLE_PATH_FLAGS = new Set(['--allow-write', '--writable'])
-const TOMLISH_INLINE_ENV_CREDENTIAL_KEY_RE =
-  /(?:^\s*\{\s*|,\s*)(?:"[^"]*(?:API_KEY|TOKEN|SECRET|PASSWORD)[^"]*"|'[^']*(?:API_KEY|TOKEN|SECRET|PASSWORD)[^']*'|[A-Za-z_][A-Za-z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)[A-Za-z0-9_]*)\s*=/i
 const MAX_JSON_SCAN_DEPTH = 1_000
 
 interface JsonScanFrame {
@@ -132,7 +130,7 @@ function scanTomlishMcpConfig(text: string): StructuredMcpConfigSignals {
     if (section.endsWith('.env') && isCredentialName(key)) {
       signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
     }
-    if (isEnvKey(key) && TOMLISH_INLINE_ENV_CREDENTIAL_KEY_RE.test(value)) {
+    if (isEnvKey(key) && tomlishInlineTableKeys(value).some(isCredentialName)) {
       signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
     }
     if (STRUCTURED_KEYS.has(normalizedKey)) {
@@ -165,6 +163,61 @@ function tomlishStringTokens(value: string): readonly string[] {
   }
   if (tokens.length > 0) return tokens
   return value.split(/[\s,[\]]+/).filter((token) => token.length > 0)
+}
+
+function tomlishInlineTableKeys(value: string): readonly string[] {
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('{')) return []
+  const inner = trimmed.endsWith('}') ? trimmed.slice(1, -1) : trimmed.slice(1)
+  const keys: string[] = []
+  let keyToken = ''
+  let readingKey = true
+  let quote: '"' | "'" | undefined
+  let escaped = false
+
+  for (let index = 0; index < inner.length; index += 1) {
+    const char = inner[index]
+    if (escaped) {
+      escaped = false
+      if (readingKey) keyToken += char
+      continue
+    }
+    if (char === '\\' && quote === '"') {
+      escaped = true
+      if (readingKey) keyToken += char
+      continue
+    }
+    if ((char === '"' || char === "'") && (quote === undefined || quote === char)) {
+      quote = quote === char ? undefined : char
+      if (readingKey) keyToken += char
+      continue
+    }
+    if (quote !== undefined) {
+      if (readingKey) keyToken += char
+      continue
+    }
+    if (readingKey && char === '=') {
+      const parsedKey = unquoteTomlishInlineKey(keyToken.trim())
+      if (parsedKey.length > 0) keys.push(parsedKey)
+      keyToken = ''
+      readingKey = false
+      continue
+    }
+    if (!readingKey && char === ',') {
+      readingKey = true
+      keyToken = ''
+      continue
+    }
+    if (readingKey) keyToken += char
+  }
+
+  return keys
+}
+
+function unquoteTomlishInlineKey(key: string): string {
+  const quote = key[0]
+  if ((quote === '"' || quote === "'") && key.endsWith(quote)) return key.slice(1, -1)
+  return key
 }
 
 function stripTomlishComment(line: string): string {

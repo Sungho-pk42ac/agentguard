@@ -2,6 +2,24 @@
   "name": "agentguard",
   "version": "0.1.0",
   "description": "AgentOps security scanner for AI coding agents, MCP configs, transcripts, and PR diffs",
+  "keywords": [
+    "agentops",
+    "security",
+    "mcp",
+    "codex",
+    "claude-code",
+    "scanner",
+    "sarif",
+    "cli"
+  ],
+  "homepage": "https://github.com/Sungho-pk42ac/agentguard#readme",
+  "bugs": {
+    "url": "https://github.com/Sungho-pk42ac/agentguard/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sungho-pk42ac/agentguard.git"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -18,7 +36,6 @@
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",

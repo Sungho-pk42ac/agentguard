@@ -508,6 +508,15 @@ test('structured MCP TOML-ish scanner handles nested inline env tables without c
   assert.ok(inlineServerFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
 })
 
+test('structured MCP TOML-ish scanner returns normally for excessive inline table nesting', () => {
+  let config = '{ safe = "value" }'
+  for (let depth = 0; depth < 20_000; depth += 1) {
+    config = `{ child = ${config} }`
+  }
+
+  assert.doesNotThrow(() => scanMcpConfig(`mcp_servers.deep = ${config}`))
+})
+
 test('structured MCP scanner flags equals-form broad root arguments', () => {
   const jsonConfig = JSON.stringify({
     mcpServers: {

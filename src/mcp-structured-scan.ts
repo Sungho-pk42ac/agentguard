@@ -177,10 +177,11 @@ function tomlishInlineTableKeys(value: string): readonly string[] {
   return tomlishInlineTableEntries(value).map((entry) => entry.key)
 }
 
-function tomlishInlineTableHasCredentialEnv(value: string): boolean {
+function tomlishInlineTableHasCredentialEnv(value: string, depth = 0): boolean {
+  if (depth >= MAX_JSON_SCAN_DEPTH || !value.trim().startsWith('{')) return false
   return tomlishInlineTableEntries(value).some((entry) => {
     if (isEnvKey(entry.key) && tomlishInlineTableKeys(entry.value).some(isCredentialName)) return true
-    return tomlishInlineTableHasCredentialEnv(entry.value)
+    return tomlishInlineTableHasCredentialEnv(entry.value, depth + 1)
   })
 }
 

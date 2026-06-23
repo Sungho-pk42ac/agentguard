@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { test } from 'node:test'
-import { scanDiff, scanMcpConfig, scanText } from '../src/scanner.js'
+import { scanDiff, scanFiles, scanMcpConfig, scanText } from '../src/scanner.js'
 import { riskScore, toSarif } from '../src/report.js'
 
 test('detects secrets in text and redacts evidence', () => {
@@ -13,6 +16,27 @@ test('scanDiff only checks added lines', () => {
   const findings = scanDiff('- sk-oldoldoldoldoldoldoldold\n+ sk-newnewnewnewnewnewnewnew')
   assert.equal(findings.length, 1)
   assert.match(findings[0].evidence, /new/)
+})
+
+test('scanFiles returns normally when workspace contains cyclic symlink', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-symlink-cycle-'))
+  const workspace = join(dir, 'workspace')
+  mkdirSync(workspace)
+  writeFileSync(join(workspace, 'token.txt'), 'GITHUB_TOKEN=ghp_abcdefghijklmnopqrst')
+  symlinkSync('.', join(workspace, 'loop'), 'dir')
+
+  assert.doesNotThrow(() => scanFiles(workspace))
+  const findings = scanFiles(workspace)
+  assert.ok(findings.some((finding) => finding.id === 'github-token' && finding.file === 'token.txt'))
+})
+
+test('scanFiles skips self-referential symlinks without crashing', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-self-symlink-'))
+  const workspace = join(dir, 'workspace')
+  mkdirSync(workspace)
+  symlinkSync('self', join(workspace, 'self'))
+
+  assert.doesNotThrow(() => scanFiles(workspace))
 })
 
 test('detects full access MCP config', () => {

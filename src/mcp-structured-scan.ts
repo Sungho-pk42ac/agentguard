@@ -55,7 +55,10 @@ function scanJsonValue(value: unknown, key: string): StructuredMcpConfigSignals 
     if (Array.isArray(frame.value)) {
       const stringValues = frame.value.filter(isString)
       signals = mergeSignals(signals, signalsFromJsonTokens(frame.key, stringValues))
-      if (isEnvKey(frame.key) && stringValues.some(isCredentialEnvAssignment)) {
+      if (
+        isEnvKey(frame.key) &&
+        stringValues.some((token) => isCredentialName(token) || isCredentialEnvAssignment(token))
+      ) {
         signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
       }
       if (frame.depth >= MAX_JSON_SCAN_DEPTH) continue
@@ -67,6 +70,12 @@ function scanJsonValue(value: unknown, key: string): StructuredMcpConfigSignals 
     }
 
     if (!isRecord(frame.value)) continue
+
+    // Non-string env array entries inherit the array key, so catch descriptors like
+    // { name: 'GITHUB_TOKEN', value: '$GITHUB_TOKEN' } when their frame is popped.
+    if (isEnvKey(frame.key) && hasCredentialEnvKey(frame.value)) {
+      signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
+    }
 
     for (const [childKey, childValue] of Object.entries(frame.value)) {
       if (isEnvKey(childKey) && isRecord(childValue) && hasCredentialEnvKey(childValue)) {
@@ -238,7 +247,15 @@ function isEnvKey(key: string): boolean {
 }
 
 function hasCredentialEnvKey(value: Record<string, unknown>): boolean {
-  return Object.keys(value).some(isCredentialName)
+  return Object.entries(value).some(([key, fieldValue]) => {
+    if (isCredentialName(key)) return true
+    const normalizedKey = key.toLowerCase()
+    return (
+      (normalizedKey === 'name' || normalizedKey === 'key') &&
+      typeof fieldValue === 'string' &&
+      isCredentialName(fieldValue)
+    )
+  })
 }
 
 function isCredentialEnvAssignment(value: string): boolean {

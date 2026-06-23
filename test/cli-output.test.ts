@@ -42,3 +42,35 @@ test('CLI --out reports write failures without a raw stack trace', () => {
   assert.match(result.stderr, /Could not write output/)
   assert.doesNotMatch(result.stderr, /at .*src\/index\.ts/)
 })
+
+test('CLI help flags print usage to stdout with a success exit', () => {
+  for (const helpFlag of ['--help', '-h']) {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', helpFlag],
+      {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      },
+    )
+
+    assert.equal(result.status, 0, `${helpFlag} should exit successfully`)
+    assert.match(result.stdout, /^Usage:/, `${helpFlag} should print usage to stdout`)
+    assert.equal(result.stderr, '', `${helpFlag} should not print usage to stderr`)
+  }
+})
+
+test('CLI invalid commands still print usage to stderr with an error exit', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', '--definitely-not-an-option'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    },
+  )
+
+  assert.equal(result.status, 2)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /^Usage:/)
+})

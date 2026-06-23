@@ -15,8 +15,8 @@ interface CliArgs {
   readonly policyPath?: string
 }
 
-function usage(): never {
-  console.error(`Usage:
+function usage(exitCode = 2): never {
+  const output = `Usage:
   agentguard scan-files [path]
   agentguard scan-diff < diff.patch
   agentguard scan-log < transcript.log
@@ -27,8 +27,10 @@ Options:
   --json           Print JSON findings
   --sarif          Print SARIF 2.1.0 for GitHub code scanning
   --policy <path>  Load agent-policy.yaml/json
-  --out <file>     Write output to file`)
-  process.exit(2)
+  --out <file>     Write output to file`
+  if (exitCode === 0) console.log(output)
+  else console.error(output)
+  process.exit(exitCode)
 }
 
 function parseArgs(args: readonly string[]): CliArgs | undefined {
@@ -41,6 +43,11 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
+    if (arg === '--help' || arg === '-h') {
+      if (cmd || cleanArgs.length > 0) return undefined
+      cmd = arg
+      continue
+    }
     if (arg === '--json') {
       json = true
       continue
@@ -83,6 +90,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
   }
 
   if (!cmd) return undefined
+  if ((cmd === '--help' || cmd === '-h') && cleanArgs.length > 0) return undefined
   return { cmd, cleanArgs, json, sarif, out, policyPath }
 }
 
@@ -93,6 +101,7 @@ function isOptionValue(value: string | undefined): value is string {
 const parsedArgs = parseArgs(process.argv.slice(2))
 if (!parsedArgs) usage()
 const { cmd, cleanArgs, json, sarif, out, policyPath } = parsedArgs
+if (cmd === '--help' || cmd === '-h') usage(0)
 
 const stdin = () => readFileSync(0, 'utf8')
 let findings: Finding[] = []

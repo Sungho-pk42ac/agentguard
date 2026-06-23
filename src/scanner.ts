@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { lstatSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { scanStructuredMcpConfig } from './mcp-structured-scan.js'
 import { DEFAULT_POLICY, type Finding, PII_PATTERNS, type Policy, SECRET_PATTERNS, SENSITIVE_FILE_RE } from './rules.js'
@@ -15,6 +15,7 @@ export function walkFiles(root: string): string[] {
     for (const name of readdirSync(dir)) {
       if (SKIP_DIRS.has(name)) continue
       const full = join(dir, name)
+      if (lstatSync(full).isSymbolicLink()) continue
       const st = statSync(full)
       if (st.isDirectory()) walk(full)
       else if (st.isFile() && st.size <= MAX_FILE_BYTES) out.push(full)

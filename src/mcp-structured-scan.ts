@@ -21,6 +21,11 @@ interface JsonScanFrame {
   readonly depth: number
 }
 
+interface TomlishInlineTableEntry {
+  readonly key: string
+  readonly value: string
+}
+
 export function scanStructuredMcpConfig(text: string): StructuredMcpConfigSignals {
   return mergeSignals(scanJsonMcpConfig(text), scanTomlishMcpConfig(text))
 }
@@ -133,6 +138,9 @@ function scanTomlishMcpConfig(text: string): StructuredMcpConfigSignals {
     if (isEnvKey(key) && tomlishInlineTableKeys(value).some(isCredentialName)) {
       signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
     }
+    if (tomlishInlineTableHasCredentialEnv(value)) {
+      signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
+    }
     if (STRUCTURED_KEYS.has(normalizedKey)) {
       signals = mergeSignals(signals, signalsFromTokens(tomlishStringTokens(value)))
     }
@@ -166,52 +174,84 @@ function tomlishStringTokens(value: string): readonly string[] {
 }
 
 function tomlishInlineTableKeys(value: string): readonly string[] {
+  return tomlishInlineTableEntries(value).map((entry) => entry.key)
+}
+
+function tomlishInlineTableHasCredentialEnv(value: string): boolean {
+  return tomlishInlineTableEntries(value).some((entry) => {
+    if (isEnvKey(entry.key) && tomlishInlineTableKeys(entry.value).some(isCredentialName)) return true
+    return tomlishInlineTableHasCredentialEnv(entry.value)
+  })
+}
+
+function tomlishInlineTableEntries(value: string): readonly TomlishInlineTableEntry[] {
   const trimmed = value.trim()
   if (!trimmed.startsWith('{')) return []
   const inner = trimmed.endsWith('}') ? trimmed.slice(1, -1) : trimmed.slice(1)
-  const keys: string[] = []
+  const entries: TomlishInlineTableEntry[] = []
   let keyToken = ''
+  let valueToken = ''
+  let currentKey = ''
   let readingKey = true
   let quote: '"' | "'" | undefined
   let escaped = false
+  let braceDepth = 0
+  let bracketDepth = 0
+
+  function pushEntry(): void {
+    if (currentKey.length > 0) entries.push({ key: currentKey, value: valueToken.trim() })
+    currentKey = ''
+    valueToken = ''
+  }
 
   for (let index = 0; index < inner.length; index += 1) {
     const char = inner[index]
     if (escaped) {
       escaped = false
       if (readingKey) keyToken += char
+      else valueToken += char
       continue
     }
     if (char === '\\' && quote === '"') {
       escaped = true
       if (readingKey) keyToken += char
+      else valueToken += char
       continue
     }
     if ((char === '"' || char === "'") && (quote === undefined || quote === char)) {
       quote = quote === char ? undefined : char
       if (readingKey) keyToken += char
+      else valueToken += char
       continue
     }
     if (quote !== undefined) {
       if (readingKey) keyToken += char
+      else valueToken += char
       continue
     }
+    if (!readingKey) {
+      if (char === '{') braceDepth += 1
+      else if (char === '}') braceDepth -= 1
+      else if (char === '[') bracketDepth += 1
+      else if (char === ']') bracketDepth -= 1
+    }
     if (readingKey && char === '=') {
-      const parsedKey = unquoteTomlishInlineKey(keyToken.trim())
-      if (parsedKey.length > 0) keys.push(parsedKey)
+      currentKey = unquoteTomlishInlineKey(keyToken.trim())
       keyToken = ''
       readingKey = false
       continue
     }
-    if (!readingKey && char === ',') {
+    if (!readingKey && char === ',' && braceDepth === 0 && bracketDepth === 0) {
+      pushEntry()
       readingKey = true
-      keyToken = ''
       continue
     }
     if (readingKey) keyToken += char
+    else valueToken += char
   }
 
-  return keys
+  pushEntry()
+  return entries
 }
 
 function unquoteTomlishInlineKey(key: string): string {

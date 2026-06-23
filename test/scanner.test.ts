@@ -491,6 +491,23 @@ test('structured MCP TOML-ish scanner ignores credential-like text inside inline
   assert.ok(!findings.some((f) => f.id === 'mcp-env-token'))
 })
 
+test('structured MCP TOML-ish scanner handles nested inline env tables without comma desync', () => {
+  const arrayConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { SAFE_LIST = ["a", "b"], GITHUB_TOKEN = "redacted" }',
+  ].join('\n')
+  const inlineServerConfig = [
+    'mcp_servers.github = { command = "github-mcp-server", env = { GITHUB_TOKEN = "redacted" } }',
+  ].join('\n')
+
+  const arrayFindings = scanMcpConfig(arrayConfig)
+  const inlineServerFindings = scanMcpConfig(inlineServerConfig)
+
+  assert.ok(arrayFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(inlineServerFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+})
+
 test('structured MCP scanner flags equals-form broad root arguments', () => {
   const jsonConfig = JSON.stringify({
     mcpServers: {

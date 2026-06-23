@@ -90,6 +90,41 @@ test('structured MCP JSON scanner flags trailing slash home roots', () => {
   assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
 })
 
+test('structured MCP scanner normalizes home-root variants before broad-root comparison', () => {
+  const configs = [
+    JSON.stringify({ mcpServers: { filesystem: { root: '~\\' } } }),
+    JSON.stringify({ mcpServers: { filesystem: { args: ['--root=~\\'] } } }),
+    JSON.stringify({ mcpServers: { filesystem: { root: ' ~/' } } }),
+    JSON.stringify({ mcpServers: { filesystem: { root: '~//' } } }),
+    '[mcp_servers.filesystem]\nroot = " ~/ "',
+    '[mcp_servers.filesystem]\nargs = ["--root=~//"]',
+  ]
+
+  for (const config of configs) {
+    const findings = scanMcpConfig(config)
+    assert.ok(
+      findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'),
+      `expected wide-root finding for ${config}`,
+    )
+  }
+})
+
+test('structured MCP scanner does not flag explicit user home roots as broad filesystem roots', () => {
+  const configs = [
+    JSON.stringify({ mcpServers: { filesystem: { root: '~alice/' } } }),
+    JSON.stringify({ mcpServers: { filesystem: { args: ['--root=~alice/'] } } }),
+    '[mcp_servers.filesystem]\nroot = "~alice/"',
+  ]
+
+  for (const config of configs) {
+    const findings = scanMcpConfig(config)
+    assert.ok(
+      !findings.some((f) => f.id === 'mcp-filesystem-wide-root'),
+      `expected no wide-root finding for ${config}`,
+    )
+  }
+})
+
 test('structured MCP JSON scanner flags explicit readOnly false filesystem settings', () => {
   const config = JSON.stringify({
     mcpServers: {

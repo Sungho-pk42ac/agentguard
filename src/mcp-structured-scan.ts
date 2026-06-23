@@ -13,6 +13,8 @@ const EMPTY_SIGNALS: StructuredMcpConfigSignals = {
 const STRUCTURED_KEYS = new Set(['args', 'root', 'roots', 'alloweddirectories', 'directories', 'paths', 'path'])
 const PATH_CONTEXT_KEYS = new Set(['root', 'roots', 'alloweddirectories', 'directories', 'paths', 'path'])
 const WRITABLE_PATH_FLAGS = new Set(['--allow-write', '--writable'])
+const TOMLISH_INLINE_ENV_CREDENTIAL_KEY_RE =
+  /(?:^\s*\{\s*|,\s*)(?:"[^"]*(?:API_KEY|TOKEN|SECRET|PASSWORD)[^"]*"|'[^']*(?:API_KEY|TOKEN|SECRET|PASSWORD)[^']*'|[A-Za-z_][A-Za-z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)[A-Za-z0-9_]*)\s*=/i
 const MAX_JSON_SCAN_DEPTH = 1_000
 
 interface JsonScanFrame {
@@ -128,6 +130,9 @@ function scanTomlishMcpConfig(text: string): StructuredMcpConfigSignals {
 
     const normalizedKey = normalizeConfigKey(key)
     if (section.endsWith('.env') && isCredentialName(key)) {
+      signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
+    }
+    if (isEnvKey(key) && TOMLISH_INLINE_ENV_CREDENTIAL_KEY_RE.test(value)) {
       signals = mergeSignals(signals, { hasWideFilesystemRoot: false, hasWritablePath: false, hasCredentialEnv: true })
     }
     if (STRUCTURED_KEYS.has(normalizedKey)) {

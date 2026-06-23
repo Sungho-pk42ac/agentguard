@@ -461,6 +461,25 @@ test('structured MCP TOML-ish scanner preserves hash characters inside quoted va
   assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
 })
 
+test('structured MCP TOML-ish scanner flags credential keys in inline env tables', () => {
+  const riskyConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { GITHUB_TOKEN = "redacted", LOG_LEVEL = "info" }',
+  ].join('\n')
+  const safeConfig = [
+    '[mcp_servers.cache]',
+    'command = "cache-mcp-server"',
+    'env = { SAFE_MODE = "true", LOG_LEVEL = "debug" }',
+  ].join('\n')
+
+  const riskyFindings = scanMcpConfig(riskyConfig)
+  const safeFindings = scanMcpConfig(safeConfig)
+
+  assert.ok(riskyFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(!safeFindings.some((f) => f.id === 'mcp-env-token'))
+})
+
 test('structured MCP scanner flags equals-form broad root arguments', () => {
   const jsonConfig = JSON.stringify({
     mcpServers: {

@@ -175,8 +175,14 @@ function isWideFilesystemRoot(token: string): boolean {
   const rootArgumentValue = token.match(
     /^(?:--?)?(?:root|roots?|path|paths?|allow(?:ed)?[-_]?directories|directories)=(.+)$/i,
   )?.[1]
-  const rootValue = rootArgumentValue ?? token
+  const rootValue = normalizeRootTokenValue(rootArgumentValue ?? token)
   return rootValue === '/' || rootValue === '~' || rootValue === '~/' || /^[A-Za-z]:[\\/]?$/.test(rootValue)
+}
+
+function normalizeRootTokenValue(value: string): string {
+  const trimmed = value.trim()
+  if (/^~[\\/]+$/.test(trimmed)) return '~/'
+  return trimmed
 }
 
 function isWritablePathFlag(token: string): boolean {

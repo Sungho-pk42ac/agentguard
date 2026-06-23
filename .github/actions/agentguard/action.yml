@@ -58,6 +58,10 @@ runs:
         policy_path="$POLICY_PATH"
         diff_path="${RUNNER_TEMP:-/tmp}/agentguard-pr.diff"
 
+        rm -f -- "$report_path" "$json_path"
+        mkdir -p -- "$(dirname -- "$report_path")"
+        mkdir -p -- "$(dirname -- "$json_path")"
+
         git diff --no-ext-diff --unified=0 "$BASE_SHA" "$HEAD_SHA" > "$diff_path"
 
         policy_args=()
@@ -74,6 +78,16 @@ runs:
 
         if [[ $json_status -gt 1 || $markdown_status -gt 1 ]]; then
           echo "AgentGuard failed to scan the PR diff" >&2
+          exit 2
+        fi
+
+        if [[ ! -s "$json_path" ]]; then
+          echo "AgentGuard did not create the JSON findings artifact" >&2
+          exit 2
+        fi
+
+        if [[ ! -s "$report_path" ]]; then
+          echo "AgentGuard did not create the markdown report artifact" >&2
           exit 2
         fi
 

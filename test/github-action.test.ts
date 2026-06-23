@@ -10,6 +10,8 @@ test('GitHub Action exposes PR diff report artifact/comment contract', () => {
   const action = YAML.parse(readFileSync(actionPath, 'utf8'))
   assert.equal(action.name, 'AgentGuard PR diff scan')
   assert.equal(action.outputs['report-path'].description, 'Path to the markdown AgentGuard report artifact')
+  assert.equal(action.outputs['json-path'].description, 'Path to the JSON AgentGuard findings artifact')
+  assert.equal(action.outputs['json-path'].value, '${{ steps.scan.outputs.json-path }}')
   assert.equal(action.outputs['conclusion'].description, 'pass, review, or block based on AgentGuard findings')
 
   const stepText = JSON.stringify(action.runs.steps)
@@ -22,6 +24,8 @@ test('GitHub Action exposes PR diff report artifact/comment contract', () => {
   assert.match(stepText, /severity === 'critical'/)
   assert.match(scanRun, /BASE_SHA/)
   assert.match(scanRun, /HEAD_SHA/)
+  assert.match(scanRun, /echo "json-path=\$json_path"/)
+  assert.match(scanRun, /" -- "\$json_path"\)/)
   assert.doesNotMatch(scanRun, /inputs\.base-sha.*inputs\.head-sha/)
   assert.doesNotMatch(stepText, /process\.exit\(1\).*review/i)
 })

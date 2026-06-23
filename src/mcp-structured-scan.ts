@@ -342,7 +342,10 @@ function isCredentialName(name: string): boolean {
 }
 
 function isEnvKey(key: string): boolean {
-  return key.toLowerCase() === 'env'
+  return key
+    .split('.')
+    .map((part) => normalizeConfigKey(unquoteTomlishInlineKey(part.trim())))
+    .includes('env')
 }
 
 function hasCredentialEnvKey(value: Record<string, unknown>): boolean {

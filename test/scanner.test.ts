@@ -495,17 +495,23 @@ test('structured MCP TOML-ish scanner handles nested inline env tables without c
   const arrayConfig = [
     '[mcp_servers.github]',
     'command = "github-mcp-server"',
-    'env = { SAFE_LIST = ["a", "b"], GITHUB_TOKEN = "redacted" }',
+    'env = { SAFE_LIST = ["a", "b"], GITHUB_TOKEN=*** }',
   ].join('\n')
   const inlineServerConfig = [
-    'mcp_servers.github = { command = "github-mcp-server", env = { GITHUB_TOKEN = "redacted" } }',
+    'mcp_servers.github = { command = "github-mcp-server", env = { GITHUB_TOKEN=*** } }',
+  ].join('\n')
+  const dottedEnvConfig = [
+    'mcp_servers.github.env = { GITHUB_TOKEN=*** }',
+    'mcp_servers = { github.env = { OPENAI_API_KEY=*** } }',
   ].join('\n')
 
   const arrayFindings = scanMcpConfig(arrayConfig)
   const inlineServerFindings = scanMcpConfig(inlineServerConfig)
+  const dottedEnvFindings = scanMcpConfig(dottedEnvConfig)
 
   assert.ok(arrayFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
   assert.ok(inlineServerFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(dottedEnvFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
 })
 
 test('structured MCP TOML-ish scanner returns normally for excessive inline table nesting', () => {

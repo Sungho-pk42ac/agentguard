@@ -26,6 +26,9 @@ outputs:
   conclusion:
     description: pass, review, or block based on AgentGuard findings
     value: ${{ steps.scan.outputs.conclusion }}
+  json-path:
+    description: Path to the JSON AgentGuard findings artifact
+    value: ${{ steps.scan.outputs.json-path }}
 runs:
   using: composite
   steps:
@@ -80,10 +83,11 @@ runs:
           if (findings.some((finding) => finding.severity === 'critical')) console.log('block')
           else if (findings.length > 0) console.log('review')
           else console.log('pass')
-        " "$json_path")
+        " -- "$json_path")
 
         {
           echo "report-path=$report_path"
+          echo "json-path=$json_path"
           echo "conclusion=$conclusion"
         } >> "$GITHUB_OUTPUT"
 

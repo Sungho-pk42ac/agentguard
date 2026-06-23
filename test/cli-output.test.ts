@@ -60,6 +60,25 @@ test('CLI help flags print usage to stdout with a success exit', () => {
   }
 })
 
+test('CLI version flags print the package version to stdout with a success exit', () => {
+  const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }
+
+  for (const versionFlag of ['--version', '-v']) {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', versionFlag],
+      {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      },
+    )
+
+    assert.equal(result.status, 0, `${versionFlag} should exit successfully`)
+    assert.equal(result.stdout, `${packageJson.version}\n`, `${versionFlag} should print the package version`)
+    assert.equal(result.stderr, '', `${versionFlag} should not print to stderr`)
+  }
+})
+
 test('CLI invalid commands still print usage to stderr with an error exit', () => {
   const result = spawnSync(
     process.execPath,

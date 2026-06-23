@@ -15,6 +15,12 @@ interface CliArgs {
   readonly policyPath?: string
 }
 
+function printVersion(): never {
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+  console.log(packageJson.version)
+  process.exit(0)
+}
+
 function usage(exitCode = 2): never {
   const output = `Usage:
   agentguard scan-files [path]
@@ -43,7 +49,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
-    if (arg === '--help' || arg === '-h') {
+    if (arg === '--help' || arg === '-h' || arg === '--version' || arg === '-v') {
       if (cmd || cleanArgs.length > 0) return undefined
       cmd = arg
       continue
@@ -90,7 +96,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
   }
 
   if (!cmd) return undefined
-  if ((cmd === '--help' || cmd === '-h') && cleanArgs.length > 0) return undefined
+  if (['--help', '-h', '--version', '-v'].includes(cmd) && cleanArgs.length > 0) return undefined
   return { cmd, cleanArgs, json, sarif, out, policyPath }
 }
 
@@ -102,6 +108,7 @@ const parsedArgs = parseArgs(process.argv.slice(2))
 if (!parsedArgs) usage()
 const { cmd, cleanArgs, json, sarif, out, policyPath } = parsedArgs
 if (cmd === '--help' || cmd === '-h') usage(0)
+if (cmd === '--version' || cmd === '-v') printVersion()
 
 const stdin = () => readFileSync(0, 'utf8')
 let findings: Finding[] = []

@@ -56,6 +56,8 @@ test('CLI help flags print usage to stdout with a success exit', () => {
 
     assert.equal(result.status, 0, `${helpFlag} should exit successfully`)
     assert.match(result.stdout, /^Usage:/, `${helpFlag} should print usage to stdout`)
+    assert.match(result.stdout, /--policy <path>, --policy=<path>/, `${helpFlag} should document policy equals form`)
+    assert.match(result.stdout, /--out <file>, --out=<file>/, `${helpFlag} should document output equals form`)
     assert.equal(result.stderr, '', `${helpFlag} should not print usage to stderr`)
   }
 })

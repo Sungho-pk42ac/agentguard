@@ -375,6 +375,7 @@ test('emits SARIF for GitHub code scanning', () => {
 
   assert.equal(sarif.version, '2.1.0')
   assert.equal(sarif.runs[0].tool.driver.name, 'AgentGuard')
+  assert.equal(sarif.runs[0].tool.driver.informationUri, 'https://github.com/Sungho-pk42ac/agentguard')
   assert.equal(sarif.runs[0].tool.driver.rules[0].properties['security-severity'], '9.0')
   assert.deepEqual(sarif.runs[0].tool.driver.rules[0].properties.tags, ['security', 'agentguard'])
   assert.equal(sarif.runs[0].tool.driver.rules[0].properties.precision, 'high')

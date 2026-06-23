@@ -46,7 +46,7 @@ type SarifLog = {
       readonly tool: {
         readonly driver: {
           readonly name: 'AgentGuard'
-          readonly informationUri: 'https://github.com/agentguard/agentguard'
+          readonly informationUri: 'https://github.com/Sungho-pk42ac/agentguard'
           readonly rules: readonly SarifReportingDescriptor[]
         }
       }
@@ -90,7 +90,7 @@ export function toSarif(findings: Finding[]): string {
         tool: {
           driver: {
             name: 'AgentGuard',
-            informationUri: 'https://github.com/agentguard/agentguard',
+            informationUri: 'https://github.com/Sungho-pk42ac/agentguard',
             rules: sarifRules(findings),
           },
         },

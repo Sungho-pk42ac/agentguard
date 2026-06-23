@@ -461,6 +461,95 @@ test('structured MCP TOML-ish scanner preserves hash characters inside quoted va
   assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high'))
 })
 
+test('structured MCP TOML-ish scanner flags credential keys in inline env tables', () => {
+  const riskyConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { GITHUB_TOKEN = "redacted", LOG_LEVEL = "info" }',
+  ].join('\n')
+  const safeConfig = [
+    '[mcp_servers.cache]',
+    'command = "cache-mcp-server"',
+    'env = { SAFE_MODE = "true", LOG_LEVEL = "debug" }',
+  ].join('\n')
+
+  const riskyFindings = scanMcpConfig(riskyConfig)
+  const safeFindings = scanMcpConfig(safeConfig)
+
+  assert.ok(riskyFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(!safeFindings.some((f) => f.id === 'mcp-env-token'))
+})
+
+test('structured MCP TOML-ish scanner ignores credential-like text inside inline env values', () => {
+  const config = [
+    '[mcp_servers.database]',
+    'command = "db-mcp-server"',
+    'env = { CONNECTION_STRING = "Host=localhost, Password=redacted", LOG_LEVEL = "info" }',
+  ].join('\n')
+  const findings = scanMcpConfig(config)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-env-token'))
+})
+
+test('structured MCP TOML-ish scanner handles nested inline env tables without comma desync', () => {
+  const arrayConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { SAFE_LIST = ["a", "b"], GITHUB_TOKEN = "redacted" }',
+  ].join('\n')
+  const inlineServerConfig = [
+    'mcp_servers.github = { command = "github-mcp-server", env = { GITHUB_TOKEN = "redacted" } }',
+  ].join('\n')
+  const dottedEnvConfig = [
+    'mcp_servers.github.env = { GITHUB_TOKEN = "redacted" }',
+    'mcp_servers = { github.env = { OPENAI_API_KEY = "redacted" } }',
+  ].join('\n')
+  const dottedEnvLeafConfig = [
+    '[mcp_servers.github]',
+    'env.GITHUB_TOKEN = "redacted"',
+  ].join('\n')
+  const tripleQuotedValueConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { DESCRIPTION = """A "quote", and GITHUB_TOKEN = redacted""", LOG_LEVEL = "info" }',
+  ].join('\n')
+  const tripleQuotedBeforeCredentialConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { DESCRIPTION = """A "quote""", GITHUB_TOKEN = "redacted" }',
+  ].join('\n')
+  const mismatchedBracketBeforeCredentialConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { safe_key = ], GITHUB_TOKEN = "redacted" }',
+  ].join('\n')
+
+  const arrayFindings = scanMcpConfig(arrayConfig)
+  const inlineServerFindings = scanMcpConfig(inlineServerConfig)
+  const dottedEnvFindings = scanMcpConfig(dottedEnvConfig)
+  const dottedEnvLeafFindings = scanMcpConfig(dottedEnvLeafConfig)
+  const tripleQuotedValueFindings = scanMcpConfig(tripleQuotedValueConfig)
+  const tripleQuotedBeforeCredentialFindings = scanMcpConfig(tripleQuotedBeforeCredentialConfig)
+  const mismatchedBracketBeforeCredentialFindings = scanMcpConfig(mismatchedBracketBeforeCredentialConfig)
+
+  assert.ok(arrayFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(inlineServerFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(dottedEnvFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(dottedEnvLeafFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(!tripleQuotedValueFindings.some((f) => f.id === 'mcp-env-token'))
+  assert.ok(tripleQuotedBeforeCredentialFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(mismatchedBracketBeforeCredentialFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+})
+
+test('structured MCP TOML-ish scanner returns normally for excessive inline table nesting', () => {
+  let config = '{ safe = "value" }'
+  for (let depth = 0; depth < 20_000; depth += 1) {
+    config = `{ child = ${config} }`
+  }
+
+  assert.doesNotThrow(() => scanMcpConfig(`mcp_servers.deep = ${config}`))
+})
+
 test('structured MCP scanner flags equals-form broad root arguments', () => {
   const jsonConfig = JSON.stringify({
     mcpServers: {

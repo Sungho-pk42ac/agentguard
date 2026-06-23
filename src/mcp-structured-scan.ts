@@ -126,9 +126,9 @@ function scanTomlishMcpConfig(text: string): StructuredMcpConfigSignals {
       continue
     }
 
-    const assignmentMatch = line.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/)
-    const key = assignmentMatch?.[1]
-    const value = assignmentMatch?.[2]
+    const assignmentMatch = line.match(/^\s*(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|([A-Za-z0-9_.-]+))\s*[:=]\s*(.+)$/)
+    const key = assignmentMatch?.[1] ?? assignmentMatch?.[2] ?? assignmentMatch?.[3]
+    const value = assignmentMatch?.[4]
     if (key === undefined || value === undefined) continue
 
     const normalizedKey = normalizeConfigKey(key)

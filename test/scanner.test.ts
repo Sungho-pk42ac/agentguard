@@ -570,6 +570,99 @@ test('structured MCP scanner flags equals-form broad root arguments', () => {
   assert.ok(tomlishFindings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical'))
 })
 
+test('scanDiff flags structured MCP risks from added config lines only', () => {
+  const diff = [
+    'diff --git a/config.json b/config.json',
+    '--- a/config.json',
+    '+++ b/config.json',
+    '@@ -1,3 +1,9 @@',
+    '-    "args": ["--root", "/"]',
+    '+{',
+    '+  "mcpServers": {',
+    '+    "filesystem": {',
+    '+      "args": ["--root", "/", "--allow-write", "./workspace"]',
+    '+    }',
+    '+  }',
+    '+}',
+  ].join('\n')
+
+  const removedOnlyDiff = [
+    'diff --git a/config.json b/config.json',
+    '--- a/config.json',
+    '+++ b/config.json',
+    '@@ -1,7 +1,1 @@',
+    '-{',
+    '-  "mcpServers": {',
+    '-    "filesystem": {',
+    '-      "args": ["--root", "/", "--allow-write", "./workspace"]',
+    '-    }',
+    '-  }',
+    '-}',
+    '+{}',
+  ].join('\n')
+  const partialJsonDiff = [
+    'diff --git a/config.json b/config.json',
+    '--- a/config.json',
+    '+++ b/config.json',
+    '@@ -7,1 +7,1 @@',
+    '+      "args": ["--root", "/", "--allow-write", "./workspace"]',
+  ].join('\n')
+
+  const multilinePartialJsonDiff = [
+    'diff --git a/config.json b/config.json',
+    '--- a/config.json',
+    '+++ b/config.json',
+    '@@ -7,1 +7,6 @@',
+    '+      "args": [',
+    '+        "--root",',
+    '+        "/",',
+    '+        "--allow-write",',
+    '+        "./workspace"',
+    '+      ]',
+  ].join('\n')
+
+  const safeCrossArrayDiff = [
+    'diff --git a/config.json b/config.json',
+    '--- a/config.json',
+    '+++ b/config.json',
+    '@@ -7,1 +7,8 @@',
+    '+      "args": [',
+    '+        "./workspace"',
+    '+      ],',
+    '+      "notes": [',
+    '+        "/",',
+    '+        "--allow-write"',
+    '+      ]',
+  ].join('\n')
+
+  const windowsNestedPathDiff = [
+    'diff --git a/config.json b/config.json',
+    '--- a/config.json',
+    '+++ b/config.json',
+    '@@ -7,1 +7,3 @@',
+    '+      "args": ["--root", "C:\\\\Users\\\\project"]',
+  ].join('\n')
+
+  const findings = scanDiff(diff)
+  const removedOnlyFindings = scanDiff(removedOnlyDiff)
+  const partialJsonFindings = scanDiff(partialJsonDiff)
+  const multilinePartialJsonFindings = scanDiff(multilinePartialJsonDiff)
+  const safeCrossArrayFindings = scanDiff(safeCrossArrayDiff)
+  const windowsNestedPathFindings = scanDiff(windowsNestedPathDiff)
+
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical' && f.file === 'diff'))
+  assert.ok(findings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high' && f.file === 'diff'))
+  assert.ok(partialJsonFindings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical' && f.file === 'diff'))
+  assert.ok(partialJsonFindings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high' && f.file === 'diff'))
+  assert.ok(multilinePartialJsonFindings.some((f) => f.id === 'mcp-filesystem-wide-root' && f.severity === 'critical' && f.file === 'diff'))
+  assert.ok(multilinePartialJsonFindings.some((f) => f.id === 'mcp-filesystem-writable-path' && f.severity === 'high' && f.file === 'diff'))
+  assert.ok(!safeCrossArrayFindings.some((f) => f.id === 'mcp-filesystem-wide-root'))
+  assert.ok(!safeCrossArrayFindings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+  assert.ok(!windowsNestedPathFindings.some((f) => f.id === 'mcp-filesystem-wide-root'))
+  assert.ok(!removedOnlyFindings.some((f) => f.id === 'mcp-filesystem-wide-root'))
+  assert.ok(!removedOnlyFindings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
 test('emits SARIF for GitHub code scanning', () => {
   const findings = scanDiff('+ const token = "ghp_abcdefghijklmnopqrstuvwxyz"')
   const sarif = JSON.parse(toSarif(findings))

@@ -195,7 +195,7 @@ function tomlishInlineTableEntries(value: string): readonly TomlishInlineTableEn
   let valueToken = ''
   let currentKey = ''
   let readingKey = true
-  let quote: '"' | "'" | undefined
+  let quote: '"' | "'" | '"""' | "'''" | undefined
   let escaped = false
   let braceDepth = 0
   let bracketDepth = 0
@@ -208,6 +208,19 @@ function tomlishInlineTableEntries(value: string): readonly TomlishInlineTableEn
 
   for (let index = 0; index < inner.length; index += 1) {
     const char = inner[index]
+    if (quote === '"""' || quote === "'''") {
+      const tripleQuote = quote
+      if (inner.startsWith(tripleQuote, index)) {
+        if (readingKey) keyToken += tripleQuote
+        else valueToken += tripleQuote
+        index += 2
+        quote = undefined
+        continue
+      }
+      if (readingKey) keyToken += char
+      else valueToken += char
+      continue
+    }
     if (escaped) {
       escaped = false
       if (readingKey) keyToken += char
@@ -218,6 +231,14 @@ function tomlishInlineTableEntries(value: string): readonly TomlishInlineTableEn
       escaped = true
       if (readingKey) keyToken += char
       else valueToken += char
+      continue
+    }
+    if (quote === undefined && (inner.startsWith('"""', index) || inner.startsWith("'''", index))) {
+      const tripleQuote = inner.slice(index, index + 3) as '"""' | "'''"
+      quote = tripleQuote
+      if (readingKey) keyToken += tripleQuote
+      else valueToken += tripleQuote
+      index += 2
       continue
     }
     if ((char === '"' || char === "'") && (quote === undefined || quote === char)) {
@@ -233,9 +254,9 @@ function tomlishInlineTableEntries(value: string): readonly TomlishInlineTableEn
     }
     if (!readingKey) {
       if (char === '{') braceDepth += 1
-      else if (char === '}') braceDepth -= 1
+      else if (char === '}') braceDepth = Math.max(0, braceDepth - 1)
       else if (char === '[') bracketDepth += 1
-      else if (char === ']') bracketDepth -= 1
+      else if (char === ']') bracketDepth = Math.max(0, bracketDepth - 1)
     }
     if (readingKey && char === '=') {
       currentKey = unquoteTomlishInlineKey(keyToken.trim())

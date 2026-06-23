@@ -513,18 +513,32 @@ test('structured MCP TOML-ish scanner handles nested inline env tables without c
     'command = "github-mcp-server"',
     'env = { DESCRIPTION = """A "quote", and GITHUB_TOKEN = redacted""", LOG_LEVEL = "info" }',
   ].join('\n')
+  const tripleQuotedBeforeCredentialConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { DESCRIPTION = """A "quote""", GITHUB_TOKEN = "redacted" }',
+  ].join('\n')
+  const mismatchedBracketBeforeCredentialConfig = [
+    '[mcp_servers.github]',
+    'command = "github-mcp-server"',
+    'env = { safe_key = ], GITHUB_TOKEN = "redacted" }',
+  ].join('\n')
 
   const arrayFindings = scanMcpConfig(arrayConfig)
   const inlineServerFindings = scanMcpConfig(inlineServerConfig)
   const dottedEnvFindings = scanMcpConfig(dottedEnvConfig)
   const dottedEnvLeafFindings = scanMcpConfig(dottedEnvLeafConfig)
   const tripleQuotedValueFindings = scanMcpConfig(tripleQuotedValueConfig)
+  const tripleQuotedBeforeCredentialFindings = scanMcpConfig(tripleQuotedBeforeCredentialConfig)
+  const mismatchedBracketBeforeCredentialFindings = scanMcpConfig(mismatchedBracketBeforeCredentialConfig)
 
   assert.ok(arrayFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
   assert.ok(inlineServerFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
   assert.ok(dottedEnvFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
   assert.ok(dottedEnvLeafFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
   assert.ok(!tripleQuotedValueFindings.some((f) => f.id === 'mcp-env-token'))
+  assert.ok(tripleQuotedBeforeCredentialFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
+  assert.ok(mismatchedBracketBeforeCredentialFindings.some((f) => f.id === 'mcp-env-token' && f.severity === 'high'))
 })
 
 test('structured MCP TOML-ish scanner returns normally for excessive inline table nesting', () => {

@@ -201,7 +201,6 @@ AgentGuard is maintained through a small-slice agentic workflow: one issue, one 
 
 ## Roadmap
 
-- GitHub Action PR comment
 - Codex/Hermes transcript adapters
 - MCP permission graph
 - policy-as-code (`agent-policy.yaml`)

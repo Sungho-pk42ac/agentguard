@@ -113,3 +113,29 @@ test('CLI invalid commands still print usage to stderr with an error exit', () =
   assert.equal(result.stdout, '')
   assert.match(result.stderr, /^Usage:/)
 })
+
+test('CLI rejects unexpected extra positional arguments', () => {
+  const cases: Array<{ command: string; args: string[]; input?: string }> = [
+    { command: 'scan-files', args: ['.', 'extra-path'] },
+    { command: 'scan-diff', args: ['unexpected.patch'], input: '' },
+    { command: 'scan-log', args: ['unexpected.log'], input: 'agent completed without sensitive output\n' },
+    { command: 'scan-mcp', args: ['unexpected.toml'], input: '[mcp_servers.github]\ncommand = "github"\n' },
+    { command: 'report', args: ['unexpected.txt'], input: 'agent completed without sensitive output\n' },
+  ]
+
+  for (const testCase of cases) {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', testCase.command, ...testCase.args],
+      {
+        cwd: process.cwd(),
+        input: testCase.input,
+        encoding: 'utf8',
+      },
+    )
+
+    assert.equal(result.status, 2, `${testCase.command} should reject extra positional args`)
+    assert.equal(result.stdout, '')
+    assert.match(result.stderr, /^Usage:/, `${testCase.command} should print usage to stderr`)
+  }
+})

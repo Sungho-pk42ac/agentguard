@@ -109,6 +109,10 @@ if (!parsedArgs) usage()
 const { cmd, cleanArgs, json, sarif, out, policyPath } = parsedArgs
 if (cmd === '--help' || cmd === '-h') usage(0)
 if (cmd === '--version' || cmd === '-v') printVersion()
+if (json && sarif) {
+  console.error('--json and --sarif cannot be combined')
+  process.exit(2)
+}
 
 const stdin = () => readFileSync(0, 'utf8')
 let findings: Finding[] = []

@@ -81,6 +81,22 @@ test('CLI version flags print the package version to stdout with a success exit'
   }
 })
 
+test('CLI rejects conflicting JSON and SARIF output flags', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-log', '--json', '--sarif'],
+    {
+      cwd: process.cwd(),
+      input: 'agent completed without sensitive output\n',
+      encoding: 'utf8',
+    },
+  )
+
+  assert.equal(result.status, 2)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /--json and --sarif cannot be combined/)
+})
+
 test('CLI invalid commands still print usage to stderr with an error exit', () => {
   const result = spawnSync(
     process.execPath,

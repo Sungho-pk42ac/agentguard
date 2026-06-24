@@ -122,14 +122,47 @@ export function scanFiles(root: string, policy: Policy = DEFAULT_POLICY): Findin
 }
 
 export function scanDiff(diff: string, policy: Policy = DEFAULT_POLICY): Finding[] {
-  const added = diff
-    .split('\n')
-    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-    .map((line) => line.slice(1))
-    .join('\n')
+  const chunks = addedDiffChunks(diff)
+  const added = chunks.join('\n')
   const findings = scanText(added, 'diff', policy)
-  findings.push(...structuredMcpRiskFindings(added, 'diff'))
+  for (const chunk of chunks) {
+    findings.push(...structuredMcpRiskFindings(chunk, 'diff'))
+  }
   return findings
+}
+
+function addedDiffChunks(diff: string): string[] {
+  // Structured MCP parsing is context-sensitive: do not let an `args` key from one
+  // file or hunk combine with root/write tokens from another unrelated diff chunk.
+  // This intentionally favors fewer false positives over reconstructing configs
+  // across distant hunks.
+  const chunks: string[] = []
+  let current: string[] = []
+  const lines = diff.split('\n')
+  let inHunk = !lines.some((line) => line.startsWith('diff --git ') || line.startsWith('@@ '))
+
+  function flush(): void {
+    if (current.length === 0) return
+    chunks.push(current.join('\n'))
+    current = []
+  }
+
+  for (const line of lines) {
+    if (line.startsWith('diff --git ')) {
+      flush()
+      inHunk = false
+      continue
+    }
+    if (line.startsWith('@@ ')) {
+      flush()
+      inHunk = true
+      continue
+    }
+    if (inHunk && line.startsWith('+')) current.push(line.slice(1).replace(/\r$/, ''))
+  }
+
+  flush()
+  return chunks
 }
 
 export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Finding[] {

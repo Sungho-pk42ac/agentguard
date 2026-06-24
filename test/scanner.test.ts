@@ -723,6 +723,120 @@ test('scanDiff flags structured MCP risks from added config lines only', () => {
   assert.ok(!removedOnlyFindings.some((f) => f.id === 'mcp-filesystem-writable-path'))
 })
 
+test('scanDiff does not combine structured MCP risks across unrelated files', () => {
+  const diff = [
+    'diff --git a/config-a.json b/config-a.json',
+    '--- a/config-a.json',
+    '+++ b/config-a.json',
+    '@@ -1,1 +1,1 @@',
+    '+      "args": [',
+    'diff --git a/config-b.json b/config-b.json',
+    '--- a/config-b.json',
+    '+++ b/config-b.json',
+    '@@ -1,1 +1,1 @@',
+    '+        "/", "--allow-write", "./workspace"',
+  ].join('\n')
+
+  const findings = scanDiff(diff)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-wide-root'))
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
+test('scanDiff does not combine structured MCP risks across unrelated hunks in one file', () => {
+  const diff = [
+    'diff --git a/config.json b/config.json',
+    '--- a/config.json',
+    '+++ b/config.json',
+    '@@ -1,1 +1,1 @@',
+    '+      "args": [',
+    '@@ -20,1 +20,1 @@',
+    '+        "/", "--allow-write", "./workspace"',
+  ].join('\n')
+
+  const findings = scanDiff(diff)
+
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-wide-root'))
+  assert.ok(!findings.some((f) => f.id === 'mcp-filesystem-writable-path'))
+})
+
+test('scanDiff reports repeated structured MCP findings across chunks', () => {
+  const diff = [
+    'diff --git a/config-a.json b/config-a.json',
+    '--- a/config-a.json',
+    '+++ b/config-a.json',
+    '@@ -1,1 +1,1 @@',
+    '+      "args": ["--root", "/", "--allow-write", "./workspace"]',
+    'diff --git a/config-b.json b/config-b.json',
+    '--- a/config-b.json',
+    '+++ b/config-b.json',
+    '@@ -1,1 +1,1 @@',
+    '+      "args": ["--root", "/", "--allow-write", "./other"]',
+  ].join('\n')
+
+  const findingIds = scanDiff(diff).map((finding) => finding.id)
+
+  assert.equal(findingIds.filter((id) => id === 'mcp-filesystem-wide-root').length, 2)
+  assert.equal(findingIds.filter((id) => id === 'mcp-filesystem-writable-path').length, 2)
+})
+
+test('scanDiff normalizes CRLF added lines for structured MCP scanning', () => {
+  const diff = [
+    'diff --git a/config.json b/config.json\r',
+    '--- a/config.json\r',
+    '+++ b/config.json\r',
+    '@@ -1,1 +1,1 @@\r',
+    '+      "args": ["--root", "/", "--allow-write", "./workspace"]\r',
+  ].join('\n')
+
+  const findingIds = scanDiff(diff).map((finding) => finding.id)
+
+  assert.ok(findingIds.includes('mcp-filesystem-wide-root'))
+  assert.ok(findingIds.includes('mcp-filesystem-writable-path'))
+})
+
+test('scanDiff scans added content lines that begin with plus operators', () => {
+  const diff = [
+    'diff --git a/src/demo.ts b/src/demo.ts',
+    '--- a/src/demo.ts',
+    '+++ b/src/demo.ts',
+    '@@ -1,1 +1,2 @@',
+    '+++const command = "rm -rf /"',
+    '+++ rm -rf /',
+  ].join('\n')
+
+  const findings = scanDiff(diff)
+  const deniedCommandCount = findings.filter((finding) => finding.id === 'denied-command').length
+
+  assert.equal(deniedCommandCount, 1)
+})
+
+test('scanDiff ignores plus-prefixed metadata before structured diff hunks', () => {
+  const diff = [
+    '+rm -rf /',
+    'diff --git a/src/demo.ts b/src/demo.ts',
+    '--- a/src/demo.ts',
+    '+++ b/src/demo.ts',
+    '@@ -1,1 +1,1 @@',
+    '+console.log("safe")',
+  ].join('\n')
+
+  const findingIds = scanDiff(diff).map((finding) => finding.id)
+
+  assert.ok(!findingIds.includes('denied-command'))
+})
+
+test('scanDiff treats header-like text inside raw added lines as content', () => {
+  const diff = [
+    '+const marker = "diff --git a/foo b/foo"',
+    '+const token = "ghp_abcdefghijklmnopqrstuvwxyz"',
+  ].join('\n')
+
+  const findingIds = scanDiff(diff).map((finding) => finding.id)
+
+  assert.ok(findingIds.includes('github-token'))
+})
+
 test('emits SARIF for GitHub code scanning', () => {
   const findings = scanDiff('+ const token = "ghp_abcdefghijklmnopqrstuvwxyz"')
   const sarif = JSON.parse(toSarif(findings))

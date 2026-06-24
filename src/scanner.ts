@@ -255,5 +255,6 @@ function normalizePath(path: string): string {
 function globToRegExp(pattern: string): RegExp {
   const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const globbed = escaped.replace(/\\\*\\\*/g, '.*').replace(/\\\*/g, '[^/]*')
-  return new RegExp(`(^|/)${globbed}$`)
+  const rootAwareGlobbed = globbed.replace(/^\.\*\//, '(?:.*/)?')
+  return new RegExp(`(^|/)${rootAwareGlobbed}$`)
 }

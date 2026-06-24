@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { scanDiff, scanFiles, scanMcpConfig, scanText } from '../src/scanner.js'
 import { riskScore, toSarif } from '../src/report.js'
+import type { Policy } from '../src/rules.js'
 
 test('detects secrets in text and redacts evidence', () => {
   const findings = scanText('OPENAI_API_KEY="sk-abcdefghijklmnopqrstuvwxyz"')
@@ -37,6 +38,65 @@ test('scanFiles skips self-referential symlinks without crashing', () => {
   symlinkSync('self', join(workspace, 'self'))
 
   assert.doesNotThrow(() => scanFiles(workspace))
+})
+
+test('scanFiles applies default **/.ssh/** deny-read glob to root-level .ssh files', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-root-ssh-deny-'))
+  const workspace = join(dir, 'workspace')
+  const sshDir = join(workspace, '.ssh')
+  mkdirSync(sshDir, { recursive: true })
+  writeFileSync(join(sshDir, 'config'), 'Host github.com\n  User git\n')
+
+  const findings = scanFiles(workspace)
+
+  assert.ok(
+    findings.some(
+      (finding) =>
+        finding.id === 'denied-read-path' &&
+        finding.file === '.ssh/config' &&
+        finding.evidence === '.ssh/config',
+    ),
+  )
+})
+
+test('scanFiles applies default **/id_rsa deny-read glob to root-level key files', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-root-id-rsa-deny-'))
+  const workspace = join(dir, 'workspace')
+  mkdirSync(workspace, { recursive: true })
+  writeFileSync(join(workspace, 'id_rsa'), 'not a real private key')
+
+  const findings = scanFiles(workspace)
+
+  assert.ok(
+    findings.some(
+      (finding) =>
+        finding.id === 'denied-read-path' && finding.file === 'id_rsa' && finding.evidence === 'id_rsa',
+    ),
+  )
+})
+
+test('scanFiles treats **/ deny-read glob prefixes as matching root-level and nested paths', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-double-star-deny-'))
+  const workspace = join(dir, 'workspace')
+  const rootPrivate = join(workspace, 'private')
+  const nestedPrivate = join(workspace, 'nested', 'private')
+  mkdirSync(rootPrivate, { recursive: true })
+  mkdirSync(nestedPrivate, { recursive: true })
+  writeFileSync(join(rootPrivate, 'session.txt'), 'root session placeholder')
+  writeFileSync(join(nestedPrivate, 'session.txt'), 'nested session placeholder')
+  const policy: Policy = {
+    denyRead: ['**/private/**'],
+    denyCommands: [],
+    requireApproval: [],
+    mcp: { denyServers: [], denyTools: [], requireApprovalTools: [] },
+  }
+
+  const deniedFiles = scanFiles(workspace, policy)
+    .filter((finding) => finding.id === 'denied-read-path')
+    .map((finding) => finding.file)
+    .sort()
+
+  assert.deepEqual(deniedFiles, ['nested/private/session.txt', 'private/session.txt'])
 })
 
 test('detects full access MCP config', () => {

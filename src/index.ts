@@ -106,11 +106,18 @@ function isOptionValue(value: string | undefined): value is string {
   return value !== undefined && !value.startsWith('--')
 }
 
+function hasValidPositionalArgs(cmd: string, cleanArgs: readonly string[]): boolean {
+  if (cmd === 'scan-files') return cleanArgs.length <= 1
+  if (cmd === 'scan-diff' || cmd === 'scan-log' || cmd === 'scan-mcp' || cmd === 'report') return cleanArgs.length === 0
+  return true
+}
+
 const parsedArgs = parseArgs(process.argv.slice(2))
 if (!parsedArgs) usage()
 const { cmd, cleanArgs, json, sarif, out, policyPath } = parsedArgs
 if (cmd === '--help' || cmd === '-h') usage(0)
 if (cmd === '--version' || cmd === '-v') printVersion()
+if (!hasValidPositionalArgs(cmd, cleanArgs)) usage()
 if (json && sarif) {
   console.error('--json and --sarif cannot be combined')
   process.exit(2)

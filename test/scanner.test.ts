@@ -13,6 +13,48 @@ test('detects secrets in text and redacts evidence', () => {
   assert.match(findings[0]?.evidence ?? '', /sk-a…/)
 })
 
+test('detects Google API keys in text and redacts evidence', () => {
+  const key = `AIzaSy${'A'.repeat(29)}wxyz`
+  const findings = scanText(`GOOGLE_API_KEY=${key}`)
+
+  const finding = findings.find((candidate) => candidate.id === 'google-api-key')
+  assert.ok(finding, 'expected a google-api-key finding')
+  assert.equal(finding.severity, 'critical')
+  assert.equal(finding.category, 'secret')
+  assert.notEqual(finding.evidence, key)
+  assert.match(finding.evidence, /^AIza…wxyz$/)
+})
+
+test('detects 40-character Google API keys in text and redacts evidence', () => {
+  const key = `AIzaSy${'A'.repeat(30)}wxyz`
+  const findings = scanText(`GOOGLE_API_KEY=${key}`)
+
+  const finding = findings.find((candidate) => candidate.id === 'google-api-key')
+  assert.ok(finding, 'expected a google-api-key finding')
+  assert.equal(finding.severity, 'critical')
+  assert.equal(finding.category, 'secret')
+  assert.notEqual(finding.evidence, key)
+  assert.match(finding.evidence, /^AIza…wxyz$/)
+})
+
+test('does not flag short AIzaSy-prefixed text as a Google API key', () => {
+  const findings = scanText(`debug marker: AIzaSy${'A'.repeat(32)}`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'google-api-key'))
+})
+
+test('does not partially match overlong Google API key lookalikes', () => {
+  const findings = scanText(`debug marker: AIzaSy${'A'.repeat(35)}`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'google-api-key'))
+})
+
+test('does not flag Google API key lookalikes embedded in longer tokens', () => {
+  const findings = scanText(`debug marker: prefixAIzaSy${'A'.repeat(29)}wxyz`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'google-api-key'))
+})
+
 test('scanDiff only checks added lines', () => {
   const findings = scanDiff('- sk-oldoldoldoldoldoldoldold\n+ sk-newnewnewnewnewnewnewnew')
   assert.equal(findings.length, 1)

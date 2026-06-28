@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -132,6 +132,30 @@ test('CLI invalid commands still print usage to stderr with an error exit', () =
   assert.equal(result.status, 2)
   assert.equal(result.stdout, '')
   assert.match(result.stderr, /^Usage:/)
+})
+
+test('CLI scan-files reports missing workspace paths without a raw stack trace', () => {
+  const workspace = mkdtempSync(join(tmpdir(), 'agentguard-missing-workspace-parent-'))
+  try {
+    const missingPath = join(workspace, 'does-not-exist')
+
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', 'scan-files', missingPath],
+      {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      },
+    )
+
+    assert.equal(result.status, 2)
+    assert.equal(result.stdout, '')
+    assert.match(result.stderr, /^Could not scan files:/)
+    assert.doesNotMatch(result.stderr, /at .*src\/index\.ts/)
+    assert.doesNotMatch(result.stderr, /ENOENT: no such file or directory, scandir/)
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
 })
 
 test('CLI rejects unexpected extra positional arguments', () => {

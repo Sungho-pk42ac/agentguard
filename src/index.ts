@@ -138,13 +138,31 @@ const policy = (() => {
     throw error
   }
 })()
-switch (cmd) {
-  case 'scan-files': findings = scanFiles(cleanArgs[0] ?? process.cwd(), policy); break
-  case 'scan-diff': findings = scanDiff(stdin(), policy); break
-  case 'scan-log': findings = scanText(stdin(), 'agent-log', policy); break
-  case 'scan-mcp': findings = scanMcpConfig(stdin(), policy); break
-  case 'report': findings = scanText(stdin(), 'stdin', policy); break
-  default: usage()
+try {
+  switch (cmd) {
+    case 'scan-files': findings = scanFiles(cleanArgs[0] ?? process.cwd(), policy); break
+    case 'scan-diff': findings = scanDiff(stdin(), policy); break
+    case 'scan-log': findings = scanText(stdin(), 'agent-log', policy); break
+    case 'scan-mcp': findings = scanMcpConfig(stdin(), policy); break
+    case 'report': findings = scanText(stdin(), 'stdin', policy); break
+    default: usage()
+  }
+} catch (error: unknown) {
+  if (cmd === 'scan-files') {
+    console.error(`Could not scan files: ${fileScanErrorMessage(error)}`)
+    process.exit(2)
+  }
+  throw error
+}
+
+function fileScanErrorMessage(error: unknown): string {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = String((error as { code?: unknown }).code)
+    if (code === 'ENOENT') return 'workspace path was not found'
+    if (code === 'ENOTDIR') return 'workspace path is not a directory'
+    if (code === 'EACCES' || code === 'EPERM') return 'workspace path is not readable'
+  }
+  return 'unable to read workspace path'
 }
 
 const output = sarif ? toSarif(findings) : json ? JSON.stringify(findings, null, 2) : toMarkdown(findings)

@@ -203,5 +203,4 @@ AgentGuard is maintained through a small-slice agentic workflow: one issue, one 
 
 - Codex/Hermes transcript adapters
 - MCP permission graph
-- policy-as-code (`agent-policy.yaml`)
 - dashboard for agent audit trails

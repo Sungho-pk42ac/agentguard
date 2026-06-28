@@ -49,10 +49,11 @@ test('README documents npm install, package smoke, and provenance release checkl
   assert.match(readme, /Release checklist/)
 })
 
-test('README roadmap does not list implemented PR comment workflow as future work', () => {
+test('README roadmap does not list implemented work as future roadmap items', () => {
   const readme = readFileSync('README.md', 'utf8')
   const roadmap = readme.split('## Roadmap')[1]
 
   assert.notEqual(roadmap, undefined, 'README should keep a Roadmap section')
   assert.doesNotMatch(roadmap, /^- GitHub Action PR comment$/m)
+  assert.doesNotMatch(roadmap, /^- policy-as-code \(`agent-policy\.yaml`\)$/m)
 })

@@ -13,6 +13,44 @@ test('detects secrets in text and redacts evidence', () => {
   assert.match(findings[0]?.evidence ?? '', /sk-a…/)
 })
 
+test('detects standalone OpenAI-style API keys in text and redacts evidence', () => {
+  const key = `sk-${'A'.repeat(44)}wxyz`
+  const findings = scanText(`OPENAI_API_KEY=${key}`)
+
+  const finding = findings.find((candidate) => candidate.id === 'openai-key')
+  assert.ok(finding, 'expected an openai-key finding')
+  assert.equal(finding.severity, 'critical')
+  assert.equal(finding.category, 'secret')
+  assert.notEqual(finding.evidence, key)
+  assert.match(finding.evidence, /^sk-A…wxyz$/)
+})
+
+test('detects project-scoped OpenAI-style API keys in text and redacts evidence', () => {
+  const key = `sk-proj-${'A'.repeat(96)}wxyz`
+  const findings = scanText(`OPENAI_API_KEY=${key}`)
+
+  const finding = findings.find((candidate) => candidate.id === 'openai-key')
+  assert.ok(finding, 'expected an openai-key finding')
+  assert.equal(finding.severity, 'critical')
+  assert.equal(finding.category, 'secret')
+  assert.notEqual(finding.evidence, key)
+  assert.match(finding.evidence, /^sk-p…wxyz$/)
+})
+
+test('does not flag OpenAI-style key lookalikes embedded in longer tokens', () => {
+  const key = `sk-${'A'.repeat(44)}wxyz`
+  const findings = scanText(`debug marker: prefix${key}`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'openai-key'))
+})
+
+test('detects OpenAI-style API keys followed by non-token delimiters', () => {
+  const key = `sk-${'A'.repeat(44)}wxyz`
+  const findings = scanText(`OPENAI_API_KEY=${key}; next=value`)
+
+  assert.ok(findings.some((finding) => finding.id === 'openai-key'))
+})
+
 test('detects Google API keys in text and redacts evidence', () => {
   const key = `AIzaSy${'A'.repeat(29)}wxyz`
   const findings = scanText(`GOOGLE_API_KEY=${key}`)

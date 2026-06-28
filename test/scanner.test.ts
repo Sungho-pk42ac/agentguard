@@ -55,6 +55,63 @@ test('does not flag Google API key lookalikes embedded in longer tokens', () => 
   assert.ok(!findings.some((finding) => finding.id === 'google-api-key'))
 })
 
+test('detects Anthropic API keys in text and redacts evidence', () => {
+  const key = `sk-ant-api03-${'A'.repeat(91)}wxyz`
+  const findings = scanText(`ANTHROPIC_API_KEY=${key}`)
+
+  const finding = findings.find((candidate) => candidate.id === 'anthropic-api-key')
+  assert.ok(finding, 'expected an anthropic-api-key finding')
+  assert.equal(finding.severity, 'critical')
+  assert.equal(finding.category, 'secret')
+  assert.notEqual(finding.evidence, key)
+  assert.match(finding.evidence, /^sk-a…wxyz$/)
+})
+
+test('does not report Anthropic API keys as OpenAI-style keys', () => {
+  const key = `sk-ant-api03-${'A'.repeat(91)}wxyz`
+  const findings = scanText(`ANTHROPIC_API_KEY=${key}`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'openai-key'))
+})
+
+test('detects future Anthropic API key versions without falling through scanners', () => {
+  const key = `sk-ant-api100-${'A'.repeat(91)}wxyz`
+  const findings = scanText(`ANTHROPIC_API_KEY=${key}`)
+
+  assert.ok(findings.some((finding) => finding.id === 'anthropic-api-key'))
+  assert.ok(!findings.some((finding) => finding.id === 'openai-key'))
+})
+
+test('detects Anthropic sk-ant fallback tokens without falling through scanners', () => {
+  const key = `sk-ant-v1-${'A'.repeat(70)}`
+  const findings = scanText(`ANTHROPIC_API_KEY=${key}`)
+
+  assert.ok(findings.some((finding) => finding.id === 'anthropic-api-key'))
+  assert.ok(!findings.some((finding) => finding.id === 'openai-key'))
+})
+
+test('does not flag short Anthropic API key lookalikes', () => {
+  const findings = scanText(`debug marker: sk-ant-${'A'.repeat(19)}`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'anthropic-api-key'))
+})
+
+test('detects long Anthropic API key lookalikes without partial leakage', () => {
+  const key = `sk-ant-${'A'.repeat(151)}wxyz`
+  const findings = scanText(`debug marker: ${key}`)
+  const finding = findings.find((candidate) => candidate.id === 'anthropic-api-key')
+
+  assert.ok(finding, 'expected long sk-ant token to be detected instead of silently bypassing')
+  assert.notEqual(finding.evidence, key)
+  assert.match(finding.evidence, /^sk-a…wxyz$/)
+})
+
+test('does not flag Anthropic API key lookalikes embedded in longer tokens', () => {
+  const findings = scanText(`debug marker: prefixsk-ant-api03-${'A'.repeat(91)}wxyz`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'anthropic-api-key'))
+})
+
 test('scanDiff only checks added lines', () => {
   const findings = scanDiff('- sk-oldoldoldoldoldoldoldold\n+ sk-newnewnewnewnewnewnewnew')
   assert.equal(findings.length, 1)

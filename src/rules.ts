@@ -36,7 +36,8 @@ export const DEFAULT_POLICY: Policy = {
 }
 
 export const SECRET_PATTERNS: Array<{ id: string; title: string; re: RegExp }> = [
-  { id: 'openai-key', title: 'OpenAI-style API key', re: /sk-[A-Za-z0-9_\-]{20,}/g },
+  { id: 'openai-key', title: 'OpenAI-style API key', re: /sk-(?!ant-)[A-Za-z0-9_\-]{20,}/g },
+  { id: 'anthropic-api-key', title: 'Anthropic API key', re: /(?<![0-9A-Za-z_\-])sk-ant-[0-9A-Za-z_\-]{20,}(?![0-9A-Za-z_\-])/g },
   { id: 'github-token', title: 'GitHub token', re: /gh[pousr]_[A-Za-z0-9_]{20,}/g },
   { id: 'google-api-key', title: 'Google API key', re: /(?<![0-9A-Za-z_\-])AIzaSy[0-9A-Za-z_\-]{33,34}(?![0-9A-Za-z_\-])/g },
   { id: 'aws-access-key', title: 'AWS access key id', re: /AKIA[0-9A-Z]{16}/g },

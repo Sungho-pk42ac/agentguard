@@ -67,6 +67,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
     if (arg === '--out') {
       const value = args[index + 1]
       if (!isOptionValue(value)) return undefined
+      if (out !== undefined) return undefined
       out = value
       index += 1
       continue
@@ -74,6 +75,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
     if (arg.startsWith('--out=')) {
       const value = arg.slice('--out='.length)
       if (value.length === 0) return undefined
+      if (out !== undefined) return undefined
       out = value
       continue
     }

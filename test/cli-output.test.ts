@@ -99,6 +99,26 @@ test('CLI rejects conflicting JSON and SARIF output flags', () => {
   assert.match(result.stderr, /--json and --sarif cannot be combined/)
 })
 
+test('CLI rejects duplicate output file flags instead of silently choosing one', () => {
+  const workspace = mkdtempSync(join(tmpdir(), 'agentguard-cli-duplicate-out-'))
+  const firstReportPath = join(workspace, 'first.md')
+  const secondReportPath = join(workspace, 'second.md')
+
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-log', '--out', firstReportPath, `--out=${secondReportPath}`],
+    {
+      cwd: process.cwd(),
+      input: 'agent completed without sensitive output\n',
+      encoding: 'utf8',
+    },
+  )
+
+  assert.equal(result.status, 2)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /^Usage:/)
+})
+
 test('CLI invalid commands still print usage to stderr with an error exit', () => {
   const result = spawnSync(
     process.execPath,

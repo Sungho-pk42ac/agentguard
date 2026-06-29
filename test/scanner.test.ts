@@ -51,6 +51,44 @@ test('detects OpenAI-style API keys followed by non-token delimiters', () => {
   assert.ok(findings.some((finding) => finding.id === 'openai-key'))
 })
 
+test('detects standalone GitHub tokens for supported prefixes and redacts evidence', () => {
+  for (const prefix of ['ghp', 'gho', 'ghu', 'ghs', 'ghr']) {
+    const key = `${prefix}_${'A'.repeat(36)}wxyz`
+    const findings = scanText(`GITHUB_TOKEN=${key}`)
+    const finding = findings.find((candidate) => candidate.id === 'github-token')
+
+    assert.ok(finding, `expected a github-token finding for ${prefix}`)
+    assert.equal(finding.severity, 'critical')
+    assert.equal(finding.category, 'secret')
+    assert.notEqual(finding.evidence, key)
+    assert.match(finding.evidence, new RegExp(`^${prefix}_…wxyz$`))
+  }
+})
+
+test('does not flag GitHub token lookalikes embedded in longer tokens', () => {
+  const key = `ghp_${'A'.repeat(36)}wxyz`
+  const overlong = `ghp_${'A'.repeat(41)}`
+  const snakeCase = 'ghp_get_user_profile_information_by_id'
+  const findings = scanText(`debug markers: prefix${key} ${key}suffix ${overlong} ${snakeCase}`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'github-token'))
+})
+
+test('detects GitHub tokens separated by hyphen delimiters', () => {
+  const key = `ghp_${'A'.repeat(36)}wxyz`
+  const findings = scanText(`debug markers: pre-${key} ${key}-post`)
+  const githubFindings = findings.filter((finding) => finding.id === 'github-token')
+
+  assert.equal(githubFindings.length, 2)
+})
+
+test('detects GitHub tokens followed by non-token delimiters', () => {
+  const key = `ghp_${'A'.repeat(36)}wxyz`
+  const findings = scanText(`GITHUB_TOKEN=${key}; next=value`)
+
+  assert.ok(findings.some((finding) => finding.id === 'github-token'))
+})
+
 test('detects Google API keys in text and redacts evidence', () => {
   const key = `AIzaSy${'A'.repeat(29)}wxyz`
   const findings = scanText(`GOOGLE_API_KEY=${key}`)

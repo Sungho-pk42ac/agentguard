@@ -81,6 +81,7 @@ Verdicts:
 - [Policy files](docs/policy.md)
 - [Rule surfaces](docs/rules.md)
 - [Examples](docs/examples.md)
+- [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)
 

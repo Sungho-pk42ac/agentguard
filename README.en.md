@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-178%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-179%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -13,7 +13,7 @@
 AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe agent shell behavior, and risky PR diffs before they reach production.
 
 <p align="center">
-  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard terminal demo showing a BLOCK verdict for a risky MCP configuration" width="920" />
+  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard Korean-first terminal demo showing a BLOCK verdict for a risky MCP configuration" width="920" />
 </p>
 
 ## Install

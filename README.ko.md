@@ -1,0 +1,102 @@
+# AgentGuard
+
+[English](README.md)
+
+**Codex, Claude Code, Hermes, MCP 설정, 에이전트 트랜스크립트/로그, PR diff를 운영하는 한국 팀을 위한 한국어 우선 AgentOps 보안 스캐너.**
+
+AgentGuard는 한국 팀이 에이전트 기반 개발을 운영할 때 노출될 수 있는 비밀 값, 위험한 MCP 권한, 에이전트 셸 동작, PR diff 리스크를 배포 전에 확인하도록 돕습니다. 지금의 한국어 우선 범위는 문서, 정책 설명, 팀 협업 가이드입니다. 런타임 엔진, 리포트 출력, CLI commands, rule IDs, SARIF/API/machine fields는 CI/CD와 글로벌 보안 도구 연동을 위해 English-compatible, global-standard 계약으로 유지합니다.
+
+## 설치
+
+```bash
+npm install -g agentguard
+```
+
+## 빠른 시작
+
+```bash
+# Scan a repo/workspace
+agentguard scan-files .
+
+# Scan a PR diff
+git diff origin/main...HEAD | agentguard scan-diff
+
+# Emit SARIF for GitHub code scanning
+git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sarif
+
+# Scan Codex/MCP config
+agentguard scan-mcp < ~/.codex/config.toml
+```
+
+## 왜 필요한가
+
+AI 코딩 에이전트는 이제 코드베이스, 터미널, GitHub, 데이터베이스, Slack, Drive, 내부 도구에 연결됩니다. 기존 SAST 도구는 애플리케이션 코드를 검사하지만, 다음 질문에는 충분히 답하지 못합니다.
+
+> 에이전트가 무엇을 읽고, 실행하고, 노출하고, 변경하려 했는가?
+
+AgentGuard는 한국어 우선 운영 문서와 정책 설명을 제공하면서도 자동화와 보안 도구가 기대하는 영어 기반 계약은 유지합니다.
+
+## 검사 대상
+
+| Surface | Examples |
+|---|---|
+| Secrets | OpenAI/Anthropic/GitHub/Google-style tokens, credential-shaped environment values |
+| Agent logs | risky shell commands, sensitive paths, unsafe operations visible in transcripts/logs |
+| PR diffs | newly-added secrets, PII, dangerous commands, agent policy violations |
+| MCP/Codex config | broad filesystem roots, writable paths, credential passthrough, full-access servers |
+| Policy files | YAML/JSON policy aliases, malformed policy documents, unsafe duplicates |
+
+## 예시 finding
+
+```text
+BLOCK  secret.github_token
+Found a GitHub token in an agent-visible diff. Evidence is redacted before reporting.
+
+REVIEW  mcp.broad_filesystem_access
+MCP configuration exposes a broad filesystem root with write-capable access.
+```
+
+Verdicts:
+
+- `PASS`: findings 없음
+- `REVIEW`: 사람이 검토해야 할 비치명 finding
+- `BLOCK`: critical secret/full-access finding 또는 높은 aggregate risk
+
+## 호환성 경계
+
+한국어 README는 제품 포지셔닝, 운영 설명, 팀 협업 맥락을 한국어 우선으로 제공합니다. 하지만 다음 machine-facing 계약은 한국어로 바꾸지 않습니다.
+
+- CLI commands: `agentguard scan-files`, `agentguard scan-diff`, `agentguard scan-mcp`
+- Rule IDs: `secret.github_token`, `mcp.broad_filesystem_access`
+- SARIF/API/machine fields: GitHub code scanning, JSON, SARIF 2.1.0, CI 파서가 읽는 필드 이름
+- Package metadata and command flags: npm, shell, GitHub Actions에서 쓰는 영어 식별자
+
+이 경계 덕분에 한국 팀은 문서를 한국어로 읽고 운영할 수 있고, CI/CD, SARIF, API, 보안 리포팅은 기존 글로벌 도구와 그대로 연동됩니다.
+
+## 문서
+
+- [GitHub Actions / SARIF setup](docs/github-action.md)
+- [Policy files](docs/policy.md)
+- [Rule surfaces](docs/rules.md)
+- [Examples](docs/examples.md)
+- [Roadmap](docs/roadmap.md)
+- [Development harness](docs/harness-workflow.md)
+
+## 로컬 개발
+
+```bash
+npm install
+npm test
+npm run typecheck
+npm run build
+
+# Example report
+node dist/index.js scan-diff --out agent-risk-report.md < examples/risky-pr.diff
+```
+
+## MVP 범위
+
+- deterministic regex/rule scanner
+- markdown/JSON report
+- SARIF 2.1.0 output for GitHub code scanning
+- external network calls 없음

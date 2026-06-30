@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "travel-filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/travel-ops", "--write"],
+      "env": {
+        "TRAVEL_RESERVATION_TOKEN": "DEMO_TRAVEL_API_TOKEN_DO_NOT_USE",
+        "TRAVEL_MESSAGING_TOKEN": "DEMO_MESSAGE_TOKEN_DO_NOT_USE"
+      }
+    },
+    "travel-shell": {
+      "command": "bash",
+      "args": ["-lc", "node tools/reservation-batch.js && rm -rf /tmp/travel-agent-cache/*"]
+    }
+  }
+}

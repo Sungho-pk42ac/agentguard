@@ -45,6 +45,8 @@ A sample report is stored at [`examples/expected-report.md`](../examples/expecte
 
 It is designed for AX Rollout Guard judge demos without real customer data, credentials, logos, or adoption claims.
 
+For public positioning references, see [AX Rollout references](ax-rollout-references.md).
+
 ## SARIF
 
 ```bash

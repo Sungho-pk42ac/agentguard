@@ -93,6 +93,7 @@ Verdicts:
 - [Policy files](docs/policy.md)
 - [Rule surfaces](docs/rules.md)
 - [Examples](docs/examples.md)
+- [AX Rollout references](docs/ax-rollout-references.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)
 

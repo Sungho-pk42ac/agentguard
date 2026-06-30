@@ -1,21 +1,29 @@
 # AgentGuard
 
-AgentGuard is an **AgentOps security scanner** for teams adopting Codex, Claude Code, Hermes, MCP servers, and other AI coding agents.
+![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
+![Tests](https://img.shields.io/badge/tests-167%20passing-brightgreen)
+![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
+![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
+
+**Security scanner for AI coding agents, MCP configs, transcripts, and PR diffs.**
+
+AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe agent shell behavior, and risky PR diffs before they reach production.
 
 It scans:
 
-- PR diffs for secrets/PII/dangerous commands
+- PR diffs for secrets, PII, and dangerous commands
 - agent transcripts and shell logs
 - MCP/Codex configuration for high-risk tool access
 - workspaces for sensitive files that agents must not read
 
 ## Why
 
-AI agents now connect to codebases, terminals, GitHub, databases, Slack, Drive, and internal tools. Existing SAST tools inspect code, but they rarely answer:
+AI agents now connect to codebases, terminals, GitHub, databases, Slack, Drive, and internal tools. Existing SAST tools inspect application code, but they rarely answer:
 
-> “What did the agent read, run, or expose?”
+> “What did the agent read, run, expose, or try to change?”
 
-AgentGuard focuses on **agent behavior risk**.
+AgentGuard focuses on **agent behavior risk**: secrets in agent-visible files, risky tool permissions, dangerous shell patterns, and PR changes that deserve human security review.
 
 ## Quick start
 
@@ -41,6 +49,7 @@ For local development:
 
 ```bash
 npm install
+npm test
 npm run build
 
 # Scan a repo/workspace
@@ -60,25 +69,34 @@ A sample SARIF payload is available at [`examples/agentguard.sarif`](examples/ag
 
 A standalone static landing page asset is available in the source repository, not the npm package payload: [`docs/landing.html`](https://github.com/Sungho-pk42ac/agentguard/blob/main/docs/landing.html).
 
-## Package smoke
+## Example findings
 
-Before publishing, verify the npm package contains only the built CLI and intended metadata/assets:
+```text
+BLOCK  secret.github_token
+Found a GitHub token in an agent-visible diff. Evidence is redacted before reporting.
 
-```bash
-npm run build
-npm pack --dry-run
+REVIEW  mcp.broad_filesystem_access
+MCP configuration exposes a broad filesystem root with write-capable access.
+
+REVIEW  agent.risky_shell_command
+Agent transcript contains a destructive shell pattern that should be reviewed before merge.
 ```
 
-The dry run should list `dist/`, `README.md`, `package.json`, and examples, without `src/` or `test/` files.
+Verdicts:
 
-## Release checklist
+- `PASS`: no findings
+- `REVIEW`: non-critical findings, human review recommended
+- `BLOCK`: high aggregate risk or critical secret/full-access finding
 
-- Run `npm test`
-- Run `npm run typecheck`
-- Run `npm run build`
-- Run `npm pack --dry-run`
-- Install the packed tarball in a temporary project and run `npx agentguard scan-log`
-- Publish with `npm publish --provenance --access public`
+## What AgentGuard checks
+
+| Surface | Examples |
+|---|---|
+| Secrets | OpenAI/Anthropic/GitHub/Google-style tokens, credential-shaped environment values |
+| Agent logs | risky shell commands, sensitive paths, unsafe operations visible in transcripts |
+| PR diffs | newly-added secrets, PII, dangerous commands, agent policy violations |
+| MCP/Codex config | broad filesystem roots, writable paths, credential passthrough, full-access servers |
+| Policy files | YAML/JSON policy aliases, malformed policy documents, unsafe duplicates |
 
 ## GitHub code scanning workflow
 
@@ -121,18 +139,6 @@ jobs:
         with:
           sarif_file: agentguard.sarif
 ```
-
-## Example report
-
-```bash
-agentguard scan-diff --out agent-risk-report.md < pr.diff
-```
-
-Verdicts:
-
-- `PASS`: no findings
-- `REVIEW`: non-critical findings, human review recommended
-- `BLOCK`: high aggregate risk or critical secret/full-access finding
 
 ## GitHub PR comment workflow
 
@@ -184,6 +190,32 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: agent-risk-report.md
 ```
+
+## Example report
+
+```bash
+agentguard scan-diff --out agent-risk-report.md < pr.diff
+```
+
+## Package smoke
+
+Before publishing, verify the npm package contains only the built CLI and intended metadata/assets:
+
+```bash
+npm run build
+npm pack --dry-run
+```
+
+The dry run should list `dist/`, `README.md`, `package.json`, and examples, without `src/` or `test/` files.
+
+## Release checklist
+
+- Run `npm test`
+- Run `npm run typecheck`
+- Run `npm run build`
+- Run `npm pack --dry-run`
+- Install the packed tarball in a temporary project and run `npx agentguard scan-log`
+- Publish with `npm publish --provenance --access public`
 
 ## MVP scope
 

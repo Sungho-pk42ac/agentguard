@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "commerce-voc-reader": {
+      "command": "agentguard-demo-voc-reader",
+      "args": ["examples/ax-rollout-before-after/commerce-voc-mcp/readonly-voc-export"],
+      "readOnly": true
+    }
+  }
+}

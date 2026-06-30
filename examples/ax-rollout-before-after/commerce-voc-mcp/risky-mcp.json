@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "commerce-voc-runner": {
+      "command": "agentguard-demo-voc-runner",
+      "args": ["/", "--writable"],
+      "env": {
+        "CRM_ACCESS_TOKEN": "DEMO_CRM_TOKEN_DO_NOT_USE",
+        "COUPON_ADMIN_TOKEN": "DEMO_COUPON_TOKEN_DO_NOT_USE"
+      }
+    }
+  }
+}

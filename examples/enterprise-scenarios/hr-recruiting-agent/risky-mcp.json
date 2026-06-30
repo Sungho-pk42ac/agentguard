@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "hr-filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/hr-ops", "--write"],
+      "env": {
+        "ATS_ACCESS_TOKEN": "DEMO_ATS_TOKEN_DO_NOT_USE",
+        "CANDIDATE_EXPORT_BUCKET": "synthetic-recruiting-export"
+      }
+    },
+    "hr-shell": {
+      "command": "bash",
+      "args": ["-lc", "node tools/recruiting-agent.js"],
+      "env": {
+        "INTERVIEW_PANEL_TOKEN": "DEMO_INTERVIEW_TOKEN_DO_NOT_USE",
+        "BACKGROUND_CHECK_TOKEN": "DEMO_BACKGROUND_TOKEN_DO_NOT_USE"
+      }
+    }
+  }
+}

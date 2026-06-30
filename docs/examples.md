@@ -34,7 +34,7 @@ agentguard scan-diff --out agent-risk-report.md < examples/risky-pr.diff
 
 A sample report is stored at [`examples/expected-report.md`](../examples/expected-report.md).
 
-## Enterprise AX rollout scenario
+## Enterprise AX rollout scenarios
 
 [`examples/enterprise-scenarios/commerce-voc-agent/`](../examples/enterprise-scenarios/commerce-voc-agent/) contains a synthetic Korean commerce VOC agent rollout demo pack:
 
@@ -43,7 +43,9 @@ A sample report is stored at [`examples/expected-report.md`](../examples/expecte
 - agent transcript/log
 - Korean approval report for `BLOCK → policy/fix conditions → PASS` storytelling
 
-It is designed for AX Rollout Guard judge demos without real customer data, credentials, logos, or adoption claims.
+[`examples/enterprise-scenarios/hr-recruiting-agent/`](../examples/enterprise-scenarios/hr-recruiting-agent/) adds the same synthetic AX Rollout Guard demo shape for an HR/recruiting agent workflow: candidate summaries, interview feedback, shortlist/ranking risk, risky MCP permissions, and a Korean approval report.
+
+These scenarios are designed for AX Rollout Guard judge demos without real customer data, credentials, logos, or adoption claims.
 
 For public positioning references, see [AX Rollout references](ax-rollout-references.md).
 

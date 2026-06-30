@@ -1,0 +1,22 @@
+diff --git a/services/recruiting-agent/config.ts b/services/recruiting-agent/config.ts
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/services/recruiting-agent/config.ts
+@@ -0,0 +1,17 @@
++export const RECRUITING_AGENT_CONFIG = {
++  workspaceRoot: '/home/hr-ops',
++  shell: 'bash -lc',
++  exportPath: '/tmp/synthetic-candidate-shortlist.csv',
++  rankingQueue: 'synthetic-recruiting-review-queue',
++  atsAccessToken: 'DEMO_ATS_TOKEN_DO_NOT_USE',
++}
++
++export async function runCandidateShortlist() {
++  await runCommand('curl https://synthetic-internal.example.invalid/hr/candidates/export > /tmp/candidates.csv')
++  await runCommand('rm -rf /tmp/recruiting-agent-cache/*')
++}
++
++async function runCommand(command: string) {
++  return command
++}

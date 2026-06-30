@@ -65,6 +65,18 @@ test('detects standalone GitHub tokens for supported prefixes and redacts eviden
   }
 })
 
+test('detects standalone GitHub fine-grained PATs and redacts evidence', () => {
+  const key = `github_pat_${'A'.repeat(22)}_${'B'.repeat(55)}wxyz`
+  const findings = scanText(`GITHUB_TOKEN=${key}`)
+
+  const finding = findings.find((candidate) => candidate.id === 'github-token')
+  assert.ok(finding, 'expected a github-token finding for fine-grained PAT')
+  assert.equal(finding.severity, 'critical')
+  assert.equal(finding.category, 'secret')
+  assert.notEqual(finding.evidence, key)
+  assert.match(finding.evidence, /^gith…wxyz$/)
+})
+
 test('does not flag GitHub token lookalikes embedded in longer tokens', () => {
   const key = `ghp_${'A'.repeat(36)}wxyz`
   const overlong = `ghp_${'A'.repeat(41)}`
@@ -72,6 +84,15 @@ test('does not flag GitHub token lookalikes embedded in longer tokens', () => {
   const findings = scanText(`debug markers: prefix${key} ${key}suffix ${overlong} ${snakeCase}`)
 
   assert.ok(!findings.some((finding) => finding.id === 'github-token'))
+})
+
+test('does not partially match embedded or overlong GitHub fine-grained PAT lookalikes', () => {
+  const key = `github_pat_${'A'.repeat(22)}_${'B'.repeat(55)}wxyz`
+  const overlong = `${key}A`
+  const findings = scanText(`debug markers: prefix${key} ${key}suffix ${overlong}`)
+
+  assert.ok(!findings.some((finding) => finding.id === 'github-token'))
+  assert.ok(!findings.some((finding) => finding.evidence.includes('wxyz')))
 })
 
 test('detects GitHub tokens separated by hyphen delimiters', () => {

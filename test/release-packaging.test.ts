@@ -25,6 +25,7 @@ test('npm package tarball installs a working agentguard bin', () => {
     assert.ok(packedFiles.includes('dist/index.js'))
     assert.ok(packedFiles.includes('dist/index.d.ts'))
     assert.ok(packedFiles.includes('README.md'))
+    assert.ok(packedFiles.includes('README.en.md'))
     assert.ok(packedFiles.includes('package.json'))
     assert.ok(packedFiles.every((path) => !path.startsWith('src/')), `src files should not ship in npm tarball: ${packedFiles.join(', ')}`)
     assert.ok(packedFiles.every((path) => !path.startsWith('test/')), `test files should not ship in npm tarball: ${packedFiles.join(', ')}`)

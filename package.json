@@ -27,7 +27,8 @@
     "docs",
     "examples",
     "CHANGELOG.md",
-    "README.md"
+    "README.md",
+    "README.en.md"
   ],
   "directories": {
     "example": "examples"

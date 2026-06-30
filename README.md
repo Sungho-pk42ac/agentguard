@@ -95,6 +95,7 @@ Verdicts:
 - [Examples](docs/examples.md)
 - [AX prelim submission pack](docs/ax-prelim-submission-pack.md)
 - [AX demo scenario matrix](docs/ax-demo-scenario-matrix.md)
+- [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX Rollout references](docs/ax-rollout-references.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)

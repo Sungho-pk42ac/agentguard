@@ -94,6 +94,7 @@ Verdicts:
 - [Rule surfaces](docs/rules.md)
 - [Examples](docs/examples.md)
 - [AX Rollout references](docs/ax-rollout-references.md)
+- [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)
 

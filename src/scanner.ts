@@ -31,6 +31,7 @@ export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_
   const findings: Finding[] = []
   for (const p of SECRET_PATTERNS) {
     for (const m of text.matchAll(p.re)) {
+      if (p.id === 'generic-secret-assignment' && /(?<![0-9A-Za-z_])npm_[A-Za-z0-9]{36}(?![0-9A-Za-z_])/.test(m[0])) continue
       findings.push({
         id: p.id,
         title: p.title,

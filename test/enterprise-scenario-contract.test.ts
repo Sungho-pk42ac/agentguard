@@ -7,6 +7,14 @@ import { fileURLToPath } from 'node:url'
 const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = findRepoRoot(testDir)
 const scenarioRoot = join(repoRoot, 'examples', 'enterprise-scenarios')
+const requiredScenarios = ['commerce-voc-agent', 'finance-audit-agent'] as const
+const requiredFiles = [
+  'README.md',
+  'risky-pr.diff',
+  'risky-mcp.json',
+  'agent-transcript.log',
+  'expected-approval-report.md',
+] as const
 
 function findRepoRoot(startDir: string): string {
   let currentDir = startDir
@@ -28,45 +36,38 @@ test('enterprise AX rollout scenarios include a complete Korean approval-demo pa
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
 
-  assert.ok(scenarios.includes('commerce-voc-agent'), 'commerce-voc-agent scenario should exist')
+  for (const scenarioName of requiredScenarios) {
+    assert.ok(scenarios.includes(scenarioName), `${scenarioName} scenario should exist`)
+    for (const fileName of requiredFiles) {
+      assert.ok(existsSync(join(scenarioRoot, scenarioName, fileName)), `${scenarioName}/${fileName} should exist`)
+    }
 
-  const requiredFiles = [
-    'README.md',
-    'risky-pr.diff',
-    'risky-mcp.json',
-    'agent-transcript.log',
-    'expected-approval-report.md',
-  ]
+    const scenarioReadme = readScenarioFile(scenarioName, 'README.md')
+    const expectedReport = readScenarioFile(scenarioName, 'expected-approval-report.md')
 
-  for (const fileName of requiredFiles) {
-    assert.ok(existsSync(join(scenarioRoot, 'commerce-voc-agent', fileName)), `${fileName} should exist`)
+    assert.match(scenarioReadme, /AX Rollout Guard/)
+    assert.match(scenarioReadme, /BLOCK → 정책\/수정 조건 → PASS/)
+    assert.match(scenarioReadme, /agentguard scan-diff/)
+    assert.match(scenarioReadme, /agentguard scan-mcp/)
+    assert.match(scenarioReadme, /agentguard scan-log/)
+
+    assert.match(expectedReport, /# AX Rollout Guard 승인 리포트/)
+    assert.match(expectedReport, /업무 영향/)
+    assert.match(expectedReport, /배포 조건/)
+    assert.match(expectedReport, /승인 체크리스트/)
+    assert.match(expectedReport, /판정: BLOCK/)
   }
 
-  const scenarioReadme = readScenarioFile('commerce-voc-agent', 'README.md')
-  const expectedReport = readScenarioFile('commerce-voc-agent', 'expected-approval-report.md')
-
-  assert.match(scenarioReadme, /AX Rollout Guard/)
-  assert.match(scenarioReadme, /커머스 VOC/)
-  assert.match(scenarioReadme, /BLOCK → 정책\/수정 조건 → PASS/)
-  assert.match(scenarioReadme, /agentguard scan-diff/)
-  assert.match(scenarioReadme, /agentguard scan-mcp/)
-  assert.match(scenarioReadme, /agentguard scan-log/)
-
-  assert.match(expectedReport, /# AX Rollout Guard 승인 리포트/)
-  assert.match(expectedReport, /업무 영향/)
-  assert.match(expectedReport, /배포 조건/)
-  assert.match(expectedReport, /승인 체크리스트/)
-  assert.match(expectedReport, /판정: BLOCK/)
+  const commerceReadme = readScenarioFile('commerce-voc-agent', 'README.md')
+  const financeReadme = readScenarioFile('finance-audit-agent', 'README.md')
+  assert.match(commerceReadme, /커머스 VOC/)
+  assert.match(financeReadme, /재무 감사|감사 증빙/)
 })
 
 test('enterprise scenario fixtures stay synthetic and do not claim fake adoption', () => {
-  const combined = [
-    readScenarioFile('commerce-voc-agent', 'README.md'),
-    readScenarioFile('commerce-voc-agent', 'risky-pr.diff'),
-    readScenarioFile('commerce-voc-agent', 'risky-mcp.json'),
-    readScenarioFile('commerce-voc-agent', 'agent-transcript.log'),
-    readScenarioFile('commerce-voc-agent', 'expected-approval-report.md'),
-  ].join('\n')
+  const combined = requiredScenarios
+    .flatMap((scenarioName) => requiredFiles.map((fileName) => readScenarioFile(scenarioName, fileName)))
+    .join('\n')
 
   assert.doesNotMatch(combined, /실제 고객|고객사|도입 완료|certified|SOC 2|ISO 27001/i)
   assert.doesNotMatch(combined, /sk-[A-Za-z0-9_-]{20,}/)

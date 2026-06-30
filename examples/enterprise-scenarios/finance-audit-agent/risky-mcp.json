@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "finance-filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/", "--allow-write=/tmp"],
+      "env": {
+        "AUDIT_EXPORT_TOKEN": "DEMO_AUDIT_TOKEN_DO_NOT_USE",
+        "LEDGER_EXPORT_BUCKET": "synthetic-audit-export"
+      }
+    },
+    "finance-shell": {
+      "command": "bash",
+      "args": ["-lc", "node tools/audit-agent.js"],
+      "env": {
+        "ERP_READ_TOKEN": "DEMO_ERP_TOKEN_DO_NOT_USE",
+        "APPROVAL_MEMO_TOKEN": "DEMO_MEMO_TOKEN_DO_NOT_USE"
+      }
+    }
+  }
+}

@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-179%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-183%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -25,8 +25,11 @@ npm install -g agentguard
 ## Quick start
 
 ```bash
-# Scan a repo/workspace
+# Scan a repo/workspace (Markdown output defaults to Korean)
 agentguard scan-files .
+
+# Emit English Markdown output when needed
+agentguard scan-files . --lang en
 
 # Scan a PR diff
 git diff origin/main...HEAD | agentguard scan-diff

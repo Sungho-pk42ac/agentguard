@@ -4,13 +4,13 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-179%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-183%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
 **Codex, Claude Code, Hermes, MCP 설정, 에이전트 트랜스크립트/로그, PR diff를 운영하는 한국 팀을 위한 한국어 우선 AgentOps 보안 스캐너.**
 
-AgentGuard는 한국 팀이 에이전트 기반 개발을 운영할 때 노출될 수 있는 비밀 값, 위험한 MCP 권한, 에이전트 셸 동작, PR diff 리스크를 배포 전에 확인하도록 돕습니다. 지금의 한국어 우선 범위는 문서, 정책 설명, 팀 협업 가이드입니다. 런타임 엔진, 리포트 출력, CLI commands, rule IDs, SARIF/API/machine fields는 CI/CD와 글로벌 보안 도구 연동을 위해 English-compatible, global-standard 계약으로 유지합니다.
+AgentGuard는 한국 팀이 에이전트 기반 개발을 운영할 때 노출될 수 있는 비밀 값, 위험한 MCP 권한, 에이전트 셸 동작, PR diff 리스크를 배포 전에 확인하도록 돕습니다. 지금의 한국어 우선 범위는 문서, 정책 설명, 팀 협업 가이드, 기본 터미널/Markdown 리포트입니다. CLI commands, rule IDs, JSON/SARIF/API/machine fields는 CI/CD와 글로벌 보안 도구 연동을 위해 English-compatible, global-standard 계약으로 유지합니다.
 
 <p align="center">
   <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard가 위험한 MCP filesystem 설정을 BLOCK verdict로 차단하는 한국어-first 터미널 데모" width="920" />
@@ -25,8 +25,11 @@ npm install -g agentguard
 ## 빠른 시작
 
 ```bash
-# Scan a repo/workspace
+# Scan a repo/workspace (기본 Markdown 리포트는 한국어)
 agentguard scan-files .
+
+# 영어 Markdown 리포트가 필요하면
+agentguard scan-files . --lang en
 
 # Scan a PR diff
 git diff origin/main...HEAD | agentguard scan-diff
@@ -78,6 +81,7 @@ Verdicts:
 
 - CLI commands: `agentguard scan-files`, `agentguard scan-diff`, `agentguard scan-mcp`
 - Rule IDs: `secret.github_token`, `mcp.broad_filesystem_access`
+- Markdown terminal reports: 기본값은 한국어, `--lang en`으로 영어 Markdown 출력 가능
 - SARIF/API/machine fields: GitHub code scanning, JSON, SARIF 2.1.0, CI 파서가 읽는 필드 이름
 - Package metadata and command flags: npm, shell, GitHub Actions에서 쓰는 영어 식별자
 

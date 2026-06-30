@@ -274,7 +274,7 @@ test('CLI accepts --out=<file> for scan-log reports', () => {
 
   assert.equal(result.status, 0)
   assert.equal(result.stdout, '')
-  assert.match(readFileSync(outPath, 'utf8'), /# AgentGuard Risk Report/)
+  assert.match(readFileSync(outPath, 'utf8'), /# AgentGuard 위험 리포트/)
 })
 
 test('CLI preserves scan-files path when --policy is present', () => {

@@ -22,7 +22,7 @@ test('CLI --out creates missing parent directories for report files', () => {
   assert.equal(result.stdout, '')
   assert.equal(result.status, 0, result.stderr)
   assert.equal(existsSync(reportPath), true)
-  assert.match(readFileSync(reportPath, 'utf8'), /^# AgentGuard Risk Report/)
+  assert.match(readFileSync(reportPath, 'utf8'), /^# AgentGuard 위험 리포트/)
 })
 
 test('CLI --out reports write failures without a raw stack trace', () => {

@@ -8,6 +8,7 @@ const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = findRepoRoot(testDir)
 const rootReadme = readFileSync(join(repoRoot, 'README.md'), 'utf8')
 const englishReadme = readFileSync(join(repoRoot, 'README.en.md'), 'utf8')
+const terminalDemoSvg = readFileSync(join(repoRoot, 'docs/agentguard-terminal-demo.svg'), 'utf8')
 
 function findRepoRoot(startDir: string): string {
   let currentDir = startDir
@@ -52,6 +53,16 @@ test('root README keeps machine-facing contracts English-compatible', () => {
   assert.match(rootReadme, /agentguard scan-mcp/)
   assert.match(rootReadme, /secret\.github_token/)
   assert.match(rootReadme, /mcp\.broad_filesystem_access/)
+})
+
+test('root README terminal demo is Korean-first while preserving English-compatible output fields', () => {
+  assert.match(rootReadme, /alt="[^"]*한국어-first 터미널 데모[^"]*"/)
+  assert.match(terminalDemoSvg, /AgentGuard 한국어-first 터미널 데모/)
+  assert.match(terminalDemoSvg, /한국 팀을 위한 에이전트 보안 점검/)
+  assert.match(terminalDemoSvg, /CLI \/ verdict \/ rule IDs \/ SARIF fields는 English-compatible/)
+  assert.match(terminalDemoSvg, /Verdict: BLOCK/)
+  assert.match(terminalDemoSvg, /Severity/)
+  assert.match(terminalDemoSvg, /mcp-risk/)
 })
 
 test('root README does not imply CLI commands or rule IDs are renamed to Korean', () => {

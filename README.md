@@ -14,28 +14,15 @@ AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe a
   <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard terminal demo showing a BLOCK verdict for a risky MCP configuration" width="920" />
 </p>
 
-It scans:
-
-- PR diffs for secrets, PII, and dangerous commands
-- agent transcripts and shell logs
-- MCP/Codex configuration for high-risk tool access
-- workspaces for sensitive files that agents must not read
-
-## Why
-
-AI agents now connect to codebases, terminals, GitHub, databases, Slack, Drive, and internal tools. Existing SAST tools inspect application code, but they rarely answer:
-
-> “What did the agent read, run, expose, or try to change?”
-
-AgentGuard focuses on **agent behavior risk**: secrets in agent-visible files, risky tool permissions, dangerous shell patterns, and PR changes that deserve human security review.
-
-## Quick start
-
-Install the published CLI:
+## Install
 
 ```bash
 npm install -g agentguard
+```
 
+## Quick start
+
+```bash
 # Scan a repo/workspace
 agentguard scan-files .
 
@@ -49,48 +36,13 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 agentguard scan-mcp < ~/.codex/config.toml
 ```
 
-For local development:
+## Why
 
-```bash
-npm install
-npm test
-npm run build
+AI agents now connect to codebases, terminals, GitHub, databases, Slack, Drive, and internal tools. Existing SAST tools inspect application code, but they rarely answer:
 
-# Scan a repo/workspace
-node dist/index.js scan-files .
+> “What did the agent read, run, expose, or try to change?”
 
-# Scan a PR diff
-git diff origin/main...HEAD | node dist/index.js scan-diff
-
-# Emit SARIF for GitHub code scanning
-git diff origin/main...HEAD | node dist/index.js scan-diff --sarif --out agentguard.sarif
-
-# Scan Codex/MCP config
-node dist/index.js scan-mcp < ~/.codex/config.toml
-```
-
-A sample SARIF payload is available at [`examples/agentguard.sarif`](examples/agentguard.sarif).
-
-A standalone static landing page asset is available in the source repository, not the npm package payload: [`docs/landing.html`](https://github.com/Sungho-pk42ac/agentguard/blob/main/docs/landing.html).
-
-## Example findings
-
-```text
-BLOCK  secret.github_token
-Found a GitHub token in an agent-visible diff. Evidence is redacted before reporting.
-
-REVIEW  mcp.broad_filesystem_access
-MCP configuration exposes a broad filesystem root with write-capable access.
-
-REVIEW  agent.risky_shell_command
-Agent transcript contains a destructive shell pattern that should be reviewed before merge.
-```
-
-Verdicts:
-
-- `PASS`: no findings
-- `REVIEW`: non-critical findings, human review recommended
-- `BLOCK`: high aggregate risk or critical secret/full-access finding
+AgentGuard focuses on **agent behavior risk**: secrets in agent-visible files, risky tool permissions, dangerous shell patterns, and PR changes that deserve human security review.
 
 ## What AgentGuard checks
 
@@ -101,6 +53,39 @@ Verdicts:
 | PR diffs | newly-added secrets, PII, dangerous commands, agent policy violations |
 | MCP/Codex config | broad filesystem roots, writable paths, credential passthrough, full-access servers |
 | Policy files | YAML/JSON policy aliases, malformed policy documents, unsafe duplicates |
+
+## Example finding
+
+```text
+BLOCK  secret.github_token
+Found a GitHub token in an agent-visible diff. Evidence is redacted before reporting.
+
+REVIEW  mcp.broad_filesystem_access
+MCP configuration exposes a broad filesystem root with write-capable access.
+```
+
+Verdicts:
+
+- `PASS`: no findings
+- `REVIEW`: non-critical findings, human review recommended
+- `BLOCK`: high aggregate risk or critical secret/full-access finding
+
+## Documentation
+
+- [GitHub Actions / SARIF setup](docs/github-action.md)
+- [Policy files](docs/policy.md)
+- [Rule surfaces](docs/rules.md)
+- [Examples](docs/examples.md)
+- [Roadmap](docs/roadmap.md)
+- [Development harness](docs/harness-workflow.md)
+
+## Examples
+
+- [`examples/risky-mcp.json`](examples/risky-mcp.json) — risky MCP filesystem config
+- [`examples/risky-pr.diff`](examples/risky-pr.diff) — PR diff with fake secret-like material
+- [`examples/agent-transcript.log`](examples/agent-transcript.log) — agent transcript with risky shell behavior
+- [`examples/expected-report.md`](examples/expected-report.md) — sample markdown report
+- [`examples/agentguard.sarif`](examples/agentguard.sarif) — sample SARIF payload
 
 ## GitHub code scanning workflow
 
@@ -195,13 +180,19 @@ jobs:
           body-path: agent-risk-report.md
 ```
 
-## Example report
+## Local development
 
 ```bash
-agentguard scan-diff --out agent-risk-report.md < pr.diff
+npm install
+npm test
+npm run typecheck
+npm run build
+
+# Example report
+node dist/index.js scan-diff --out agent-risk-report.md < examples/risky-pr.diff
 ```
 
-## Package smoke
+## Release checklist
 
 Before publishing, verify the npm package contains only the built CLI and intended metadata/assets:
 
@@ -211,8 +202,6 @@ npm pack --dry-run
 ```
 
 The dry run should list `dist/`, `README.md`, `package.json`, and examples, without `src/` or `test/` files.
-
-## Release checklist
 
 - Run `npm test`
 - Run `npm run typecheck`
@@ -230,10 +219,6 @@ This first version is intentionally small:
 - SARIF 2.1.0 output for GitHub code scanning
 - no external network calls
 - no secrets are printed in full
-
-## Development harness
-
-AgentGuard is maintained through a small-slice agentic workflow: one issue, one branch, one PR, and executable verification for every change. See [`docs/harness-workflow.md`](docs/harness-workflow.md) before starting new work.
 
 ## Roadmap
 

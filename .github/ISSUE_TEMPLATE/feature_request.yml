@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest a focused AgentGuard improvement
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What risk surface or workflow should AgentGuard cover?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful version.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - PR diff
+        - agent transcript/log
+        - MCP/Codex config
+        - workspace scan
+        - policy file
+        - GitHub Action/SARIF
+        - docs/examples
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Safe synthetic examples
+      description: Do not paste real secrets, private logs, or customer data.

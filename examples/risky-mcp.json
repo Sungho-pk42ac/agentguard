@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "mcp-server-filesystem",
+      "args": ["/", "--write"],
+      "env": {
+        "GITHUB_TOKEN": "${FAKE_GITHUB_TOKEN_FOR_DEMO}"
+      }
+    },
+    "github": {
+      "command": "mcp-server-github",
+      "env": {
+        "GITHUB_TOKEN": "${FAKE_GITHUB_TOKEN_FOR_DEMO}"
+      }
+    }
+  }
+}

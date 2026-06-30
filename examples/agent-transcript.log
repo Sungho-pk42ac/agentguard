@@ -1,0 +1,4 @@
+[agent] read .env
+[agent] git push --force origin main
+[agent] rm -rf /tmp/agentguard-demo
+[agent] configured MCP filesystem root / with writable access

@@ -1,0 +1,33 @@
+name: Good first issue
+description: Small, well-scoped contribution idea
+title: "good first issue: "
+labels: [good first issue]
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: What should be changed?
+      placeholder: Add a safe example for a new MCP config shape.
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Likely files
+      placeholder: |
+        src/scanner.ts
+        test/scanner.test.ts
+        docs/examples.md
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      value: |
+        - [ ] npm test
+        - [ ] npm run typecheck
+        - [ ] npm run build
+    validations:
+      required: true

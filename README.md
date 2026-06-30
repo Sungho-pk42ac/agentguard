@@ -1,5 +1,7 @@
 # AgentGuard
 
+[한국어](README.ko.md)
+
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
 ![Tests](https://img.shields.io/badge/tests-167%20passing-brightgreen)

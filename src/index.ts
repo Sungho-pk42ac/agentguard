@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { loadPolicy, PolicyLoadError } from './policy.js'
 import { scanDiff, scanFiles, scanMcpConfig, scanText } from './scanner.js'
-import { toMarkdown, toSarif } from './report.js'
+import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import type { Finding } from './rules.js'
 
 interface CliArgs {
@@ -13,6 +13,7 @@ interface CliArgs {
   readonly sarif: boolean
   readonly out?: string
   readonly policyPath?: string
+  readonly markdownLanguage: MarkdownLanguage
 }
 
 function printVersion(): never {
@@ -34,6 +35,7 @@ Options:
   --version, -v                 Print the package version
   --json                         Print JSON findings
   --sarif                        Print SARIF 2.1.0 for GitHub code scanning
+  --lang ko|en, --lang=ko|en     Markdown report language (default: ko)
   --policy <path>, --policy=<path>  Load agent-policy.yaml/json
   --out <file>, --out=<file>        Write output to file`
   if (exitCode === 0) console.log(output)
@@ -48,6 +50,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
   let sarif = false
   let out: string | undefined
   let policyPath: string | undefined
+  let markdownLanguage: MarkdownLanguage = 'ko'
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -62,6 +65,19 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
     }
     if (arg === '--sarif') {
       sarif = true
+      continue
+    }
+    if (arg === '--lang') {
+      const value = args[index + 1]
+      if (!isMarkdownLanguage(value)) return undefined
+      markdownLanguage = value
+      index += 1
+      continue
+    }
+    if (arg.startsWith('--lang=')) {
+      const value = arg.slice('--lang='.length)
+      if (!isMarkdownLanguage(value)) return undefined
+      markdownLanguage = value
       continue
     }
     if (arg === '--out') {
@@ -101,7 +117,11 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
 
   if (!cmd) return undefined
   if (['--help', '-h', '--version', '-v'].includes(cmd) && cleanArgs.length > 0) return undefined
-  return { cmd, cleanArgs, json, sarif, out, policyPath }
+  return { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage }
+}
+
+function isMarkdownLanguage(value: string | undefined): value is MarkdownLanguage {
+  return value === 'ko' || value === 'en'
 }
 
 function isOptionValue(value: string | undefined): value is string {
@@ -116,7 +136,7 @@ function hasValidPositionalArgs(cmd: string, cleanArgs: readonly string[]): bool
 
 const parsedArgs = parseArgs(process.argv.slice(2))
 if (!parsedArgs) usage()
-const { cmd, cleanArgs, json, sarif, out, policyPath } = parsedArgs
+const { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage } = parsedArgs
 if (cmd === '--help' || cmd === '-h') usage(0)
 if (cmd === '--version' || cmd === '-v') printVersion()
 if (!hasValidPositionalArgs(cmd, cleanArgs)) usage()
@@ -165,7 +185,7 @@ function fileScanErrorMessage(error: unknown): string {
   return 'unable to read workspace path'
 }
 
-const output = sarif ? toSarif(findings) : json ? JSON.stringify(findings, null, 2) : toMarkdown(findings)
+const output = sarif ? toSarif(findings) : json ? JSON.stringify(findings, null, 2) : toMarkdown(findings, { lang: markdownLanguage })
 if (out) {
   try {
     mkdirSync(dirname(out), { recursive: true })

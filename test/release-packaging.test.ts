@@ -33,8 +33,8 @@ test('npm package tarball installs a working agentguard bin', () => {
     run('npm', ['init', '-y'], temp)
     run('npm', ['install', tarball], temp)
     const output = run('npx', ['agentguard', 'scan-log'], temp)
-    assert.match(output, /# AgentGuard Risk Report/)
-    assert.match(output, /\*\*Verdict:\*\* PASS/)
+    assert.match(output, /# AgentGuard 위험 리포트/)
+    assert.match(output, /\*\*판정:\*\* PASS/)
   } finally {
     rmSync(temp, { recursive: true, force: true })
   }

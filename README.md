@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-183%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-196%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -94,6 +94,7 @@ Verdicts:
 - [Rule surfaces](docs/rules.md)
 - [Examples](docs/examples.md)
 - [AX Rollout references](docs/ax-rollout-references.md)
+- [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)

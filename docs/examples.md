@@ -47,6 +47,10 @@ It is designed for AX Rollout Guard judge demos without real customer data, cred
 
 For public positioning references, see [AX Rollout references](ax-rollout-references.md).
 
+## AX company problem intake kit
+
+[AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.
+
 ## SARIF
 
 ```bash

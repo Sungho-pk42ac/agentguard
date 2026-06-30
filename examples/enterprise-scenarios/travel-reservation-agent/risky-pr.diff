@@ -1,0 +1,25 @@
+diff --git a/services/travel-agent/config.ts b/services/travel-agent/config.ts
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/services/travel-agent/config.ts
+@@ -0,0 +1,19 @@
++export const TRAVEL_AGENT_CONFIG = {
++  workspaceRoot: '/home/travel-ops',
++  shell: 'bash -lc',
++  exportPath: '/tmp/travel-reservation-export.csv',
++  routeBatch: 'synthetic-route-change-batch',
++  reservationApiToken: 'DEMO_TRAVEL_API_TOKEN_DO_NOT_USE',
++  messagingToken: 'DEMO_MESSAGE_TOKEN_DO_NOT_USE',
++}
++
++export async function runReservationExport() {
++  await runCommand('curl https://synthetic-internal.example.invalid/reservations/export > /tmp/reservations.csv')
++  await runCommand('printenv > /tmp/travel-agent-env.txt')
++  await runCommand('rm -rf /tmp/travel-agent-cache/*')
++}
++
++// Demo stub representing the internal agent shell command runner.
++async function runCommand(command: string) {
++  return command
++}

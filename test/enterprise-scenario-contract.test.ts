@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = findRepoRoot(testDir)
 const scenarioRoot = join(repoRoot, 'examples', 'enterprise-scenarios')
-const requiredScenarios = ['commerce-voc-agent', 'finance-audit-agent'] as const
+const requiredScenarios = ['commerce-voc-agent', 'finance-audit-agent', 'travel-reservation-agent'] as const
 const requiredFiles = [
   'README.md',
   'risky-pr.diff',
@@ -60,8 +60,10 @@ test('enterprise AX rollout scenarios include a complete Korean approval-demo pa
 
   const commerceReadme = readScenarioFile('commerce-voc-agent', 'README.md')
   const financeReadme = readScenarioFile('finance-audit-agent', 'README.md')
+  const travelReadme = readScenarioFile('travel-reservation-agent', 'README.md')
   assert.match(commerceReadme, /커머스 VOC/)
   assert.match(financeReadme, /재무 감사|감사 증빙/)
+  assert.match(travelReadme, /여행|예약|노선|좌석|취소|환불/)
 })
 
 test('enterprise scenario fixtures stay synthetic and do not claim fake adoption', () => {

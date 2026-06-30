@@ -34,6 +34,17 @@ agentguard scan-diff --out agent-risk-report.md < examples/risky-pr.diff
 
 A sample report is stored at [`examples/expected-report.md`](../examples/expected-report.md).
 
+## Enterprise AX rollout scenario
+
+[`examples/enterprise-scenarios/commerce-voc-agent/`](../examples/enterprise-scenarios/commerce-voc-agent/) contains a synthetic Korean commerce VOC agent rollout demo pack:
+
+- risky PR diff
+- risky MCP config
+- agent transcript/log
+- Korean approval report for `BLOCK → policy/fix conditions → PASS` storytelling
+
+It is designed for AX Rollout Guard judge demos without real customer data, credentials, logos, or adoption claims.
+
 ## SARIF
 
 ```bash

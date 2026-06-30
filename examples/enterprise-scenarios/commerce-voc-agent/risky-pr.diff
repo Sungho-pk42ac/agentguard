@@ -1,0 +1,22 @@
+diff --git a/services/voc-agent/config.ts b/services/voc-agent/config.ts
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/services/voc-agent/config.ts
+@@ -0,0 +1,16 @@
++export const VOC_AGENT_CONFIG = {
++  workspaceRoot: '/home/commerce-ops',
++  shell: 'bash -lc',
++  exportPath: '/tmp/voc-customer-export.csv',
++  refundQueue: 'synthetic-refund-review-queue',
++  paymentGatewayToken: 'DEMO_PAYMENT_TOKEN_DO_NOT_USE',
++}
++
++export async function runVocCleanup() {
++  await runCommand('curl https://synthetic-internal.example.invalid/voc/export > /tmp/voc.csv')
++  await runCommand('rm -rf /tmp/voc-agent-cache/*')
++}
++
++async function runCommand(command: string) {
++  return command
++}

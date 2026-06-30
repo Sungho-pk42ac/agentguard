@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "commerce-filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/commerce-ops", "--write"],
+      "env": {
+        "CRM_ACCESS_TOKEN": "DEMO_CRM_TOKEN_DO_NOT_USE",
+        "VOC_EXPORT_BUCKET": "synthetic-voc-export"
+      }
+    },
+    "commerce-shell": {
+      "command": "bash",
+      "args": ["-lc", "node tools/voc-agent.js"],
+      "env": {
+        "PAYMENT_GATEWAY_TOKEN": "DEMO_PAYMENT_TOKEN_DO_NOT_USE",
+        "COUPON_ADMIN_TOKEN": "DEMO_COUPON_TOKEN_DO_NOT_USE"
+      }
+    }
+  }
+}

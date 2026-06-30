@@ -10,6 +10,10 @@
 
 AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe agent shell behavior, and risky PR diffs before they reach production.
 
+<p align="center">
+  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard terminal demo showing a BLOCK verdict for a risky MCP configuration" width="920" />
+</p>
+
 It scans:
 
 - PR diffs for secrets, PII, and dangerous commands

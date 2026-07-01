@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-183%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-217%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -83,6 +83,7 @@ Verdicts:
 - [Examples](docs/examples.md)
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
+- [AX judge evidence index (Korean)](docs/ax-judge-evidence-index.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)
 

@@ -57,6 +57,8 @@ For a tiny Korean before/after MCP rollout approval story, see [AX before/after 
 
 For a one-page Korean judge evidence handoff, see [AX judge evidence index](ax-judge-evidence-index.md).
 
+For Korean-first prelim judge Q&A scripts with evidence commands and non-claim guardrails, see [AX prelim judge Q&A](ax-prelim-judge-qa.md).
+
 For a 30-second onsite company-problem pivot into existing evidence commands, see [AX onsite pivot guide](ax-onsite-pivot-guide.md).
 
 ## AX company problem intake kit

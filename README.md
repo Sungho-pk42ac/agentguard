@@ -94,6 +94,7 @@ Verdicts:
 - [Rule surfaces](docs/rules.md)
 - [Examples](docs/examples.md)
 - [AX prelim submission pack](docs/ax-prelim-submission-pack.md)
+- [AX rule compliance checklist](docs/ax-rule-compliance-checklist.md)
 - [AX demo scenario matrix](docs/ax-demo-scenario-matrix.md)
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)

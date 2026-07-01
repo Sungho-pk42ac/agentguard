@@ -65,3 +65,4 @@ Reviewer-visible terms to watch: `secret.github_token`, `mcp.broad_filesystem_ac
 | `docs/ax-company-problem-intake-kit.md` ([link](ax-company-problem-intake-kit.md)) | 현장 회사 문제를 AgentGuard demo pack으로 바꾸는 인터뷰/변환 절차 |
 | `docs/ax-demo-scenario-matrix.md` ([link](ax-demo-scenario-matrix.md)) | 커머스, 재무, HR, 여행 시나리오별 30초 demo angle과 evidence command |
 | `docs/ax-competitive-comparison.md` ([link](ax-competitive-comparison.md)) | 공개 보안 레퍼런스에서 빌릴 말과 피해야 할 과장 표현 |
+| `docs/ax-rule-compliance-checklist.md` ([link](ax-rule-compliance-checklist.md)) | 예선 규정/증거/미확인 항목을 분리해 제출 직전 과장 주장 리스크를 줄이는 체크리스트 |

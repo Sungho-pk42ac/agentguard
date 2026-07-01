@@ -98,6 +98,7 @@ Verdicts:
 - [AX rule compliance checklist](docs/ax-rule-compliance-checklist.md)
 - [AX demo scenario matrix](docs/ax-demo-scenario-matrix.md)
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
+- [AX 30-second demo command card](docs/ax-30-second-demo-card.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)

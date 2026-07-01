@@ -1,0 +1,12 @@
+diff --git a/services/commerce-voc-agent/refund-draft-policy.ts b/services/commerce-voc-agent/refund-draft-policy.ts
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/services/commerce-voc-agent/refund-draft-policy.ts
+@@ -0,0 +1,6 @@
++export const refundDraftPolicy = {
++  scope: "commerce-voc-fixture-readonly",
++  customerReferenceMode: "redacted-before-agent",
++  humanApprovalRequired: true,
++  crmMemoMode: "draft-only",
++}

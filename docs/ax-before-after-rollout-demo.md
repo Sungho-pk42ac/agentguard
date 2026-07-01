@@ -4,9 +4,9 @@
 
 ## 회사 문제
 
-커머스 VOC 운영팀이 환불, 쿠폰, CRM 메모 초안 작성을 AX 에이전트에게 맡기려 합니다. 승인권자는 먼저 MCP config가 업무 폴더만 읽는지, credential-like 환경 변수를 agent runtime에 넘기지 않는지, 쓰기 가능한 broad root가 없는지 확인해야 합니다.
+커머스 VOC 운영팀이 환불, 쿠폰, CRM 메모 초안 작성을 AX 에이전트에게 맡기려 합니다. 승인권자는 먼저 MCP config가 업무 폴더만 읽는지, credential-like 환경 변수를 agent runtime에 넘기지 않는지, 쓰기 가능한 broad root가 없는지, PR diff가 agent-visible secret/PII/위험 명령을 새로 추가하지 않는지 확인해야 합니다.
 
-이 slice는 MCP config 하나만 사용합니다. PR diff, transcript, dashboard, SaaS workflow는 다루지 않습니다.
+이 slice는 MCP config와 PR diff fixture만 사용합니다. Transcript, dashboard, SaaS workflow는 다루지 않습니다.
 
 ## Before: 위험 fixture
 
@@ -52,16 +52,61 @@ agentguard scan-mcp < examples/ax-rollout-before-after/commerce-voc-mcp/fixed-mc
 - `agentguard-demo-voc-reader` / `agentguard-demo-voc-runner`는 합성 command 이름입니다. AgentGuard `scan-mcp`는 이 config를 evidence로 파싱할 뿐 데모 command를 실행하거나 binary를 resolve하지 않습니다.
 - CLI 출력: `**판정:** PASS`
 
+## PR diff Before: 위험 fixture
+
+Risky PR diff fixture:
+
+```bash
+node dist/index.js scan-diff < examples/ax-rollout-before-after/commerce-voc-pr-diff/risky.diff
+```
+
+Global install 환경에서는 같은 입력을 아래처럼 실행할 수 있습니다.
+
+```bash
+agentguard scan-diff < examples/ax-rollout-before-after/commerce-voc-pr-diff/risky.diff
+```
+
+예상 evidence:
+
+- `generic-secret-assignment`: PR diff가 agent-visible source에 합성 credential-like 값을 추가합니다.
+- `email`: PR diff가 VOC approval 담당자 이메일처럼 보이는 PII를 source에 남깁니다.
+- CLI 출력: `**판정:** REVIEW` 또는 rule/severity 정책에 따라 `**판정:** BLOCK`
+
+## PR diff After: 수정 fixture
+
+Fixed PR diff fixture:
+
+```bash
+node dist/index.js scan-diff < examples/ax-rollout-before-after/commerce-voc-pr-diff/fixed.diff
+```
+
+Global install 환경에서는 같은 입력을 아래처럼 실행할 수 있습니다.
+
+```bash
+agentguard scan-diff < examples/ax-rollout-before-after/commerce-voc-pr-diff/fixed.diff
+```
+
+수정 설명:
+
+- agent-visible source에서 credential-like literal과 담당자 이메일을 제거합니다.
+- 합성 VOC workflow는 fixture scope, redacted customer references, human approval flag만 남깁니다.
+- 실제 배포에서는 credential과 담당자 매핑을 source가 아니라 secret manager, approval workflow, 운영 시스템이 소유합니다.
+- CLI 출력: `**판정:** PASS`
+
 ## 30초 승인 스토리
 
 > "처음 설정은 VOC 에이전트가 넓은 root와 writable path, credential-like env를 받아서 배포 전 BLOCK입니다. 수정 후에는 MCP config가 fixture 전용 read-only path만 읽고 env credential을 받지 않으므로 같은 `agentguard scan-mcp` 증거가 PASS로 바뀝니다. 이 before/after가 AX Rollout Guard의 승인 스토리입니다."
+
+> "PR diff는 회사 문제 → risky agent PR diff → AgentGuard REVIEW/BLOCK evidence → fixed diff → PASS 순서로 보여줍니다. 처음 diff는 합성 credential-like 값과 담당자 이메일을 agent-visible source에 추가해서 REVIEW/BLOCK이고, 수정 diff는 fixture scope와 human approval flag만 남겨 같은 `agentguard scan-diff` 증거가 PASS로 바뀝니다."
 
 ## Machine contract boundary
 
 한국어 설명을 추가해도 CLI와 machine-facing contract는 그대로 둡니다.
 
 - CLI command: `agentguard scan-mcp`
+- CLI command: `agentguard scan-diff`
 - Node command: `node dist/index.js scan-mcp`
+- Node command: `node dist/index.js scan-diff`
 - JSON/SARIF fields and rule IDs stay English-compatible.
 - Existing rule ID examples remain stable: `mcp.broad_filesystem_access`, `mcp-filesystem-wide-root`, `mcp.filesystem_writable_path`, `mcp-filesystem-writable-path`.
 

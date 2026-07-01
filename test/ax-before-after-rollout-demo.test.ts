@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
@@ -9,9 +10,11 @@ const repoRoot = findRepoRoot(testDir)
 const demoDocPath = join(repoRoot, 'docs', 'ax-before-after-rollout-demo.md')
 const riskyFixturePath = 'examples/ax-rollout-before-after/commerce-voc-mcp/risky-mcp.json'
 const fixedFixturePath = 'examples/ax-rollout-before-after/commerce-voc-mcp/fixed-mcp.json'
+const riskyPrDiffFixturePath = 'examples/ax-rollout-before-after/commerce-voc-pr-diff/risky.diff'
+const fixedPrDiffFixturePath = 'examples/ax-rollout-before-after/commerce-voc-pr-diff/fixed.diff'
 const readonlyExportReadmePath =
   'examples/ax-rollout-before-after/commerce-voc-mcp/readonly-voc-export/README.md'
-const fixturePaths = [riskyFixturePath, fixedFixturePath] as const
+const fixturePaths = [riskyFixturePath, fixedFixturePath, riskyPrDiffFixturePath, fixedPrDiffFixturePath] as const
 
 function findRepoRoot(startDir: string): string {
   let currentDir = startDir
@@ -29,6 +32,21 @@ function readDemoDoc(): string {
 
 function expectLiteral(content: string, value: string): void {
   assert.ok(content.includes(value), `${value} should be present`)
+}
+
+function runScanDiff(fixturePath: string): { readonly status: number | null; readonly stdout: string; readonly stderr: string } {
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'scan-diff'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    input: readFileSync(join(repoRoot, fixturePath), 'utf8'),
+    timeout: 10_000,
+  })
+
+  return {
+    status: result.status,
+    stdout: result.stdout,
+    stderr: result.stderr,
+  }
 }
 
 test('AX before/after rollout demo doc exists and is linked from public docs', () => {
@@ -55,11 +73,27 @@ test('AX before/after rollout demo uses existing risky and fixed fixtures', () =
   const requiredCommands = [
     `node dist/index.js scan-mcp < ${riskyFixturePath}`,
     `node dist/index.js scan-mcp < ${fixedFixturePath}`,
+    `node dist/index.js scan-diff < ${riskyPrDiffFixturePath}`,
+    `node dist/index.js scan-diff < ${fixedPrDiffFixturePath}`,
   ] as const
 
   for (const command of requiredCommands) {
     expectLiteral(demoDoc, command)
   }
+})
+
+test('AX before/after rollout PR diff fixtures reproduce REVIEW then PASS with the built CLI', () => {
+  const riskyResult = runScanDiff(riskyPrDiffFixturePath)
+  const fixedResult = runScanDiff(fixedPrDiffFixturePath)
+
+  assert.equal(riskyResult.status, 1, riskyResult.stderr)
+  assert.match(riskyResult.stdout, /\*\*판정:\*\*\s*REVIEW|\*\*Verdict:\*\*\s*REVIEW/)
+  assert.match(riskyResult.stdout, /generic-secret-assignment|하드코딩된 secret assignment/)
+  assert.match(riskyResult.stdout, /Email address|이메일|PII/i)
+
+  assert.equal(fixedResult.status, 0, fixedResult.stderr)
+  assert.match(fixedResult.stdout, /\*\*판정:\*\*\s*PASS|\*\*Verdict:\*\*\s*PASS/)
+  assert.match(fixedResult.stdout, /탐지 건수:\*\*\s*0|Findings:\*\*\s*0/)
 })
 
 test('AX before/after rollout demo tells a Korean approval story without changing machine contracts', () => {
@@ -75,6 +109,10 @@ test('AX before/after rollout demo tells a Korean approval story without changin
     'mcp.broad_filesystem_access',
     'mcp.filesystem_writable_path',
     'agentguard scan-mcp',
+    '회사 문제 → risky agent PR diff → AgentGuard REVIEW/BLOCK evidence → fixed diff → PASS',
+    'PR diff',
+    'agentguard scan-diff',
+    'node dist/index.js scan-diff',
     'config를 evidence로 파싱',
   ] as const) {
     expectLiteral(demoDoc, term)
@@ -82,6 +120,8 @@ test('AX before/after rollout demo tells a Korean approval story without changin
 
   assert.match(demoDoc, /^## Before: 위험 fixture/m)
   assert.match(demoDoc, /^## After: 수정\/정책 fixture/m)
+  assert.match(demoDoc, /^## PR diff Before: 위험 fixture/m)
+  assert.match(demoDoc, /^## PR diff After: 수정 fixture/m)
   assert.match(demoDoc, /\*\*판정:\*\*\s*BLOCK|\*\*Verdict:\*\*\s*BLOCK/)
   assert.match(demoDoc, /\*\*판정:\*\*\s*PASS|\*\*Verdict:\*\*\s*PASS/)
 })

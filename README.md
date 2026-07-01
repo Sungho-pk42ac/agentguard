@@ -106,6 +106,7 @@ Verdicts:
 - [AX Rollout references](docs/ax-rollout-references.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
+- [AX final company-problem worksheet](docs/ax-final-problem-worksheet.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)
 

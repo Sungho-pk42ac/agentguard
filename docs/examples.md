@@ -53,6 +53,8 @@ For a 30-second Korean judge-facing matrix against public agent-security referen
 
 For a tiny Korean before/after MCP rollout approval story, see [AX before/after rollout demo](ax-before-after-rollout-demo.md).
 
+For a one-page Korean judge evidence handoff, see [AX judge evidence index](ax-judge-evidence-index.md).
+
 ## AX company problem intake kit
 
 [AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.

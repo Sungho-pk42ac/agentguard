@@ -100,6 +100,7 @@ Verdicts:
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
+- [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite pivot guide](docs/ax-onsite-pivot-guide.md)
 - [AX Rollout references](docs/ax-rollout-references.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)

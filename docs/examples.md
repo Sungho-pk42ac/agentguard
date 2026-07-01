@@ -51,6 +51,8 @@ For public positioning references, see [AX Rollout references](ax-rollout-refere
 
 For a 30-second Korean judge-facing matrix against public agent-security references, see [AX competitive comparison](ax-competitive-comparison.md).
 
+For a Korean-first competition-rule compliance checklist that separates public facts, current evidence, and gated unknowns, see [AX rule compliance checklist](ax-rule-compliance-checklist.md).
+
 For a tiny Korean before/after MCP rollout approval story, see [AX before/after rollout demo](ax-before-after-rollout-demo.md).
 
 For a one-page Korean judge evidence handoff, see [AX judge evidence index](ax-judge-evidence-index.md).

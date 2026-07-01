@@ -84,6 +84,7 @@ Verdicts:
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX judge evidence index (Korean)](docs/ax-judge-evidence-index.md)
+- [AX submission readiness scorecard (Korean)](docs/ax-submission-readiness-scorecard.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)
 

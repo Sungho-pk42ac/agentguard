@@ -101,6 +101,7 @@ Verdicts:
 - [AX 30-second demo command card](docs/ax-30-second-demo-card.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
+- [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite pivot guide](docs/ax-onsite-pivot-guide.md)
 - [AX Rollout references](docs/ax-rollout-references.md)

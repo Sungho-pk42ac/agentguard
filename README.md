@@ -111,6 +111,7 @@ Verdicts:
 - [AX Rollout references](docs/ax-rollout-references.md)
 - [AX reference refresh drill](docs/ax-reference-refresh-drill.md)
 - [AX evidence freshness checklist](docs/ax-evidence-freshness-checklist.md)
+- [AX policy exception decision tree](docs/ax-policy-exception-decision-tree.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)

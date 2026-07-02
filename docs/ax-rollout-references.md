@@ -24,10 +24,19 @@ AgentGuard를 AX 인재전쟁 심사 맥락에서 **AX Rollout Guard**로 설명
 | splx-ai agentic-radar | agentic attack surface를 지도처럼 보여주는 접근 | attack simulation 전체를 제공한다는 표현 | 현재는 deterministic scanner로 PR, MCP, transcript 근거를 모아 승인 조건을 만든다. |
 | agentshield | 에이전트 가드레일을 사용자가 이해하기 쉬운 말로 설명 | 검증되지 않은 신뢰 과장과 독점성 주장 | 한국어 운영 문서와 policy-as-code 예제로 팀이 배포 전 판단할 수 있게 한다. |
 
+## Public research refresh
+
+| Signal | Borrow | Avoid | AgentGuard action |
+|---|---|---|---|
+| [OWASP Agentic AI threats and mitigations](https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/) | Agentic AI를 threat-model 기반으로 보고, 자율 행동과 mitigation을 함께 설명하는 방식 | OWASP ASI 문서를 AgentGuard coverage나 공식 검증처럼 말하는 것 | risky agent behavior를 `transcript/log`, MCP, PR diff evidence에 연결하고, REVIEW 항목은 SARIF와 company-problem worksheet의 수정 조건으로 남긴다. |
+| [GitHub SARIF support docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning) | code scanning이 이해하는 SARIF result, ruleId, location, fingerprint 중심의 증거 구조 | SARIF를 위해 CLI commands, rule IDs, product name을 바꾸는 것 | 기존 SARIF output을 유지하고 PR diff finding은 SARIF location/ruleId와 Markdown report를 같은 판단 근거로 보여준다. |
+| [Anthropic Agent Skills post](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) | skills를 instructions, scripts, resources가 담긴 폴더로 보고 필요한 맥락만 점진적으로 읽는 방식 | AgentGuard가 Agent Skills 런타임이나 Anthropic 기능을 구현했다는 표현 | MCP 설정과 `transcript/log`에서 agent procedure drift를 증거화하고, demo tailoring은 company-problem worksheet에 한정해 기록한다. |
+
 ## AX judging implications
 
 - **현업성**: AgentGuard는 "AI 에이전트를 도입할 수 있는가?"가 아니라 "에이전트가 PR, MCP, transcript에서 위험한 행동을 했을 때 배포를 어떻게 멈추고 승인 조건을 남길 것인가?"를 다룬다.
 - **결과물성**: 심사자는 CLI, Markdown report, SARIF, PR comment, enterprise scenario fixture를 직접 확인할 수 있다. 설명보다 산출물이 먼저 보이도록 구성한다.
+- **증거 무결성**: `transcript/log`는 에이전트가 스스로 꾸며낸 자기보고가 아니라 CI, host, PR artifact처럼 팀이 통제하는 읽기 전용 evidence channel에서 보관·검증해야 한다.
 - **차별성**: AgentGuard는 공개 보안 프레임워크와 유사 도구를 부정하지 않는다. 차별점은 한국어 우선 운영 맥락, PR+MCP+transcript를 함께 보는 rollout gate, policy-as-code, CI/SARIF 연결, 엔터프라이즈 데모 시나리오다.
 - **발표력**: 발표는 "문제 → 위험 입력 → AgentGuard finding → 수정/승인 조건 → 재검증" 순서로 짧게 보여준다. 공개 레퍼런스는 근거로만 쓰고, 제품 기능처럼 말하지 않는다.
 

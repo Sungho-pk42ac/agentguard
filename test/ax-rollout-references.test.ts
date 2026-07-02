@@ -57,6 +57,30 @@ test('AX rollout references doc cites public references and judging implications
   assert.match(referenceDoc, /발표력/)
 })
 
+test('AX rollout references doc includes the public research refresh with evidence-surface actions', () => {
+  const referenceDoc = readFileSync(referenceDocPath, 'utf8')
+  const refreshSectionStart = referenceDoc.indexOf('## Public research refresh')
+
+  assert.notEqual(refreshSectionStart, -1, 'docs/ax-rollout-references.md should include the public research refresh section')
+
+  const refreshSection = referenceDoc.slice(refreshSectionStart)
+  const requiredRefreshReferences = [
+    'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
+    'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
+    'https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills',
+  ]
+
+  for (const referenceUrl of requiredRefreshReferences) {
+    assert.match(refreshSection, new RegExp(escapeRegExp(referenceUrl)))
+  }
+
+  for (const evidenceSurface of ['SARIF', 'PR diff', 'MCP', 'transcript/log', 'company-problem worksheet']) {
+    assert.match(refreshSection, new RegExp(escapeRegExp(evidenceSurface)))
+  }
+
+  assert.match(refreshSection, /\|\s*Signal\s*\|\s*Borrow\s*\|\s*Avoid\s*\|\s*AgentGuard action\s*\|/)
+})
+
 test('AX rollout references doc avoids fake adoption, certification, and first mover claims', () => {
   const referenceDoc = readFileSync(referenceDocPath, 'utf8')
 

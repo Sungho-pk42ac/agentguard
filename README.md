@@ -110,6 +110,7 @@ Verdicts:
 - [AX agent rollback drill](docs/ax-agent-rollback-drill.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
+- [AX rollout control map](docs/ax-rollout-control-map.md)
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)
 - [AX judge handoff packet](docs/ax-judge-handoff-packet.md)

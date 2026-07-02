@@ -18,7 +18,7 @@ interface ScanApiResponse {
   readonly markdown: string
 }
 
-async function startServer(): Promise<{ readonly baseUrl: string; readonly child: ChildProcessWithoutNullStreams }> {
+async function startServer(): Promise<{ readonly baseUrl: string; readonly child: ChildProcessWithoutNullStreams; readonly stdout: () => string }> {
   const child = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts', 'serve', '--port=0'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -36,7 +36,7 @@ async function startServer(): Promise<{ readonly baseUrl: string; readonly child
 
   for (let attempt = 0; attempt < 50; attempt += 1) {
     const match = stdout.match(/http:\/\/127\.0\.0\.1:(\d+)/)
-    if (match?.[1] !== undefined) return { baseUrl: `http://127.0.0.1:${match[1]}`, child }
+    if (match?.[1] !== undefined) return { baseUrl: `http://127.0.0.1:${match[1]}`, child, stdout: () => stdout }
     if (child.exitCode !== null) {
       throw new Error(`server exited early: ${stderr}`)
     }
@@ -103,6 +103,18 @@ test('serve health route returns ok JSON', async () => {
   })
 })
 
+test('serve startup prints an ASCII banner before the local URL', async () => {
+  const { child, stdout } = await startServer()
+  try {
+    assert.match(stdout(), /___\s+__  ______/)
+    assert.match(stdout(), /AgentOps Risk Gate :: PASS \/ REVIEW \/ BLOCK/)
+    assert.match(stdout(), /AgentGuard local preview: http:\/\/127\.0\.0\.1:\d+/)
+  } finally {
+    child.kill()
+    await once(child, 'exit').catch(() => undefined)
+  }
+})
+
 test('serve scan route returns shared scanner report for risky MCP input', async () => {
   await withServer(async (baseUrl) => {
     const response = await httpRequest(`${baseUrl}/api/scan`, {
@@ -144,6 +156,8 @@ test('serve static page is Korean-first and includes an API hint', async () => {
     assert.equal(response.statusCode, 200)
     assert.match(String(response.headers['content-type']), /^text\/html/)
     assert.match(response.body, /AgentGuard 로컬 SaaS 미리보기/)
+    assert.match(response.body, /AgentOps Risk Gate :: PASS \/ REVIEW \/ BLOCK/)
+    assert.match(response.body, /aria-label="AgentGuard ASCII banner"/)
     assert.match(response.body, /<textarea/)
     assert.match(response.body, /mode/)
     assert.match(response.body, /curl/)

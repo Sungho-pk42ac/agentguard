@@ -4,6 +4,15 @@ import { scanInput } from './core.js'
 
 const DEFAULT_PORT = 8787
 const MAX_BODY_BYTES = 1_048_576
+const ASCII_BANNER = [
+  '    ___                    __  ______                    __',
+  '   /   | ____ ____  ____  / /_/ ____/_  ______ __________/ /',
+  '  / /| |/ __  / / / / / __/ / __/ / / / __  / ___/ __  / ',
+  ' / ___ / /_/ / /_/ / / /_/ /_/ / /_/ / /_/ / /  / /_/ /  ',
+  '/_/  |_\\__, /\\__,_/_/\\__/\\____/\\__,_/\\__,_/_/   \\__,_/   ',
+  '      /____/                                                ',
+  '  AgentOps Risk Gate :: PASS / REVIEW / BLOCK',
+].join('\n')
 const scanRequestSchema = z.object({
   mode: z.enum(['diff', 'mcp', 'log', 'text']),
   input: z.string(),
@@ -32,7 +41,7 @@ export async function startPreviewServer(options: ServeOptions = {}): Promise<Se
       server.off('error', reject)
       const address = server.address()
       const actualPort = typeof address === 'object' && address !== null ? address.port : port
-      console.log(`AgentGuard local preview: http://${host}:${actualPort}`)
+      console.log(`${ASCII_BANNER}\nAgentGuard local preview: http://${host}:${actualPort}`)
       resolve()
     })
   })
@@ -146,6 +155,7 @@ function demoPage(): string {
     h1 { margin: 0 0 12px; font-size: clamp(30px, 5vw, 48px); line-height: 1.08; letter-spacing: 0; }
     p { color: var(--muted); line-height: 1.65; }
     form, .result, .hint { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+    .banner { background: #0f172a; color: #bfe8ff; border-color: #27364e; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; overflow-x: auto; text-shadow: 0 0 16px rgba(77, 194, 255, 0.35); }
     label { display: block; font-weight: 700; margin-bottom: 8px; }
     textarea { width: 100%; min-height: 220px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 12px; font: 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
     .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-top: 14px; }
@@ -160,6 +170,7 @@ function demoPage(): string {
 </head>
 <body>
   <main>
+    <pre class="hint banner" aria-label="AgentGuard ASCII banner">${ASCII_BANNER}</pre>
     <h1>AgentGuard 로컬 SaaS 미리보기</h1>
     <p>브라우저나 API에서 기존 CLI 스캐너를 그대로 실행해 MCP 설정, PR diff, 에이전트 로그, 일반 텍스트를 점검합니다. 이 화면은 로컬 테스트 전용입니다.</p>
     <form id="scan-form">

@@ -75,6 +75,8 @@ For Korean-first hard objection scripts against public agent-security references
 
 For Korean-first live-demo failure-mode handling with exact fixture-backed commands and non-claim guardrails, see [AX demo failure mode register](ax-demo-failure-mode-register.md).
 
+For a Korean-first 90-second judge path from company problem to command, verdict, and approval sentence, see [AX 90-second judge evidence tour](ax-90-second-judge-evidence-tour.md).
+
 For a Korean-first competition-rule compliance checklist that separates public facts, current evidence, and gated unknowns, see [AX rule compliance checklist](ax-rule-compliance-checklist.md).
 
 For a tiny Korean before/after MCP rollout approval story, see [AX before/after rollout demo](ax-before-after-rollout-demo.md).

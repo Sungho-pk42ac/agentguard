@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-302%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-327%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -112,6 +112,7 @@ Verdicts:
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
 - [AX rollout control map](docs/ax-rollout-control-map.md)
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
+- [AX executive risk memo](docs/ax-executive-risk-memo.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)
 - [AX judge handoff packet](docs/ax-judge-handoff-packet.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)

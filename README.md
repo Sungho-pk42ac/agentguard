@@ -105,6 +105,7 @@ Verdicts:
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
+- [AX onsite triage card](docs/ax-onsite-triage-card.md)
 - [AX onsite pivot guide](docs/ax-onsite-pivot-guide.md)
 - [AX Rollout references](docs/ax-rollout-references.md)
 - [AX reference refresh drill](docs/ax-reference-refresh-drill.md)

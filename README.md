@@ -106,6 +106,7 @@ Verdicts:
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite pivot guide](docs/ax-onsite-pivot-guide.md)
 - [AX Rollout references](docs/ax-rollout-references.md)
+- [AX reference refresh drill](docs/ax-reference-refresh-drill.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)

@@ -102,6 +102,7 @@ Verdicts:
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
+- [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite pivot guide](docs/ax-onsite-pivot-guide.md)

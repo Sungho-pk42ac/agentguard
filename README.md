@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-296%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-302%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -105,6 +105,7 @@ Verdicts:
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX 30-second demo command card](docs/ax-30-second-demo-card.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
+- [AX agent rollback drill](docs/ax-agent-rollback-drill.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)

@@ -34,6 +34,26 @@ agentguard scan-diff --out agent-risk-report.md < examples/risky-pr.diff
 
 A sample report is stored at [`examples/expected-report.md`](../examples/expected-report.md).
 
+## Local SaaS preview
+
+Run the same AgentGuard CLI engine behind a local browser/API surface:
+
+```bash
+agentguard serve --port 8787
+```
+
+Then open `http://127.0.0.1:8787`, or call the API directly:
+
+```bash
+curl -s http://127.0.0.1:8787/api/scan \
+  -H 'content-type: application/json' \
+  -d '{"mode":"mcp","input":"{\"mcpServers\":{\"filesystem\":{\"args\":[\"--allow-write\",\"/\"]}}}"}'
+```
+
+Supported API modes are `diff`, `mcp`, `log`, and `text`. The JSON response includes `verdict`, `findingCount`, `findings`, and `markdown`.
+
+Boundary: this is a local SaaS preview for demos and reviewer verification. It is not a hosted production SaaS and does not include auth, billing, database storage, customer uploads, or public deployment claims.
+
 ## Enterprise AX rollout scenarios
 
 [`examples/enterprise-scenarios/commerce-voc-agent/`](../examples/enterprise-scenarios/commerce-voc-agent/) contains a synthetic Korean commerce VOC agent rollout demo pack:

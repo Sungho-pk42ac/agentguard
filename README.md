@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-217%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-295%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -39,7 +39,12 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 
 # Scan Codex/MCP config
 agentguard scan-mcp < ~/.codex/config.toml
+
+# 로컬 SaaS 미리보기: 브라우저/API에서 같은 CLI 엔진 실행
+agentguard serve --port 8787
 ```
+
+브라우저에서 `http://127.0.0.1:8787`을 열면 MCP 설정, PR diff, 에이전트 로그, 일반 텍스트를 넣어 `PASS / REVIEW / BLOCK` verdict와 한국어 Markdown 리포트를 확인할 수 있습니다. 이 기능은 로컬 preview/API surface이며, 아직 hosted production SaaS, auth, billing, database, customer upload 기능을 주장하지 않습니다.
 
 ## 왜 필요한가
 

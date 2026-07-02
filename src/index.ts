@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { scanCliCommand } from './core.js'
 import { loadPolicy, PolicyLoadError } from './policy.js'
-import { scanDiff, scanFiles, scanMcpConfig, scanText } from './scanner.js'
 import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
+import { startPreviewServer } from './server.js'
 import type { Finding } from './rules.js'
 
 interface CliArgs {
@@ -17,8 +18,7 @@ interface CliArgs {
 }
 
 function printVersion(): never {
-  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
-  console.log(packageJson.version)
+  console.log(readPackageVersion())
   process.exit(0)
 }
 
@@ -29,6 +29,7 @@ function usage(exitCode = 2): never {
   agentguard scan-log < transcript.log
   agentguard scan-mcp < config.toml
   agentguard report < input.txt
+  agentguard serve [--port <number>]
 
 Options:
   --help, -h                    Print this usage information
@@ -38,6 +39,18 @@ Options:
   --lang ko|en, --lang=ko|en     Markdown report language (default: ko)
   --policy <path>, --policy=<path>  Load agent-policy.yaml/json
   --out <file>, --out=<file>        Write output to file`
+  if (exitCode === 0) console.log(output)
+  else console.error(output)
+  process.exit(exitCode)
+}
+
+function serveUsage(exitCode = 2): never {
+  const output = `Usage:
+  agentguard serve [--port <number>]
+
+Options:
+  --help, -h                    Print serve usage information
+  --port <number>, --port=<number>  Local HTTP port (default: 8787; 0 selects a random port)`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)
@@ -134,66 +147,128 @@ function hasValidPositionalArgs(cmd: string, cleanArgs: readonly string[]): bool
   return true
 }
 
-const parsedArgs = parseArgs(process.argv.slice(2))
-if (!parsedArgs) usage()
-const { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage } = parsedArgs
-if (cmd === '--help' || cmd === '-h') usage(0)
-if (cmd === '--version' || cmd === '-v') printVersion()
-if (!hasValidPositionalArgs(cmd, cleanArgs)) usage()
-if (json && sarif) {
-  console.error('--json and --sarif cannot be combined')
-  process.exit(2)
+interface ServeArgs {
+  readonly port: number
 }
 
-const stdin = () => readFileSync(0, 'utf8')
-let findings: Finding[] = []
-const policy = (() => {
+function parseServeArgs(args: readonly string[]): ServeArgs | undefined {
+  let port = 8787
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === '--help' || arg === '-h') serveUsage(0)
+    if (arg === '--port') {
+      const value = args[index + 1]
+      if (!isOptionValue(value)) return undefined
+      const parsedPort = parsePort(value)
+      if (parsedPort === undefined) return undefined
+      port = parsedPort
+      index += 1
+      continue
+    }
+    if (arg.startsWith('--port=')) {
+      const parsedPort = parsePort(arg.slice('--port='.length))
+      if (parsedPort === undefined) return undefined
+      port = parsedPort
+      continue
+    }
+    return undefined
+  }
+  return { port }
+}
+
+function parsePort(value: string): number | undefined {
+  if (!/^\d+$/.test(value)) return undefined
+  const port = Number(value)
+  return Number.isInteger(port) && port >= 0 && port <= 65_535 ? port : undefined
+}
+
+const rawArgs = process.argv.slice(2)
+if (rawArgs[0] === 'serve') {
+  const serveArgs = parseServeArgs(rawArgs.slice(1))
+  if (serveArgs === undefined) serveUsage()
   try {
-    return loadPolicy(policyPath)
+    await startPreviewServer({ port: serveArgs.port })
   } catch (error: unknown) {
-    if (error instanceof PolicyLoadError) {
-      console.error(error.message)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`Could not start server: ${message}`)
+    process.exit(2)
+  }
+} else {
+  const parsedArgs = parseArgs(rawArgs)
+  if (!parsedArgs) usage()
+  const { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage } = parsedArgs
+  if (cmd === '--help' || cmd === '-h') usage(0)
+  if (cmd === '--version' || cmd === '-v') printVersion()
+  if (!hasValidPositionalArgs(cmd, cleanArgs)) usage()
+  if (!isScanCommand(cmd)) usage()
+  if (json && sarif) {
+    console.error('--json and --sarif cannot be combined')
+    process.exit(2)
+  }
+
+  const stdin = () => readFileSync(0, 'utf8')
+  let findings: Finding[] = []
+  const policy = (() => {
+    try {
+      return loadPolicy(policyPath)
+    } catch (error: unknown) {
+      if (error instanceof PolicyLoadError) {
+        console.error(error.message)
+        process.exit(2)
+      }
+      throw error
+    }
+  })()
+  try {
+    findings = scanCliCommand(cmd, {
+      input: cmd === 'scan-files' ? '' : stdin(),
+      workspacePath: cleanArgs[0],
+      policy,
+    })
+  } catch (error: unknown) {
+    if (cmd === 'scan-files') {
+      console.error(`Could not scan files: ${fileScanErrorMessage(error)}`)
       process.exit(2)
     }
     throw error
   }
-})()
-try {
-  switch (cmd) {
-    case 'scan-files': findings = scanFiles(cleanArgs[0] ?? process.cwd(), policy); break
-    case 'scan-diff': findings = scanDiff(stdin(), policy); break
-    case 'scan-log': findings = scanText(stdin(), 'agent-log', policy); break
-    case 'scan-mcp': findings = scanMcpConfig(stdin(), policy); break
-    case 'report': findings = scanText(stdin(), 'stdin', policy); break
-    default: usage()
+
+  function fileScanErrorMessage(error: unknown): string {
+    if (hasErrorCode(error)) {
+      const code = String(error.code)
+      if (code === 'ENOENT') return 'workspace path was not found'
+      if (code === 'ENOTDIR') return 'workspace path is not a directory'
+      if (code === 'EACCES' || code === 'EPERM') return 'workspace path is not readable'
+    }
+    return 'unable to read workspace path'
   }
-} catch (error: unknown) {
-  if (cmd === 'scan-files') {
-    console.error(`Could not scan files: ${fileScanErrorMessage(error)}`)
-    process.exit(2)
-  }
-  throw error
+
+  const output = sarif ? toSarif(findings) : json ? JSON.stringify(findings, null, 2) : toMarkdown(findings, { lang: markdownLanguage })
+  if (out) {
+    try {
+      mkdirSync(dirname(out), { recursive: true })
+      writeFileSync(out, output + '\n')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(`Could not write output: ${message}`)
+      process.exit(2)
+    }
+  } else console.log(output)
+  process.exit(findings.some((f) => f.severity === 'critical') ? 1 : 0)
 }
 
-function fileScanErrorMessage(error: unknown): string {
-  if (error && typeof error === 'object' && 'code' in error) {
-    const code = String((error as { code?: unknown }).code)
-    if (code === 'ENOENT') return 'workspace path was not found'
-    if (code === 'ENOTDIR') return 'workspace path is not a directory'
-    if (code === 'EACCES' || code === 'EPERM') return 'workspace path is not readable'
+function readPackageVersion(): string {
+  const packageJson: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  if (packageJson && typeof packageJson === 'object' && 'version' in packageJson && typeof packageJson.version === 'string') {
+    return packageJson.version
   }
-  return 'unable to read workspace path'
+  return '0.0.0'
 }
 
-const output = sarif ? toSarif(findings) : json ? JSON.stringify(findings, null, 2) : toMarkdown(findings, { lang: markdownLanguage })
-if (out) {
-  try {
-    mkdirSync(dirname(out), { recursive: true })
-    writeFileSync(out, output + '\n')
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error)
-    console.error(`Could not write output: ${message}`)
-    process.exit(2)
-  }
-} else console.log(output)
-process.exit(findings.some((f) => f.severity === 'critical') ? 1 : 0)
+function isScanCommand(cmd: string): boolean {
+  return cmd === 'scan-files' || cmd === 'scan-diff' || cmd === 'scan-log' || cmd === 'scan-mcp' || cmd === 'report'
+}
+
+function hasErrorCode(error: unknown): error is { readonly code: unknown } {
+  return error !== null && typeof error === 'object' && 'code' in error
+}

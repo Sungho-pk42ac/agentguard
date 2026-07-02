@@ -102,6 +102,7 @@ Verdicts:
 - [AX prelim judge Q&A](docs/ax-prelim-judge-qa.md)
 - [AX rule compliance checklist](docs/ax-rule-compliance-checklist.md)
 - [AX demo scenario matrix](docs/ax-demo-scenario-matrix.md)
+- [AX demo failure mode register](docs/ax-demo-failure-mode-register.md)
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX 30-second demo command card](docs/ax-30-second-demo-card.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)

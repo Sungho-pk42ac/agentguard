@@ -81,6 +81,33 @@ test('AX rollout references doc includes the public research refresh with eviden
   assert.match(refreshSection, /\|\s*Signal\s*\|\s*Borrow\s*\|\s*Avoid\s*\|\s*AgentGuard action\s*\|/)
 })
 
+test('AX rollout references doc maps target-prize gaps to next evidence slices', () => {
+  const referenceDoc = readFileSync(referenceDocPath, 'utf8')
+  const gapSectionStart = referenceDoc.indexOf('## Target-prize gap-to-slice table')
+
+  assert.notEqual(gapSectionStart, -1, 'docs/ax-rollout-references.md should include the target-prize gap table')
+
+  const gapSection = referenceDoc.slice(gapSectionStart)
+  const requiredGapReferences = [
+    'https://github.com/snyk/agent-scan',
+    'https://modelcontextprotocol.io/specification/draft/basic/security_best_practices',
+    'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
+    'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
+  ]
+
+  for (const referenceUrl of requiredGapReferences) {
+    assert.match(gapSection, new RegExp(escapeRegExp(referenceUrl)))
+  }
+
+  assert.match(gapSection, /\|\s*Target-prize gap\s*\|\s*Public signal\s*\|\s*Borrow\s*\|\s*Avoid\s*\|\s*Next evidence slice\s*\|/)
+  assert.match(gapSection, /Snyk `agent-scan`/)
+  assert.match(gapSection, /MCP permission\/credential\/consent/)
+  assert.match(gapSection, /SARIF rule\/result\/location\/fingerprint/)
+  assert.match(gapSection, /OWASP Agentic AI threat\/mitigation/)
+  assert.match(gapSection, /English-compatible/)
+  assert.match(gapSection, /No fake adoption, certification, unsupported uniqueness, or broad-platform claim/)
+})
+
 test('AX rollout references doc avoids fake adoption, certification, and first mover claims', () => {
   const referenceDoc = readFileSync(referenceDocPath, 'utf8')
 

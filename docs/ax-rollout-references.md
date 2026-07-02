@@ -32,6 +32,15 @@ AgentGuard를 AX 인재전쟁 심사 맥락에서 **AX Rollout Guard**로 설명
 | [GitHub SARIF support docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning) | code scanning이 이해하는 SARIF result, ruleId, location, fingerprint 중심의 증거 구조 | SARIF를 위해 CLI commands, rule IDs, product name을 바꾸는 것 | 기존 SARIF output을 유지하고 PR diff finding은 SARIF location/ruleId와 Markdown report를 같은 판단 근거로 보여준다. |
 | [Anthropic Agent Skills post](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) | skills를 instructions, scripts, resources가 담긴 폴더로 보고 필요한 맥락만 점진적으로 읽는 방식 | AgentGuard가 Agent Skills 런타임이나 Anthropic 기능을 구현했다는 표현 | MCP 설정과 `transcript/log`에서 agent procedure drift를 증거화하고, demo tailoring은 company-problem worksheet에 한정해 기록한다. |
 
+## Target-prize gap-to-slice table
+
+| Target-prize gap | Public signal | Borrow | Avoid | Next evidence slice |
+|---|---|---|---|---|
+| AgentGuard 차별성이 "보안 스캐너"로만 들릴 수 있음 | [Snyk `agent-scan`](https://github.com/snyk/agent-scan) | AI agents, MCP, agent skills security처럼 category를 선명하게 나누는 표현 | vendor-scale coverage나 대형 플랫폼 수준의 탐지 범위 주장 | PR diff, MCP config, `transcript/log`를 한 데 묶은 AX Rollout Guard evidence ladder를 보여준다. |
+| MCP 위험이 설정 목록처럼 보일 수 있음 | [MCP permission/credential/consent framing](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices) | permission, credential, user consent, confused deputy mitigation language | MCP conformance, official compatibility, 또는 default blocking policy 변경 암시 | `scan-mcp` finding을 승인 조건과 연결해 broad filesystem, writable roots, credential passthrough의 수정 slice를 적는다. |
+| 결과물이 judge-visible artifact로 충분히 이어지지 않음 | [SARIF rule/result/location/fingerprint evidence routing](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning) | ruleId, result, source location, partial fingerprint 중심의 증거 라우팅 | CLI commands, rule IDs, product name을 presentation용으로 바꾸는 것 | 기존 English-compatible SARIF, Markdown report, PR comment를 같은 finding의 next action으로 매핑한다. |
+| 위협 언어가 일반 LLM 보안처럼 넓어질 수 있음 | [OWASP Agentic AI threat/mitigation vocabulary](https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/) | agent autonomy, tool use, mitigation vocabulary를 evidence 설명에 붙이는 방식 | No fake adoption, certification, unsupported uniqueness, or broad-platform claim | Agentic AI threat를 `BLOCK → 수정 조건 → PASS` demo script와 company-problem worksheet의 next evidence slice로 좁힌다. |
+
 ## AX judging implications
 
 - **현업성**: AgentGuard는 "AI 에이전트를 도입할 수 있는가?"가 아니라 "에이전트가 PR, MCP, transcript에서 위험한 행동을 했을 때 배포를 어떻게 멈추고 승인 조건을 남길 것인가?"를 다룬다.

@@ -34,6 +34,7 @@ const requiredReferences = [
   'https://genai.owasp.org/llm-top-10/',
   'https://github.com/Tencent/AI-Infra-Guard',
   'https://github.com/splx-ai/agentic-radar',
+  'https://github.com/affaan-m/agentshield',
 ] as const
 
 const forbiddenClaimPatterns = [
@@ -107,6 +108,11 @@ test('AX competitor objection answer card cites public references without unsupp
   }
 
   assert.match(card, /Agentshield/i)
+  assert.match(card, /AI agent security scanner/i)
+  assert.match(card, /MCP\/tool permission/i)
+  assert.match(card, /GitHub Action\/App/i)
+  assert.match(card, /vendor-scale/i)
+  assert.match(card, /product-scope parity/i)
   assert.match(card, /fake adoption/i)
   assert.match(card, /certification/i)
   assert.match(card, /broad-platform/i)

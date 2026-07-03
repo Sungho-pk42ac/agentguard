@@ -28,7 +28,7 @@ Existing docs: `docs/ax-judge-evidence-index.md`, `docs/ax-judge-evidence-ladder
 | https://genai.owasp.org/llm-top-10/ | shared LLM risk language that judges may already know | checklist completion이나 standard replacement claim |
 | https://github.com/Tencent/AI-Infra-Guard | broad AI infra and agent threat inventory framing | full-stack red-team suite positioning |
 | https://github.com/splx-ai/agentic-radar | agentic workflow and MCP scanner category language | equivalent coverage, runtime monitoring, market proof |
-| public Agentshield search results | agent/MCP scanner comparison vocabulary | same adoption signal or same product scope claim |
+| https://github.com/affaan-m/agentshield | AI agent security scanner framing, MCP/tool permission risk vocabulary, GitHub Action/App packaging vocabulary | fake adoption, certification, vendor-scale claim, product-scope parity |
 
 ## Objection 1: "Tencent AI-Infra-Guard가 더 넓은데 AgentGuard가 왜 필요한가?"
 
@@ -43,7 +43,7 @@ Evidence to open:
 ## Objection 2: "agentic-radar나 Agentshield 계열 scanner가 있으면 충분하지 않나?"
 
 30초 답변:
-AgentGuard는 agentic-radar나 public Agentshield search results에서 agent workflow, MCP scanner, comparison vocabulary를 빌립니다. 피할 점은 equivalent coverage, adoption signal, runtime monitoring을 주장하는 것입니다. 차별점은 한국어 우선 심사/운영 문서와 exact command evidence입니다. 같은 commerce VOC rollout에서 `scan-diff`, `scan-mcp`, `scan-log`가 PR diff, MCP config, transcript/log를 각각 `REVIEW`, `BLOCK`, `PASS` 논의로 연결하고, 그 결과를 `docs/ax-judge-evidence-ladder.md`에서 30초 답변으로 다시 읽을 수 있습니다.
+AgentGuard는 agentic-radar와 `https://github.com/affaan-m/agentshield`에서 agent workflow, AI agent security scanner, MCP/tool permission, GitHub Action/App comparison vocabulary를 빌립니다. 피할 점은 equivalent coverage, fake adoption, vendor-scale, runtime monitoring, product-scope parity를 주장하는 것입니다. 차별점은 한국어 우선 심사/운영 문서와 exact command evidence입니다. 같은 commerce VOC rollout에서 `scan-diff`, `scan-mcp`, `scan-log`가 PR diff, MCP config, transcript/log를 각각 `REVIEW`, `BLOCK`, `PASS` 논의로 연결하고, 그 결과를 `docs/ax-judge-evidence-ladder.md`에서 30초 답변으로 다시 읽을 수 있습니다.
 
 Evidence to open:
 - `node dist/index.js scan-diff < examples/ax-rollout-before-after/commerce-voc-pr-diff/risky.diff`

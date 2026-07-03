@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-351%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-354%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -30,6 +30,9 @@ agentguard scan-files .
 
 # 로컬 설치/예제/스캐너 준비 상태 확인
 agentguard doctor
+
+# Claude/Codex/Gemini/MCP 로컬 설정의 에이전트 권한 posture 점검
+agentguard posture .
 
 # 영어 Markdown 리포트가 필요하면
 agentguard scan-files . --lang en

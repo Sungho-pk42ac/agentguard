@@ -275,6 +275,8 @@ Dry run에는 `dist/`, `README.md`, `package.json`, examples가 포함되어야 
 - Install the packed tarball in a temporary project and run `npx agentguard scan-log`
 - Publish with `npm publish --provenance --access public`
 
+태그 push 시 자동으로 provenance publish를 실행하는 release workflow와 토큰 설정은 [docs/release-process.md](docs/release-process.md)를 참고하세요.
+
 ## MVP 범위
 
 - deterministic regex/rule scanner

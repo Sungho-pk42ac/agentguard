@@ -111,6 +111,7 @@ Verdicts:
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
 - [AX rollout control map](docs/ax-rollout-control-map.md)
+- [AX boardroom go/no-go brief](docs/ax-boardroom-go-no-go-brief.md)
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
 - [AX executive risk memo](docs/ax-executive-risk-memo.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)

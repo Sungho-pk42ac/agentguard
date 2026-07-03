@@ -97,6 +97,8 @@ For a 30-second onsite company-problem pivot into existing evidence commands, se
 
 For a Korean-first final company-problem worksheet with fixture-backed commands and public-reference guardrails, see [AX final company-problem worksheet](ax-final-problem-worksheet.md).
 
+For a Korean-first pilot responsibility handoff that assigns business approval, residual risk, rollback, and evidence rerun owners, see [AX pilot responsibility card](ax-pilot-responsibility-card.md).
+
 ## SARIF
 
 ```bash

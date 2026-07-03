@@ -2,7 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { scanCliCommand } from './core.js'
-import { runDoctor } from './doctor.js'
+import { runDoctor, type DoctorLanguage } from './doctor.js'
 import { loadPolicy, PolicyLoadError } from './policy.js'
 import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import { startPreviewServer } from './server.js'
@@ -30,7 +30,7 @@ function usage(exitCode = 2): never {
   agentguard scan-log < transcript.log
   agentguard scan-mcp < config.toml
   agentguard report < input.txt
-  agentguard doctor
+  agentguard doctor [--lang ko|en]
   agentguard serve [--port <number>]
 
 Options:
@@ -60,7 +60,7 @@ Options:
 
 function doctorUsage(exitCode = 2): never {
   const output = `Usage:
-  agentguard doctor
+  agentguard doctor [--lang ko|en]
 
 Checks:
   package version readability, examples directory presence, scanner smoke test`
@@ -164,6 +164,10 @@ interface ServeArgs {
   readonly port: number
 }
 
+interface DoctorArgs {
+  readonly lang: DoctorLanguage
+}
+
 function parseServeArgs(args: readonly string[]): ServeArgs | undefined {
   let port = 8787
   for (let index = 0; index < args.length; index += 1) {
@@ -189,6 +193,29 @@ function parseServeArgs(args: readonly string[]): ServeArgs | undefined {
   return { port }
 }
 
+function parseDoctorArgs(args: readonly string[]): DoctorArgs | undefined {
+  let lang: DoctorLanguage = 'ko'
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === '--help' || arg === '-h') doctorUsage(0)
+    if (arg === '--lang') {
+      const value = args[index + 1]
+      if (!isMarkdownLanguage(value)) return undefined
+      lang = value
+      index += 1
+      continue
+    }
+    if (arg.startsWith('--lang=')) {
+      const value = arg.slice('--lang='.length)
+      if (!isMarkdownLanguage(value)) return undefined
+      lang = value
+      continue
+    }
+    return undefined
+  }
+  return { lang }
+}
+
 function parsePort(value: string): number | undefined {
   if (!/^\d+$/.test(value)) return undefined
   const port = Number(value)
@@ -207,9 +234,9 @@ if (rawArgs[0] === 'serve') {
     process.exit(2)
   }
 } else if (rawArgs[0] === 'doctor') {
-  if (rawArgs[1] === '--help' || rawArgs[1] === '-h') doctorUsage(0)
-  if (rawArgs.length !== 1) doctorUsage()
-  const result = runDoctor()
+  const doctorArgs = parseDoctorArgs(rawArgs.slice(1))
+  if (doctorArgs === undefined) doctorUsage()
+  const result = runDoctor(doctorArgs.lang)
   console.log(result.output)
   process.exit(result.exitCode)
 } else {

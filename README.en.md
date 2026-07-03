@@ -232,6 +232,8 @@ The dry run should list `dist/`, `README.md`, `package.json`, and examples, with
 - Install the packed tarball in a temporary project and run `npx agentguard scan-log`
 - Publish with `npm publish --provenance --access public`
 
+See [docs/release-process.md](docs/release-process.md) for the tag-triggered provenance release workflow and token setup.
+
 ## MVP scope
 
 This first version is intentionally small:

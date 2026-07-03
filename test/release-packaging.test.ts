@@ -60,3 +60,21 @@ test('README roadmap does not list implemented work as future roadmap items', ()
   assert.doesNotMatch(roadmap, /^- GitHub Action PR comment$/m)
   assert.doesNotMatch(roadmap, /^- policy-as-code \(`agent-policy\.yaml`\)$/m)
 })
+
+test('release workflow publishes with provenance and a version guard', () => {
+  const workflow = readFileSync('.github/workflows/release.yml', 'utf8')
+
+  assert.match(workflow, /--provenance/)
+  assert.match(workflow, /GITHUB_REF_NAME#v/)
+  assert.match(workflow, /NODE_AUTH_TOKEN/)
+  assert.match(workflow, /id-token: write/)
+  assert.match(workflow, /workflow_dispatch/)
+})
+
+test('release process docs describe the tag flow and the OIDC migration path', () => {
+  const docs = readFileSync('docs/release-process.md', 'utf8')
+
+  assert.match(docs, /git tag v/)
+  assert.match(docs, /OIDC/)
+  assert.match(docs, /trusted publishing/)
+})

@@ -13,6 +13,13 @@ const ASCII_BANNER = [
   '      /____/                                                ',
   '  AgentOps Risk Gate :: PASS / REVIEW / BLOCK',
 ].join('\n')
+const STARTUP_STATUS_LINES = [
+  'Status     READY - local scanner is online',
+  'Scope      Local-only preview - no auth/billing/db/uploads',
+  'Routes     GET /  |  GET /healthz  |  POST /api/scan',
+  'Modes      diff, mcp, log, text',
+  'Stop       Press Ctrl+C to shut down',
+]
 const scanRequestSchema = z.object({
   mode: z.enum(['diff', 'mcp', 'log', 'text']),
   input: z.string(),
@@ -41,12 +48,35 @@ export async function startPreviewServer(options: ServeOptions = {}): Promise<Se
       server.off('error', reject)
       const address = server.address()
       const actualPort = typeof address === 'object' && address !== null ? address.port : port
-      console.log(`${ASCII_BANNER}\nAgentGuard local preview: http://${host}:${actualPort}`)
+      console.log(startupMessage(host, actualPort))
       resolve()
     })
   })
 
   return server
+}
+
+function startupMessage(host: string, port: number): string {
+  const localUrl = `http://${host}:${port}`
+  const displayUrl = fitTerminalCell(localUrl, 48)
+  const lines = [
+    ...ASCII_BANNER.split('\n'),
+    '',
+    '╭────────────────────────────────────────────────────────────╮',
+    '│ AgentGuard Serve                                           │',
+    '├────────────────────────────────────────────────────────────┤',
+    `│ URL        ${displayUrl}│`,
+    ...STARTUP_STATUS_LINES.map((line) => `│ ${line.padEnd(58)} │`),
+    '╰────────────────────────────────────────────────────────────╯',
+    '',
+    `AgentGuard local preview: ${localUrl}`,
+  ]
+  return lines.join('\n')
+}
+
+function fitTerminalCell(value: string, width: number): string {
+  if (value.length <= width) return value.padEnd(width)
+  return `${value.slice(0, width - 1)}…`
 }
 
 async function handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {

@@ -103,11 +103,17 @@ test('serve health route returns ok JSON', async () => {
   })
 })
 
-test('serve startup prints an ASCII banner before the local URL', async () => {
+test('serve startup prints a polished terminal service card before the local URL', async () => {
   const { child, stdout } = await startServer()
   try {
     assert.match(stdout(), /___\s+__  ______/)
     assert.match(stdout(), /AgentOps Risk Gate :: PASS \/ REVIEW \/ BLOCK/)
+    assert.match(stdout(), /╭─+╮/)
+    assert.match(stdout(), /│ AgentGuard Serve\s+│/)
+    assert.match(stdout(), /│ URL\s+http:\/\/127\.0\.0\.1:\d+\s+│/)
+    assert.match(stdout(), /Status\s+READY - local scanner is online/)
+    assert.match(stdout(), /Routes\s+GET \/\s+\|\s+GET \/healthz\s+\|\s+POST \/api\/scan/)
+    assert.match(stdout(), /Scope\s+Local-only preview - no auth\/billing\/db\/uploads/)
     assert.match(stdout(), /AgentGuard local preview: http:\/\/127\.0\.0\.1:\d+/)
   } finally {
     child.kill()

@@ -1,6 +1,6 @@
 {
   "name": "agentguard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AgentOps security scanner for AI coding agents, MCP configs, transcripts, and PR diffs",
   "keywords": [
     "agentops",

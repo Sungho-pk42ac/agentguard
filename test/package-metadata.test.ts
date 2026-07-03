@@ -38,3 +38,9 @@ test('npm package metadata is hardened for first npm publish', () => {
   assert.ok(packageJson.scripts?.prepublishOnly?.includes('typecheck'), 'prepublishOnly should run typecheck')
   assert.ok(packageJson.scripts?.prepublishOnly?.includes('build'), 'prepublishOnly should run build')
 })
+
+test('CHANGELOG documents the v0.2.0 release', () => {
+  const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8')
+  assert.match(changelog, /^## \[Unreleased\]/m, 'CHANGELOG should keep an empty Unreleased stub at the top')
+  assert.match(changelog, /^## \[0\.2\.0\]/m, 'CHANGELOG should have a heading promoting Unreleased to 0.2.0')
+})

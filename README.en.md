@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-217%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-347%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -13,7 +13,7 @@
 AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe agent shell behavior, and risky PR diffs before they reach production.
 
 <p align="center">
-  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard Korean-first terminal demo showing a BLOCK verdict for a risky MCP configuration" width="920" />
+  <img src="docs/agentguard-terminal-demo.svg" alt="agentguard serve terminal screenshot showing the ASCII banner and READY local service card" width="920" />
 </p>
 
 ## Install
@@ -39,7 +39,12 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 
 # Scan Codex/MCP config
 agentguard scan-mcp < ~/.codex/config.toml
+
+# Local SaaS preview: run the same scanner engine through a browser/API
+agentguard serve --port 8787
 ```
+
+Open `http://127.0.0.1:8787` to scan MCP configs, PR diffs, agent logs, or plain text through the local `PASS / REVIEW / BLOCK` preview. This is a local preview/API surface, not a hosted production SaaS, auth, billing, database, or customer-upload claim.
 
 ## Why
 

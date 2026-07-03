@@ -56,15 +56,16 @@ test('root README keeps machine-facing contracts English-compatible', () => {
   assert.match(rootReadme, /mcp\.broad_filesystem_access/)
 })
 
-test('root README terminal demo is Korean-first while preserving English-compatible output fields', () => {
-  assert.match(rootReadme, /alt="[^"]*한국어-first 터미널 데모[^"]*"/)
-  assert.match(terminalDemoSvg, /AgentGuard 한국어-first 터미널 데모/)
-  assert.match(terminalDemoSvg, /한국 팀을 위한 에이전트 보안 점검/)
-  assert.match(terminalDemoSvg, /터미널 리포트는 한국어-first/)
-  assert.match(terminalDemoSvg, /CLI \/ verdict 값 \/ rule IDs \/ SARIF fields는 English-compatible/)
-  assert.match(terminalDemoSvg, /판정: BLOCK/)
-  assert.match(terminalDemoSvg, /심각도/)
-  assert.match(terminalDemoSvg, /mcp-risk/)
+test('root README terminal demo shows the local service preview while preserving English-compatible output fields', () => {
+  assert.match(rootReadme, /alt="[^"]*로컬 SaaS 미리보기 터미널 스크린샷[^"]*"/)
+  assert.match(terminalDemoSvg, /AgentGuard serve 로컬 서비스 터미널 스크린샷/)
+  assert.match(terminalDemoSvg, /로컬 SaaS 미리보기: CLI 엔진을 브라우저\/API에서 실행/)
+  assert.match(terminalDemoSvg, /JSON\/SARIF\/API\/machine fields는 English-compatible/)
+  assert.match(terminalDemoSvg, /AgentGuard Serve/)
+  assert.match(terminalDemoSvg, /Status/)
+  assert.match(terminalDemoSvg, /READY/)
+  assert.match(terminalDemoSvg, /POST \/api\/scan/)
+  assert.match(terminalDemoSvg, /diff, mcp, log, text/)
 })
 
 test('root README does not imply CLI commands or rule IDs are renamed to Korean', () => {

@@ -60,7 +60,44 @@ test('CLI help flags print usage to stdout with a success exit', () => {
     assert.match(result.stdout, /--version, -v/, `${helpFlag} should document version flags`)
     assert.match(result.stdout, /--policy <path>, --policy=<path>/, `${helpFlag} should document policy equals form`)
     assert.match(result.stdout, /--out <file>, --out=<file>/, `${helpFlag} should document output equals form`)
+    assert.match(result.stdout, /agentguard doctor/, `${helpFlag} should document the doctor command`)
     assert.equal(result.stderr, '', `${helpFlag} should not print usage to stderr`)
+  }
+})
+
+test('CLI doctor prints Korean-first readiness checks with a success exit', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'doctor'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    },
+  )
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stderr, '')
+  assert.match(result.stdout, /^AgentGuard 준비 상태/)
+  assert.match(result.stdout, /PASS package version/)
+  assert.match(result.stdout, /PASS examples directory/)
+  assert.match(result.stdout, /PASS scanner smoke/)
+})
+
+test('CLI doctor help flags print command usage to stdout with a success exit', () => {
+  for (const helpFlag of ['--help', '-h']) {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', 'doctor', helpFlag],
+      {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      },
+    )
+
+    assert.equal(result.status, 0, `${helpFlag} should exit successfully`)
+    assert.match(result.stdout, /^Usage:\n  agentguard doctor/)
+    assert.match(result.stdout, /scanner smoke test/)
+    assert.equal(result.stderr, '')
   }
 })
 

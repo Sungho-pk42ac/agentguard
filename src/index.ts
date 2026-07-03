@@ -2,6 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { scanCliCommand } from './core.js'
+import { runDoctor } from './doctor.js'
 import { loadPolicy, PolicyLoadError } from './policy.js'
 import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import { startPreviewServer } from './server.js'
@@ -29,6 +30,7 @@ function usage(exitCode = 2): never {
   agentguard scan-log < transcript.log
   agentguard scan-mcp < config.toml
   agentguard report < input.txt
+  agentguard doctor
   agentguard serve [--port <number>]
 
 Options:
@@ -51,6 +53,17 @@ function serveUsage(exitCode = 2): never {
 Options:
   --help, -h                    Print serve usage information
   --port <number>, --port=<number>  Local HTTP port (default: 8787; 0 selects a random port)`
+  if (exitCode === 0) console.log(output)
+  else console.error(output)
+  process.exit(exitCode)
+}
+
+function doctorUsage(exitCode = 2): never {
+  const output = `Usage:
+  agentguard doctor
+
+Checks:
+  package version readability, examples directory presence, scanner smoke test`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)
@@ -193,6 +206,12 @@ if (rawArgs[0] === 'serve') {
     console.error(`Could not start server: ${message}`)
     process.exit(2)
   }
+} else if (rawArgs[0] === 'doctor') {
+  if (rawArgs[1] === '--help' || rawArgs[1] === '-h') doctorUsage(0)
+  if (rawArgs.length !== 1) doctorUsage()
+  const result = runDoctor()
+  console.log(result.output)
+  process.exit(result.exitCode)
 } else {
   const parsedArgs = parseArgs(rawArgs)
   if (!parsedArgs) usage()

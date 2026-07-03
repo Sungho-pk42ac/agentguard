@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, join, relative } from 'node:path'
-import { scanMcpConfig } from './scanner.js'
+import { normalizePath, scanMcpConfig } from './scanner.js'
 
 export interface PostureFinding {
   readonly id: string
@@ -93,7 +93,7 @@ function existingCandidates(root: string): AgentConfigCandidate[] {
 }
 
 function postureFindingsForConfig(root: string, candidate: AgentConfigCandidate, text: string): PostureFinding[] {
-  const file = relative(root, candidate.path) || basename(candidate.path)
+  const file = normalizePath(relative(root, candidate.path)) || basename(candidate.path)
   const findings: PostureFinding[] = []
   const mcpFindings = scanMcpConfig(text)
   for (const finding of mcpFindings) {

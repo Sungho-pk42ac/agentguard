@@ -90,7 +90,7 @@ export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_
 export function scanFiles(root: string, policy: Policy = DEFAULT_POLICY): Finding[] {
   const findings: Finding[] = []
   for (const file of walkFiles(root)) {
-    const rel = relative(root, file)
+    const rel = normalizePath(relative(root, file))
     if (matchesPolicyPattern(rel, policy.denyRead)) {
       findings.push({
         id: 'denied-read-path',
@@ -282,7 +282,8 @@ function matchesPolicyPattern(path: string, patterns: readonly string[]): boolea
   return patterns.some((pattern) => globToRegExp(normalizePath(pattern)).test(normalizedPath))
 }
 
-function normalizePath(path: string): string {
+// Windows의 백슬래시 경로를 리포트/글롭 매칭용 슬래시 경로로 통일한다
+export function normalizePath(path: string): string {
   return path.replace(/\\/g, '/').replace(/^\.\//, '')
 }
 

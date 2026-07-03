@@ -39,12 +39,17 @@
     "test:behavior": "tsx --test test/*.test.ts",
     "test:docs": "tsx --test test/docs/*.test.ts",
     "build": "tsc",
+    "postbuild": "node -e \"require('fs').chmodSync('dist/index.js', 0o755)\"",
     "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run build"
   },
-  "author": "",
+  "author": "Sungho-pk42ac",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "agentguard": "./dist/index.js"
   },

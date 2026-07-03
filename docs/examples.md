@@ -77,6 +77,8 @@ For a Korean-first SARIF reviewer loop from company problem to evidence command 
 
 For Korean-first live-demo failure-mode handling with exact fixture-backed commands and non-claim guardrails, see [AX demo failure mode register](ax-demo-failure-mode-register.md).
 
+For a Korean-first 3-minute live demo rehearsal path with exact exits, artifacts, and fallback wording, see [AX demo operator checklist](ax-demo-operator-checklist.md).
+
 For a Korean-first 90-second judge path from company problem to command, verdict, and approval sentence, see [AX 90-second judge evidence tour](ax-90-second-judge-evidence-tour.md).
 
 For a Korean-first competition-rule compliance checklist that separates public facts, current evidence, and gated unknowns, see [AX rule compliance checklist](ax-rule-compliance-checklist.md).

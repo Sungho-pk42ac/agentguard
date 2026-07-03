@@ -83,6 +83,41 @@ test('CLI doctor prints Korean-first readiness checks with a success exit', () =
   assert.match(result.stdout, /PASS scanner smoke/)
 })
 
+test('CLI doctor supports English readiness output with both lang flag forms', () => {
+  for (const args of [['--lang=en'], ['--lang', 'en']]) {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', 'doctor', ...args],
+      {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      },
+    )
+
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.stderr, '')
+    assert.match(result.stdout, /^AgentGuard readiness/)
+    assert.match(result.stdout, /PASS package version - \d+\.\d+\.\d+ readable/)
+    assert.match(result.stdout, /PASS examples directory - examples directory found/)
+    assert.match(result.stdout, /PASS scanner smoke - safe\/risky sample detection ok/)
+  }
+})
+
+test('CLI doctor rejects invalid language options with command usage', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'doctor', '--lang=fr'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    },
+  )
+
+  assert.equal(result.status, 2)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /^Usage:\n  agentguard doctor \[--lang ko\|en\]/)
+})
+
 test('CLI doctor help flags print command usage to stdout with a success exit', () => {
   for (const helpFlag of ['--help', '-h']) {
     const result = spawnSync(

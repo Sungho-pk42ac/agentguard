@@ -92,6 +92,55 @@ function createRiskyClaudeDesktopWorkspace(): string {
   return workspace
 }
 
+function createRiskyCursorWorkspace(): string {
+  const workspace = mkdtempSync(join(tmpdir(), 'agentguard-posture-cursor-'))
+  mkdirSync(join(workspace, '.cursor'), { recursive: true })
+
+  writeFileSync(
+    join(workspace, '.cursor', 'mcp.json'),
+    JSON.stringify(
+      {
+        mcpServers: {
+          filesystem: {
+            command: 'npx',
+            args: ['-y', '@modelcontextprotocol/server-filesystem', '/'],
+            env: {
+              GITHUB_TOKEN: 'ghp_should_not_leak_in_output_1234567890',
+            },
+          },
+        },
+      },
+      null,
+      2,
+    ),
+  )
+
+  return workspace
+}
+
+test('CLI posture reports Cursor MCP config surface risks', () => {
+  const workspace = createRiskyCursorWorkspace()
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', 'posture', workspace],
+      {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      },
+    )
+
+    assert.equal(result.status, 1, result.stderr)
+    assert.equal(result.stderr, '')
+    assert.match(result.stdout, /^AgentGuard agent posture/)
+    assert.match(result.stdout, /REVIEW cursor mcp config - broad filesystem root/)
+    assert.match(result.stdout, /REVIEW cursor mcp config - credential env/)
+    assert.doesNotMatch(result.stdout, /ghp_should_not_leak/)
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
+})
+
 test('CLI posture reports Claude Desktop MCP config surface risks', () => {
   const workspace = createRiskyClaudeDesktopWorkspace()
   try {

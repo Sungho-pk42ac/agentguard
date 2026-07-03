@@ -26,6 +26,22 @@ agentguard posture .
 
 Expected result: a `claude desktop config` surface finding for the broad filesystem root and credential env passthrough when `claude_desktop_config.json` is present.
 
+## Cursor MCP config
+
+```bash
+agentguard scan-mcp < examples/cursor-mcp.json
+```
+
+Expected result: `BLOCK` or `REVIEW` findings for a broad filesystem root (`/`) and a credential-like `GITHUB_TOKEN` environment passthrough.
+
+`agentguard posture` also detects this surface when `.cursor/mcp.json` sits in the scanned workspace:
+
+```bash
+agentguard posture .
+```
+
+Expected result: a `cursor mcp config` surface finding for the broad filesystem root and credential env passthrough when `.cursor/mcp.json` is present.
+
 ## Risky PR diff
 
 ```bash

@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-347%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-349%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -27,6 +27,9 @@ npm install -g agentguard
 ```bash
 # Scan a repo/workspace (기본 Markdown 리포트는 한국어)
 agentguard scan-files .
+
+# 로컬 설치/예제/스캐너 준비 상태 확인
+agentguard doctor
 
 # 영어 Markdown 리포트가 필요하면
 agentguard scan-files . --lang en
@@ -84,7 +87,7 @@ Verdicts:
 
 한국어 README는 제품 포지셔닝, 운영 설명, 팀 협업 맥락을 한국어 우선으로 제공합니다. 하지만 다음 machine-facing 계약은 한국어로 바꾸지 않습니다.
 
-- CLI commands: `agentguard scan-files`, `agentguard scan-diff`, `agentguard scan-mcp`
+- CLI commands: `agentguard scan-files`, `agentguard scan-diff`, `agentguard scan-mcp`, `agentguard doctor`
 - Rule IDs: `secret.github_token`, `mcp.broad_filesystem_access`
 - Markdown terminal reports: 기본값은 한국어, `--lang en`으로 영어 Markdown 출력 가능
 - SARIF/API/machine fields: GitHub code scanning, JSON, SARIF 2.1.0, CI 파서가 읽는 필드 이름

@@ -10,6 +10,22 @@ agentguard scan-mcp < examples/risky-mcp.json
 
 Expected result: `BLOCK` or `REVIEW` findings for broad filesystem access, writable roots, and credential-like environment passthrough.
 
+## Claude Desktop MCP config
+
+```bash
+agentguard scan-mcp < examples/claude-desktop-config.json
+```
+
+Expected result: `BLOCK` or `REVIEW` findings for a broad filesystem root (`/`) and a credential-like `GITHUB_TOKEN` environment passthrough.
+
+`agentguard posture` also detects this surface when `claude_desktop_config.json` sits at the scanned workspace root:
+
+```bash
+agentguard posture .
+```
+
+Expected result: a `claude desktop config` surface finding for the broad filesystem root and credential env passthrough when `claude_desktop_config.json` is present.
+
 ## Risky PR diff
 
 ```bash

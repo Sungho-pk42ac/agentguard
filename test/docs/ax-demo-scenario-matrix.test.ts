@@ -4,8 +4,18 @@ import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
+function findRepoRoot(startDir: string): string {
+  let currentDir = startDir
+  while (true) {
+    if (existsSync(join(currentDir, 'package.json'))) return currentDir
+    const parentDir = dirname(currentDir)
+    if (parentDir === currentDir) throw new Error('Could not find package.json in the directory tree')
+    currentDir = parentDir
+  }
+}
+
 const testDir = dirname(fileURLToPath(import.meta.url))
-const repoRoot = join(testDir, '..')
+const repoRoot = findRepoRoot(testDir)
 const scenarioRoot = join(repoRoot, 'examples', 'enterprise-scenarios')
 const matrixPath = join(repoRoot, 'docs', 'ax-demo-scenario-matrix.md')
 const currentEnterpriseScenarios = readdirSync(scenarioRoot, { withFileTypes: true })

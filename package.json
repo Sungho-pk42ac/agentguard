@@ -35,7 +35,9 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "tsx --test test/*.test.ts",
+    "test": "npm run test:behavior && npm run test:docs",
+    "test:behavior": "tsx --test test/*.test.ts",
+    "test:docs": "tsx --test test/docs/*.test.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"

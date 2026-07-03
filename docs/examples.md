@@ -73,6 +73,8 @@ For a 30-second Korean judge-facing matrix against public agent-security referen
 
 For Korean-first hard objection scripts against public agent-security references, see [AX competitor objection answer card](ax-competitor-objection-answer-card.md).
 
+For a Korean-first SARIF reviewer loop from company problem to evidence command and approval condition, see [AX SARIF reviewer loop card](ax-sarif-reviewer-loop-card.md).
+
 For Korean-first live-demo failure-mode handling with exact fixture-backed commands and non-claim guardrails, see [AX demo failure mode register](ax-demo-failure-mode-register.md).
 
 For a Korean-first 90-second judge path from company problem to command, verdict, and approval sentence, see [AX 90-second judge evidence tour](ax-90-second-judge-evidence-tour.md).

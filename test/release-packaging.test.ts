@@ -9,6 +9,8 @@ function run(command: string, args: readonly string[], cwd = process.cwd()): str
   return execFileSync(command, args, {
     cwd,
     encoding: 'utf8',
+    // Windows에서 npm/npx는 .cmd 배치 파일이라 shell 없이는 실행 불가 (Node 18.20+ 필수)
+    shell: process.platform === 'win32',
     env: { ...process.env, npm_config_update_notifier: 'false', npm_config_fund: 'false', npm_config_audit: 'false' },
     stdio: ['pipe', 'pipe', 'pipe'],
   })

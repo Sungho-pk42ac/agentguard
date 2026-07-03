@@ -126,6 +126,7 @@ Verdicts:
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
+- [AX pilot responsibility card](docs/ax-pilot-responsibility-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)
 - [AX final company-problem worksheet](docs/ax-final-problem-worksheet.md)
 - [Roadmap](docs/roadmap.md)

@@ -30,6 +30,7 @@ const CANDIDATES: readonly AgentConfigCandidate[] = [
   { surface: 'codex config', path: '.codex/config.toml' },
   { surface: 'gemini mcp config', path: '.gemini/settings.json' },
   { surface: 'gemini mcp config', path: '.gemini/settings.toml' },
+  { surface: 'claude desktop config', path: 'claude_desktop_config.json' },
   { surface: 'mcp config', path: 'mcp.json' },
 ]
 

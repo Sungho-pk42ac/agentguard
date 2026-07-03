@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-351%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-354%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -30,6 +30,9 @@ agentguard scan-files .
 
 # Check local package/examples/scanner readiness
 agentguard doctor
+
+# Check local Claude/Codex/Gemini/MCP agent permission posture
+agentguard posture .
 
 # Emit English Markdown reports when needed
 agentguard scan-files . --lang en

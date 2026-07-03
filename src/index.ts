@@ -4,6 +4,7 @@ import { dirname } from 'node:path'
 import { scanCliCommand } from './core.js'
 import { runDoctor, type DoctorLanguage } from './doctor.js'
 import { loadPolicy, PolicyLoadError } from './policy.js'
+import { scanAgentPosture, postureReportToText } from './posture.js'
 import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import { startPreviewServer } from './server.js'
 import type { Finding } from './rules.js'
@@ -30,6 +31,7 @@ function usage(exitCode = 2): never {
   agentguard scan-log < transcript.log
   agentguard scan-mcp < config.toml
   agentguard report < input.txt
+  agentguard posture [path] [--json]
   agentguard doctor [--lang ko|en]
   agentguard serve [--port <number>]
 
@@ -64,6 +66,17 @@ function doctorUsage(exitCode = 2): never {
 
 Checks:
   package version readability, examples directory presence, scanner smoke test`
+  if (exitCode === 0) console.log(output)
+  else console.error(output)
+  process.exit(exitCode)
+}
+
+function postureUsage(exitCode = 2): never {
+  const output = `Usage:
+  agentguard posture [path] [--json]
+
+Checks:
+  local Claude/Codex/Gemini/MCP config posture, broad filesystem roots, writable paths, credential env passthrough, local agent-policy presence`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)
@@ -168,6 +181,11 @@ interface DoctorArgs {
   readonly lang: DoctorLanguage
 }
 
+interface PostureArgs {
+  readonly path: string
+  readonly json: boolean
+}
+
 function parseServeArgs(args: readonly string[]): ServeArgs | undefined {
   let port = 8787
   for (let index = 0; index < args.length; index += 1) {
@@ -216,6 +234,24 @@ function parseDoctorArgs(args: readonly string[]): DoctorArgs | undefined {
   return { lang }
 }
 
+function parsePostureArgs(args: readonly string[]): PostureArgs | undefined {
+  let path = process.cwd()
+  let json = false
+  let pathSeen = false
+  for (const arg of args) {
+    if (arg === '--help' || arg === '-h') postureUsage(0)
+    if (arg === '--json') {
+      json = true
+      continue
+    }
+    if (arg.startsWith('-')) return undefined
+    if (pathSeen) return undefined
+    path = arg
+    pathSeen = true
+  }
+  return { path, json }
+}
+
 function parsePort(value: string): number | undefined {
   if (!/^\d+$/.test(value)) return undefined
   const port = Number(value)
@@ -239,6 +275,17 @@ if (rawArgs[0] === 'serve') {
   const result = runDoctor(doctorArgs.lang)
   console.log(result.output)
   process.exit(result.exitCode)
+} else if (rawArgs[0] === 'posture') {
+  const postureArgs = parsePostureArgs(rawArgs.slice(1))
+  if (postureArgs === undefined) postureUsage()
+  try {
+    const report = scanAgentPosture(postureArgs.path)
+    console.log(postureArgs.json ? JSON.stringify(report, null, 2) : postureReportToText(report))
+    process.exit(report.findingCount > 0 ? 1 : 0)
+  } catch (error: unknown) {
+    console.error(`Could not scan posture: ${postureScanErrorMessage(error)}`)
+    process.exit(2)
+  }
 } else {
   const parsedArgs = parseArgs(rawArgs)
   if (!parsedArgs) usage()
@@ -313,6 +360,16 @@ function readPackageVersion(): string {
 
 function isScanCommand(cmd: string): boolean {
   return cmd === 'scan-files' || cmd === 'scan-diff' || cmd === 'scan-log' || cmd === 'scan-mcp' || cmd === 'report'
+}
+
+function postureScanErrorMessage(error: unknown): string {
+  if (hasErrorCode(error)) {
+    const code = String(error.code)
+    if (code === 'ENOENT') return 'path was not found'
+    if (code === 'ENOTDIR') return 'path is not a directory'
+    if (code === 'EACCES' || code === 'EPERM') return 'path is not readable'
+  }
+  return 'unable to read posture path'
 }
 
 function hasErrorCode(error: unknown): error is { readonly code: unknown } {

@@ -10,6 +10,9 @@ interface PackageJson {
   readonly bugs?: { readonly url?: string }
   readonly homepage?: string
   readonly keywords?: readonly string[]
+  readonly engines?: Record<string, string>
+  readonly author?: string
+  readonly scripts?: Record<string, string>
 }
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as PackageJson
@@ -27,4 +30,11 @@ test('npm package metadata links users to the source, issues, and product catego
   assert.ok(packageJson.keywords?.includes('agentops'))
   assert.ok(packageJson.keywords?.includes('mcp'))
   assert.ok(packageJson.keywords?.includes('security'))
+})
+
+test('npm package metadata is hardened for first npm publish', () => {
+  assert.equal(packageJson.engines?.node, '>=20')
+  assert.ok(packageJson.author && packageJson.author.trim().length > 0, 'author should be a non-empty string')
+  assert.ok(packageJson.scripts?.prepublishOnly?.includes('typecheck'), 'prepublishOnly should run typecheck')
+  assert.ok(packageJson.scripts?.prepublishOnly?.includes('build'), 'prepublishOnly should run build')
 })

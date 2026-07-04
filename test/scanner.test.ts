@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { scanDiff, scanFiles, scanMcpConfig, scanText } from '../src/scanner.js'
 import { riskScore, toSarif } from '../src/report.js'
-import type { Policy } from '../src/rules.js'
+import type { Finding, Policy } from '../src/rules.js'
 
 test('detects secrets in text and redacts evidence', () => {
   const findings = scanText('OPENAI_API_KEY="sk-abcdefghijklmnopqrstuvwxyz"')
@@ -1062,4 +1062,28 @@ test('emits SARIF for GitHub code scanning', () => {
   assert.equal(sarif.runs[0].results[0].ruleId, 'github-token')
   assert.equal(sarif.runs[0].results[0].level, 'error')
   assert.equal(sarif.runs[0].results[0].locations[0].physicalLocation.artifactLocation.uri, 'diff')
+})
+
+test('SARIF rules carry fullDescription, helpUri, and a severity-mapped defaultConfiguration.level', () => {
+  const findings: Finding[] = [
+    { id: 'github-token', title: 'GitHub token', severity: 'critical', category: 'secret', evidence: 'gh*', recommendation: 'Rotate it.' },
+    { id: 'aws-access-key', title: 'AWS access key id', severity: 'high', category: 'secret', evidence: 'AKIA*', recommendation: 'Rotate it.' },
+    { id: 'pii-email', title: 'Email address', severity: 'medium', category: 'pii', evidence: 'a@b.com', recommendation: 'Redact it.' },
+    { id: 'sensitive-file', title: 'Sensitive file', severity: 'low', category: 'sensitive-file', evidence: '.env', recommendation: 'Exclude it.' },
+  ]
+  const expectedLevel: Record<string, 'error' | 'warning' | 'note'> = {
+    'github-token': 'error',
+    'aws-access-key': 'error',
+    'pii-email': 'warning',
+    'sensitive-file': 'note',
+  }
+
+  const sarif = JSON.parse(toSarif(findings))
+
+  for (const rule of sarif.runs[0].tool.driver.rules) {
+    assert.ok(rule.fullDescription && rule.fullDescription.text.length > 0, `${rule.id} should have non-empty fullDescription.text`)
+    assert.match(rule.helpUri, /^https:\/\/github\.com\/Sungho-pk42ac\/agentguard/, `${rule.id} should have a repo helpUri`)
+    assert.ok(['error', 'warning', 'note'].includes(rule.defaultConfiguration.level), `${rule.id} should have a valid defaultConfiguration.level`)
+    assert.equal(rule.defaultConfiguration.level, expectedLevel[rule.id], `${rule.id} level should match its severity mapping`)
+  }
 })

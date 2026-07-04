@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-457%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-465%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -14,6 +14,8 @@ Licensed under the [Apache License 2.0](LICENSE).
 **Security scanner for AI coding agents, MCP configs, transcripts, and PR diffs.**
 
 AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe agent shell behavior, and risky PR diffs before they reach production.
+
+As of v0.3.0, AgentGuard delivers **AI coding agent lifecycle security** as a local workflow — an **onboarding inspection** of the AI tools and permissions installed on a new hire's machine, an **offboarding sweep** that finds residual credentials on a departing employee's machine and deletes them only after explicit approval (with an audit report), and an **admin-only local terminal dashboard** (`agentguard`) to run it all. It works offline on the target machine, with no web or central server.
 
 <p align="center">
   <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard dashboard terminal screenshot showing the 5-tab keyboard navigation and findings exploration" width="920" />
@@ -72,6 +74,9 @@ AgentGuard focuses on **agent behavior risk**: secrets in agent-visible files, r
 | PR diffs | newly-added secrets, PII, dangerous commands, agent policy violations |
 | MCP/Codex config | broad filesystem roots, writable paths, credential passthrough, full-access servers |
 | Policy files | YAML/JSON policy aliases, malformed policy documents, unsafe duplicates |
+| Shell rc keys | API keys / credential-named vars exported in `.bashrc`/`.zshrc`/PowerShell `$PROFILE` |
+| npm global AI CLIs | globally installed AI coding CLIs (Claude Code/Codex/Gemini/…) as onboarding/offboarding signals |
+| AI tool config | residual credentials in `~/.claude`/`~/.codex`, Claude Desktop/Cursor MCP config |
 
 ## Example finding
 

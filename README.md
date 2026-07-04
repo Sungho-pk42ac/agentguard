@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-457%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-465%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -14,6 +14,8 @@ Licensed under the [Apache License 2.0](LICENSE).
 **Codex, Claude Code, Hermes, MCP 설정, 에이전트 트랜스크립트/로그, PR diff를 운영하는 한국 팀을 위한 한국어 우선 AgentOps 보안 스캐너.**
 
 AgentGuard는 한국 팀이 에이전트 기반 개발을 운영할 때 노출될 수 있는 비밀 값, 위험한 MCP 권한, 에이전트 셸 동작, PR diff 리스크를 배포 전에 확인하도록 돕습니다. 지금의 한국어 우선 범위는 문서, 정책 설명, 팀 협업 가이드, 기본 터미널/Markdown 리포트입니다. CLI commands, rule IDs, JSON/SARIF/API/machine fields는 CI/CD와 글로벌 보안 도구 연동을 위해 English-compatible, global-standard 계약으로 유지합니다.
+
+v0.3.0부터는 **AI 코딩 에이전트 생애주기 보안**을 로컬 워크플로로 제공합니다 — 신입 입사자 PC의 설치된 AI 도구·권한을 점검하는 **온보딩 인스펙션**, 퇴사자 PC의 잔여 자격증명을 훑어 **승인 후에만 삭제하고 감사 리포트를 남기는 오프보딩 스윕**, 그리고 이를 운영하는 **관리자 전용 로컬 터미널 대시보드**(`agentguard`). 웹·중앙 서버 없이 대상 PC에서 오프라인으로 동작합니다.
 
 <p align="center">
   <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard 대시보드 터미널 스크린샷 — 5탭 키보드 네비게이션과 findings 탐색" width="920" />
@@ -72,6 +74,9 @@ AgentGuard는 한국어 우선 운영 문서와 정책 설명을 제공하면서
 | PR diffs | newly-added secrets, PII, dangerous commands, agent policy violations |
 | MCP/Codex config | broad filesystem roots, writable paths, credential passthrough, full-access servers |
 | Policy files | YAML/JSON policy aliases, malformed policy documents, unsafe duplicates |
+| Shell rc keys | `.bashrc`/`.zshrc`/PowerShell `$PROFILE`에 export된 API 키·credential-named 변수 |
+| npm global AI CLIs | 전역 설치된 AI 코딩 CLI(Claude Code/Codex/Gemini 등) — 온보딩·오프보딩 신호 |
+| AI tool config | `~/.claude`·`~/.codex` 등 잔여 자격증명, Claude Desktop/Cursor MCP config |
 
 ## 예시 finding
 

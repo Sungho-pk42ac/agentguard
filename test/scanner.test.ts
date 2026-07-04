@@ -1087,3 +1087,21 @@ test('SARIF rules carry fullDescription, helpUri, and a severity-mapped defaultC
     assert.equal(rule.defaultConfiguration.level, expectedLevel[rule.id], `${rule.id} level should match its severity mapping`)
   }
 })
+
+test('still matches normal emails after bounding the PII regex quantifiers', () => {
+  const findings = scanText('contact us at hello.support+billing@example.co.kr for help')
+  const finding = findings.find((f) => f.id === 'email')
+  assert.ok(finding, 'expected an email finding for a normal address')
+  assert.equal(finding?.severity, 'medium')
+})
+
+// ReDoS 회귀 테스트: '@' 없는 대용량 입력에서 email 정규식이 O(n^2) 백트래킹으로
+// 멈추지 않는지 확인한다. 수정 전 코드는 100kB에서 17.5s가 걸렸다(2MB는 행).
+// 넉넉한 상한선(2s)으로 시간 측정 플레이키니스를 피하면서도 회귀를 잡아낸다.
+test('email PII regex resolves quickly on large @-less input (ReDoS guard)', () => {
+  const text = 'a'.repeat(200_000)
+  const start = performance.now()
+  scanText(text)
+  const elapsed = performance.now() - start
+  assert.ok(elapsed < 2000, `expected scan of 200kB @-less text under 2000ms, took ${elapsed.toFixed(0)}ms`)
+})

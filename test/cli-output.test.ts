@@ -43,6 +43,30 @@ test('CLI --out reports write failures without a raw stack trace', () => {
   assert.doesNotMatch(result.stderr, /at .*src\/index\.ts/)
 })
 
+// stdin은 파일 스캔의 크기 상한(MAX_FILE_BYTES=512_000)이 없어 그대로 두면 무한정
+// 커질 수 있다. 이 픽스처는 PII/시크릿 패턴을 피해 상한 검사 전 코드에서도 빠르게
+// 끝나도록 만들어, ReDoS 회귀와 상관없이 이 케이스만 단독으로 검증한다.
+test('CLI rejects stdin larger than the file-scan size cap with a clear error', () => {
+  const oversized = 'benign log line without special markers\n'.repeat(15_000)
+  assert.ok(oversized.length > 512_000, 'fixture must exceed the 512_000 byte cap')
+
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-log'],
+    {
+      cwd: process.cwd(),
+      input: oversized,
+      encoding: 'utf8',
+      timeout: 15_000,
+    },
+  )
+
+  assert.equal(result.status, 2, `expected usage-error exit code 2, got ${result.status}; stderr: ${result.stderr}`)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /stdin/i)
+  assert.match(result.stderr, /512.?000|512.?KB/i)
+})
+
 test('CLI help flags print usage to stdout with a success exit', () => {
   for (const helpFlag of ['--help', '-h']) {
     const result = spawnSync(

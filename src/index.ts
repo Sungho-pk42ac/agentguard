@@ -6,6 +6,7 @@ import { runDoctor, type DoctorLanguage } from './doctor.js'
 import { loadPolicy, PolicyLoadError } from './policy.js'
 import { scanAgentPosture, postureReportToText } from './posture.js'
 import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
+import { MAX_FILE_BYTES } from './scanner.js'
 import { startPreviewServer } from './server.js'
 import type { Finding } from './rules.js'
 
@@ -299,7 +300,14 @@ if (rawArgs[0] === 'serve') {
     process.exit(2)
   }
 
-  const stdin = () => readFileSync(0, 'utf8')
+  const stdin = () => {
+    const raw = readFileSync(0)
+    if (raw.byteLength > MAX_FILE_BYTES) {
+      console.error(`Could not read stdin: input is ${raw.byteLength} bytes, exceeding the ${MAX_FILE_BYTES} byte limit. Scan a smaller input.`)
+      process.exit(2)
+    }
+    return raw.toString('utf8')
+  }
   let findings: Finding[] = []
   const policy = (() => {
     try {

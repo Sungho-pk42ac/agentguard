@@ -1,0 +1,29 @@
+overrides:
+  mcp:
+    deny_servers:
+      - postgres
+      - supabase
+      - github
+      - slack
+      - google
+      - drive
+deny_read:
+  - .env*
+  - ~/.ssh/**
+  - auth.json
+  - credentials.json
+  - .aws/**
+  - .kube/**
+  - .gnupg/**
+  - "*.pem"
+deny_commands:
+  - rm -rf
+  - find . -delete
+  - chmod -R 777
+mcp:
+  deny_tools:
+    - filesystem.delete_file
+  require_approval_tools:
+    - filesystem.write_file
+    - filesystem.move_file
+    - filesystem.create_directory

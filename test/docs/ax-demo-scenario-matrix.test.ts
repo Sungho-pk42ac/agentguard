@@ -92,6 +92,35 @@ test('AX demo scenario matrix preserves scoped English-compatible evidence terms
   assert.match(matrix, /PR diff \+ MCP \+ transcript evidence/)
 })
 
+test('AX demo scenario matrix documents local agent config posture as a new risk surface', () => {
+  const matrix = readMatrix()
+
+  const requiredFixturePaths = [
+    'examples/claude-desktop-config.json',
+    'examples/cursor-mcp.json',
+    'examples/codex-transcript.jsonl',
+  ] as const
+
+  for (const fixturePath of requiredFixturePaths) {
+    assert.ok(existsSync(join(repoRoot, fixturePath)), `${fixturePath} should exist`)
+    assert.ok(matrix.includes(fixturePath), `${fixturePath} should be documented`)
+  }
+
+  const requiredCommands = [
+    'agentguard scan-mcp < examples/claude-desktop-config.json',
+    'agentguard scan-mcp < examples/cursor-mcp.json',
+    'agentguard scan-log < examples/codex-transcript.jsonl',
+  ] as const
+
+  for (const command of requiredCommands) {
+    assert.ok(matrix.includes(command), `${command} should be documented exactly`)
+  }
+
+  assert.match(matrix, /Claude Desktop/)
+  assert.match(matrix, /Cursor/)
+  assert.match(matrix, /JSONL/)
+})
+
 test('AX demo scenario matrix does not claim fake adoption, certification, or broad coverage', () => {
   const matrix = readMatrix()
 

@@ -44,6 +44,20 @@ CLI가 전역 설치된 환경에서는 같은 입력을 `agentguard scan-diff`,
 - `scan-log --policy`: 승인 없이 export, 삭제성 shell behavior, 민감 경로 접근이 필요한 작업을 `판정: REVIEW` 또는 `Verdict: REVIEW` evidence로 보여줍니다.
 - `scan-diff --sarif --out .agentguard-demo/agentguard.sarif`: GitHub code scanning에 올릴 수 있는 SARIF 형태의 CI artifact framing을 보여줍니다.
 
+## 추가 evidence: 로컬 agent config posture와 JSONL transcript
+
+심사자가 "IDE에 붙인 MCP 서버는요?" 또는 "Codex 같은 다른 agent 로그도 되나요?"라고 물으면 같은 저장소 fixture로 바로 보여줍니다. Claude Desktop과 Cursor의 MCP config는 `scan-mcp`에서 동일한 방식으로 `BLOCK` evidence를 만들고, Codex 스타일 JSONL transcript는 `scan-log`에서 `REVIEW` evidence를 만듭니다.
+
+```bash
+node dist/index.js scan-mcp < examples/claude-desktop-config.json
+node dist/index.js scan-mcp < examples/cursor-mcp.json
+node dist/index.js scan-log < examples/codex-transcript.jsonl
+```
+
+- `examples/claude-desktop-config.json`: Claude Desktop MCP config evidence for broad filesystem root and credential env passthrough, `판정: BLOCK`.
+- `examples/cursor-mcp.json`: Cursor MCP config evidence for the same broad root/credential risk shape, `판정: BLOCK`.
+- `examples/codex-transcript.jsonl`: Codex-style JSONL transcript evidence for a leaked OpenAI-format key and an approval-required `deploy` operation, `판정: REVIEW`.
+
 ## 수정/정책/PASS 전환
 
 30초 데모에서는 실제 파일을 수정하지 않아도 됩니다. 말로는 아래 순서만 짧게 연결합니다.

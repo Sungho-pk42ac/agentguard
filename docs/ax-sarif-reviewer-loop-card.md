@@ -30,6 +30,8 @@ AgentGuard는 MCP 런타임 authorization, GitHub native integration, hosted Saa
 - `agentguard scan-diff --sarif --out agentguard.sarif`로 만든 SARIF file을 PR workflow artifact로 보존한다.
 - CI에서 risky finding 때문에 scan step이 non-zero로 종료되면 SARIF upload step이 건너뛰어질 수 있다. reviewer에게 alert를 보여주는 workflow에서는 `continue-on-error: true` 또는 별도 artifact/upload step 분리를 명시해 SARIF 파일 보존을 우선한다.
 - GitHub code scanning upload step을 쓰는 경우 GitHub가 요구하는 SARIF 2.1.0 subset과 alert display 흐름에 맞춰 reviewer가 alert를 본다.
+- SARIF `rules[]` 메타데이터에는 `fullDescription`, `helpUri`, `defaultConfiguration.level`이 포함되어 reviewer가 GitHub code scanning alert 화면에서 추가 문서 없이 원인과 조치 방법을 바로 확인할 수 있다.
+- SARIF `results[].locations[].physicalLocation.region.startLine`이 채워져 GitHub code scanning이 PR diff의 정확한 줄에 alert를 앵커링한다.
 - 같은 run에서 한국어 우선 Markdown/terminal report를 PR comment 또는 artifact로 남겨 `reviewer`, `approval condition`, residual risk를 사람이 읽게 한다.
 - `agentguard scan-mcp`, `agentguard scan-log`, `agentguard scan-diff`, rule IDs, JSON, SARIF, API fields stay English-compatible.
 - 대표 machine contracts: `secret.github_token`, `mcp.broad_filesystem_access`.

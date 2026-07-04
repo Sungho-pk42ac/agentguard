@@ -1,6 +1,6 @@
 <svg width="920" height="560" viewBox="0 0 920 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">AgentGuard 대시보드 터미널 스크린샷</title>
-  <desc id="desc">README용 터미널 스크린샷으로, 맨 agentguard 실행 시 열리는 tokscale 스타일 관리자 대시보드가 상단 5개 탭, 서피스별 findings 바 차트와 PASS/REVIEW/BLOCK verdict 배지, 심각도 색상 findings 리스트, 하단 단축키/상태 바를 표시하는 모습을 보여준다.</desc>
+  <desc id="desc">README용 터미널 스크린샷으로, 맨 agentguard 실행 시 열리는 tokscale 스타일 관리자 대시보드가 상단 6개 탭, 서피스별 findings 바 차트와 PASS/REVIEW/BLOCK verdict 배지, 심각도 색상 findings 리스트, 하단 단축키/상태 바를 표시하는 모습을 보여준다.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#06111f"/>
@@ -16,7 +16,7 @@
 
   <!-- tab bar -->
   <text x="28" y="86" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15">
-    <tspan fill="#38bdf8" font-weight="700">agentguard  </tspan><tspan fill="#0b1b2f" style="background:#38bdf8"> Overview </tspan><tspan fill="#38bdf8"> Overview </tspan><tspan fill="#9ca3af">  Agents   Credentials   Posture   Offboard</tspan><tspan fill="#f87171" font-weight="700">      BLOCK · 3 critical</tspan>
+    <tspan fill="#38bdf8" font-weight="700">agentguard  </tspan><tspan fill="#38bdf8" font-weight="700">Overview</tspan><tspan fill="#9ca3af">   Agents   Credentials   Posture   Baseline   Offboard</tspan><tspan fill="#f87171" font-weight="700">      BLOCK · 3 critical</tspan>
   </text>
   <line x1="28" y1="98" x2="892" y2="98" stroke="#1f3a56"/>
 

@@ -5,6 +5,9 @@ import { render } from 'ink-testing-library'
 import { Dashboard } from '../../src/tui/dashboard.js'
 import { buildDashboardData } from '../../src/tui/dashboard-data.js'
 import type { ResidualCredential } from '../../src/residual.js'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
@@ -81,5 +84,21 @@ test('SINGLE INPUT OWNER: q during offboard does NOT kill the process (parent in
   assert.ok(await waitFor(lastFrame, /Findings by surface|Press \[o\]/), 'q backs out to the dashboard')
   await delay(50)
   assert.equal(wasExited(), false, 'q during offboard must not call the dashboard exit')
+  unmount()
+})
+
+test('Baseline tab: navigate, save a snapshot, then show no drift', async () => {
+  const home = mkdtempSync(join(tmpdir(), 'agentguard-dash-baseline-'))
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader, onExit: () => {}, homeDir: home }))
+  assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview should load')
+  // overview -> agents -> credentials -> posture -> baseline (4 tab presses)
+  for (let i = 0; i < 4; i += 1) {
+    stdin.write('\t')
+    await delay(25)
+  }
+  assert.ok(await waitFor(lastFrame, /No baseline saved yet/), 'baseline tab shows empty state')
+  stdin.write('s') // save current scan as baseline
+  assert.ok(await waitFor(lastFrame, /Saved baseline/), 'baseline should be saved')
+  assert.match(lastFrame() ?? '', /No drift since the last baseline/)
   unmount()
 })

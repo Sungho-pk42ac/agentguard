@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-465%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-469%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -18,7 +18,7 @@ AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe a
 As of v0.3.0, AgentGuard delivers **AI coding agent lifecycle security** as a local workflow — an **onboarding inspection** of the AI tools and permissions installed on a new hire's machine, an **offboarding sweep** that finds residual credentials on a departing employee's machine and deletes them only after explicit approval (with an audit report), and an **admin-only local terminal dashboard** (`agentguard`) to run it all. It works offline on the target machine, with no web or central server.
 
 <p align="center">
-  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard dashboard terminal screenshot showing the 5-tab keyboard navigation and findings exploration" width="920" />
+  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard dashboard terminal screenshot showing the 6-tab keyboard navigation and findings exploration" width="920" />
 </p>
 
 ## Install
@@ -51,11 +51,11 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 # Scan Codex/MCP config
 agentguard scan-mcp < ~/.codex/config.toml
 
-# Interactive dashboard (TTY): 5-tab keyboard navigation + /offboard sweep
+# Interactive dashboard (TTY): 6-tab keyboard navigation + /offboard sweep
 agentguard        # or: agentguard repl
 ```
 
-Run bare `agentguard` (or `agentguard repl`) in a TTY to open a tokscale-style full-screen admin dashboard. Switch the 5 top tabs (Overview/Agents/Credentials/Posture/Offboard) with `tab`/`←→`, and browse the severity-colored findings list with `↑↓`, `f` to filter by severity, and `enter` for the detail panel. Overview shows a findings-by-surface bar chart and a `PASS/REVIEW/BLOCK` verdict badge; the bottom keybind/status bar exposes `[o]` offboarding sweep, `[r]` rescan, and `[q]` quit. In non-TTY contexts (pipes/CI) the usual help text is printed, preserving script backward compatibility. Every cleanup (delete) action applies only after explicit approval (y), and deleted targets are moved to `~/.agentguard/trash` (a recoverable backup) rather than hard-deleted.
+Run bare `agentguard` (or `agentguard repl`) in a TTY to open a tokscale-style full-screen admin dashboard. Switch the 6 top tabs (Overview/Agents/Credentials/Posture/Baseline/Offboard) with `tab`/`←→`, and browse the severity-colored findings list with `↑↓`, `f` to filter by severity, and `enter` for the detail panel. Overview shows a findings-by-surface bar chart and a `PASS/REVIEW/BLOCK` verdict badge; the **Baseline tab snapshots the current scan with `[s]` and shows drift (appeared/disappeared/rotated) vs the last baseline**. The bottom keybind/status bar exposes `[o]` offboarding sweep, `[r]` rescan, and `[q]` quit. In non-TTY contexts (pipes/CI) the usual help text is printed, preserving script backward compatibility. Every cleanup (delete) action applies only after explicit approval (y), and deleted targets are moved to `~/.agentguard/trash` (a recoverable backup) rather than hard-deleted.
 
 ## Why
 

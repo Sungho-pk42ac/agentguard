@@ -1,8 +1,10 @@
 import { render, Box, Text, useApp, useInput, useStdout } from 'ink'
 import { homedir } from 'node:os'
 import { useEffect, useReducer } from 'react'
+import { type BaselineDiff, diffAgainstBaseline, loadBaseline, saveBaseline } from '../baseline.js'
 import type { Severity } from '../rules.js'
 import { AgentsView } from './agents-view.js'
+import { BaselineView } from './baseline-view.js'
 import { buildDashboardData, type DashboardData, loadDashboardData } from './dashboard-data.js'
 import { FindingsView } from './findings-view.js'
 import { Footer } from './footer.js'
@@ -10,15 +12,22 @@ import { HeroChart, VerdictBadge } from './hero-chart.js'
 import { Offboard } from './offboard.js'
 import { nextSeverityFilter } from './view-model.js'
 
-export type TabId = 'overview' | 'agents' | 'credentials' | 'posture' | 'offboard'
+export type TabId = 'overview' | 'agents' | 'credentials' | 'posture' | 'baseline' | 'offboard'
 
 const TABS: readonly { readonly id: TabId; readonly label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'agents', label: 'Agents' },
   { id: 'credentials', label: 'Credentials' },
   { id: 'posture', label: 'Posture' },
+  { id: 'baseline', label: 'Baseline' },
   { id: 'offboard', label: 'Offboard' },
 ]
+
+interface BaselineState {
+  readonly has: boolean
+  readonly diff: BaselineDiff | null
+  readonly message: string | null
+}
 
 interface State {
   readonly activeTab: TabId
@@ -28,6 +37,7 @@ interface State {
   readonly cursor: number
   readonly detailOpen: boolean
   readonly offboardActive: boolean
+  readonly baseline: BaselineState
   readonly now: number
 }
 
@@ -40,6 +50,7 @@ type Action =
   | { type: 'toggleDetail' }
   | { type: 'openOffboard' }
   | { type: 'closeOffboard' }
+  | { type: 'baseline'; has: boolean; diff: BaselineDiff | null; message?: string | null }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -62,6 +73,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, activeTab: 'offboard', offboardActive: true }
     case 'closeOffboard':
       return { ...state, offboardActive: false }
+    case 'baseline':
+      return { ...state, baseline: { has: action.has, diff: action.diff, message: action.message ?? null } }
   }
 }
 
@@ -69,14 +82,18 @@ export interface DashboardProps {
   // Injectable scan for tests (defaults to the real, offline scan).
   readonly loader?: () => DashboardData
   readonly onExit?: () => void
+  // Home dir for baseline snapshots (defaults to os.homedir()); injectable for tests.
+  readonly homeDir?: string
 }
 
 const EMPTY_DATA = (): DashboardData => buildDashboardData([], Date.now())
+const BASELINE_SCAN_ID = 'dashboard'
 
-export function Dashboard({ loader, onExit }: DashboardProps): React.ReactElement {
+export function Dashboard({ loader, onExit, homeDir }: DashboardProps): React.ReactElement {
   const app = useApp()
   const { stdout } = useStdout()
   const columns = stdout?.columns ?? 80
+  const home = homeDir ?? homedir()
   const [state, dispatch] = useReducer(reducer, {
     activeTab: 'overview',
     loading: true,
@@ -84,6 +101,7 @@ export function Dashboard({ loader, onExit }: DashboardProps): React.ReactElemen
     cursor: 0,
     detailOpen: false,
     offboardActive: false,
+    baseline: { has: false, diff: null, message: null },
     now: Date.now(),
   })
 
@@ -92,8 +110,7 @@ export function Dashboard({ loader, onExit }: DashboardProps): React.ReactElemen
 
   function rescan(): void {
     dispatch({ type: 'loading' })
-    // Async boundary BEFORE the synchronous scan (collectResiduals ->
-    // spawnSync 'npm ls -g') so the loading frame paints and Ink is not frozen.
+    // Async boundary BEFORE the synchronous scan so the loading frame paints.
     setTimeout(() => {
       let data: DashboardData
       try {
@@ -110,6 +127,34 @@ export function Dashboard({ loader, onExit }: DashboardProps): React.ReactElemen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Load + diff the baseline when the Baseline tab is active (cheap sync file read).
+  useEffect(() => {
+    if (state.activeTab !== 'baseline' || !state.data || state.loading) return
+    const baseline = loadBaseline(BASELINE_SCAN_ID, home)
+    dispatch({
+      type: 'baseline',
+      has: baseline !== undefined,
+      diff: baseline ? diffAgainstBaseline(baseline, state.data.residuals) : null,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.activeTab, state.data])
+
+  function saveBaselineNow(): void {
+    if (!state.data) return
+    try {
+      saveBaseline(state.data.residuals, { homeDir: home, scanId: BASELINE_SCAN_ID })
+      const baseline = loadBaseline(BASELINE_SCAN_ID, home)
+      dispatch({
+        type: 'baseline',
+        has: true,
+        diff: baseline ? diffAgainstBaseline(baseline, state.data.residuals) : null,
+        message: `Saved baseline: ${state.data.residuals.length} entr${state.data.residuals.length === 1 ? 'y' : 'ies'} → ~/.agentguard/baselines`,
+      })
+    } catch (error) {
+      dispatch({ type: 'baseline', has: state.baseline.has, diff: state.baseline.diff, message: `Save failed: ${error instanceof Error ? error.message : String(error)}` })
+    }
+  }
+
   const isFindingsTab = state.activeTab === 'credentials' || state.activeTab === 'posture'
 
   useInput(
@@ -120,6 +165,7 @@ export function Dashboard({ loader, onExit }: DashboardProps): React.ReactElemen
       if (key.tab || key.rightArrow) return dispatch({ type: 'tab', dir: 1 })
       if (key.leftArrow) return dispatch({ type: 'tab', dir: -1 })
       if (char === 'o' || (key.return && state.activeTab === 'offboard')) return dispatch({ type: 'openOffboard' })
+      if (state.activeTab === 'baseline' && char === 's') return saveBaselineNow()
       if (isFindingsTab) {
         if (key.downArrow || char === 'j') return dispatch({ type: 'move', delta: 1 })
         if (key.upArrow || char === 'k') return dispatch({ type: 'move', delta: -1 })
@@ -163,6 +209,8 @@ export function Dashboard({ loader, onExit }: DashboardProps): React.ReactElemen
         return <FindingsView title="Credentials" items={data.credentialItems} cursor={state.cursor} filter={state.filter} detailOpen={state.detailOpen} />
       case 'posture':
         return <FindingsView title="Posture" items={data.postureItems} cursor={state.cursor} filter={state.filter} detailOpen={state.detailOpen} />
+      case 'baseline':
+        return <BaselineView has={state.baseline.has} diff={state.baseline.diff} message={state.baseline.message} />
       case 'offboard':
         return <Text dimColor>Press [o] or [enter] to start the guided offboarding sweep (scope → scan → review → approve → audit report).</Text>
     }
@@ -186,7 +234,7 @@ export function Dashboard({ loader, onExit }: DashboardProps): React.ReactElemen
         <Box marginTop={1} flexDirection="column">
           <Offboard
             scanOptions={{ projectPath: process.cwd() }}
-            applyOptions={{ homeDir: homedir() }}
+            applyOptions={{ homeDir: home }}
             onExit={() => dispatch({ type: 'closeOffboard' })}
           />
         </Box>

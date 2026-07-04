@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-469%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-593%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -51,11 +51,14 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 # Scan Codex/MCP config
 agentguard scan-mcp < ~/.codex/config.toml
 
-# 인터랙티브 대시보드 (TTY): 6탭 키보드 네비게이션 + /offboard 스윕
+# stdin 리다이렉트(<)가 안 되는 환경(PowerShell 등)은 파일 경로 인자 사용
+agentguard scan-mcp ~/.codex/config.toml
+
+# 인터랙티브 대시보드 (TTY): 6탭 + 검색/정렬/프리셋/watch/마우스 + /offboard 스윕
 agentguard        # 또는: agentguard repl
 ```
 
-TTY에서 맨 `agentguard`(또는 `agentguard repl`)를 실행하면 tokscale 스타일 **풀스크린 관리자 대시보드**가 열립니다. 상단 6개 탭(Overview/Agents/Credentials/Posture/Baseline/Offboard)을 `tab`/`←→`로 전환하고, 심각도 색상 findings 리스트를 `↑↓` 탐색·`f` 필터·`enter` 상세로 살펴봅니다. Overview에는 서피스별 findings 바 차트와 `PASS/REVIEW/BLOCK` verdict 배지가, **Baseline 탭에서는 `[s]`로 현재 스캔을 스냅샷 저장하고 이전 baseline 대비 drift(생김/사라짐/로테이션)를 확인**합니다. 하단에는 단축키/상태 바(`[o]` 오프보딩 스윕 · `[r]` 재스캔 · `[q]` 종료)가 표시됩니다. non-TTY(파이프/CI)에서는 기존 도움말이 그대로 출력되어 스크립트 하위호환이 유지됩니다. 모든 정리(삭제) 작업은 명시적 승인(y) 후에만 적용되며, 삭제 대상은 `~/.agentguard/trash`로 이동(백업)되어 복구 가능합니다.
+TTY에서 맨 `agentguard`(또는 `agentguard repl`)를 실행하면 tokscale 스타일 **풀스크린 관리자 대시보드**가 열립니다. 상단 6개 탭(Overview/Agents/Credentials/Posture/Baseline/Offboard)을 `tab`/`←→`로 전환하고, findings 리스트를 `↑↓`(또는 `j`/`k`) 탐색·`enter` 상세로 살펴봅니다. 상세 패널에는 전체 경로와 **심각도 근거·카테고리별 조치 가이드**가 함께 표시됩니다. `f` 심각도 필터, `g` 심각도 정렬, `/` 실시간 검색(surface·경로·evidence), `i` 세션 숨김(파일 미기록·verdict 불변), `1`/`2`/`3` 스캔 프리셋(Quick/Project/Full — Quick은 즉시, Full은 확인 후 실행)+실시간 서피스 진행, `w` 30초 자동 재스캔, `?` 전체 단축키 오버레이, 그리고 마우스(휠 스크롤·탭 클릭)를 지원합니다. Overview에는 서피스별 findings 바 차트와 `PASS/REVIEW/BLOCK` verdict 배지가, **Baseline 탭에서는 `[s]`로 스냅샷 저장 후 이전 baseline 대비 drift(생김/사라짐/로테이션)**를 확인합니다. 하단 바에는 `[o]` 오프보딩 스윕 · `[r]` 재스캔 · `[q]` 종료가 표시됩니다. non-TTY(파이프/CI)에서는 기존 도움말이 그대로 출력되어 스크립트 하위호환이 유지됩니다. 모든 정리(삭제) 작업은 명시적 승인(y) 후에만 적용되며, 삭제 대상은 `~/.agentguard/trash`로 이동(백업)되어 복구 가능합니다.
 
 ## 왜 필요한가
 

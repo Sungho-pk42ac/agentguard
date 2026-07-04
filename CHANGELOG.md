@@ -17,6 +17,8 @@ The format follows a lightweight keep-a-changelog style. This project is pre-1.0
 - Baseline snapshots + diff under `~/.agentguard/` (appeared/disappeared), with opt-in `--track-rotation` value-fingerprint rotation detection. Default snapshots store zero secret material.
 - Approval-gated cleanup actions: no file is modified/deleted without explicit approval; deletions move to `~/.agentguard/trash/<timestamp>/` (recoverable), with cross-volume (EXDEV) and locked-file (EBUSY) handling.
 - Public zod contracts (`schemaVersion`) for audit reports and baselines.
+- Dashboard interactivity controls: `?` full keybind overlay; `/` live search (surface/path/evidence); `g` severity sort; `i` session-hide (display-only — writes no file, leaves verdict/aggregate unchanged); `1`/`2`/`3` scan presets (Quick/Project/Full, Quick default) with live per-surface progress and a Full-scan confirmation; `w` 30s auto-rescan; consistent ↑↓/`enter` across list tabs; a first-run welcome line and a "깨끗함 ✓" empty-state; finding detail now shows the full path plus a severity rationale and category remediation guidance; basic mouse support (wheel scroll, tab click); a colored ASCII banner on the loading screen.
+- CLI file-path input (additive): `scan-diff`/`scan-log`/`scan-mcp`/`report` accept an optional file path (e.g. `agentguard scan-mcp config.toml`) in addition to stdin, so shells without `<` redirection (PowerShell) work. stdin-first — piped output/exit/JSON/SARIF stay byte-identical; the path is read only when stdin is a TTY; a missing file exits 2. `--help` is Korean-first with PowerShell examples.
 
 ### Removed
 
@@ -32,6 +34,8 @@ The format follows a lightweight keep-a-changelog style. This project is pre-1.0
 
 - Dashboard scan no longer freezes the terminal: the global npm CLI inventory runs via non-blocking `spawn`, and the loading view shows an animated spinner with an elapsed-seconds counter so an in-progress scan is visibly alive.
 - Launching the dashboard from a broad directory (home, a drive root) no longer triggers an enormous filesystem walk: landing-view project-file scanning is limited to real project roots (a `.git`/`package.json`/`pyproject.toml`/… marker present) and never the home directory. Explicit `scan-files` and the guided offboard scope are unchanged.
+- Terminal window/tab title is now set to `agentguard` (previously showed a transient "npm ls" while the global npm inventory scan ran).
+- Resolved a Node `DEP0190` deprecation warning by invoking the npm inventory with a static command string instead of an args array under `shell: true`.
 
 ## [0.2.0] - 2026-07-03
 

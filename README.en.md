@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-469%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-593%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -51,11 +51,14 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 # Scan Codex/MCP config
 agentguard scan-mcp < ~/.codex/config.toml
 
-# Interactive dashboard (TTY): 6-tab keyboard navigation + /offboard sweep
+# Or pass a file path (for shells without `<` stdin redirection, e.g. PowerShell)
+agentguard scan-mcp ~/.codex/config.toml
+
+# Interactive dashboard (TTY): 6 tabs + search/sort/presets/watch/mouse + /offboard sweep
 agentguard        # or: agentguard repl
 ```
 
-Run bare `agentguard` (or `agentguard repl`) in a TTY to open a tokscale-style full-screen admin dashboard. Switch the 6 top tabs (Overview/Agents/Credentials/Posture/Baseline/Offboard) with `tab`/`←→`, and browse the severity-colored findings list with `↑↓`, `f` to filter by severity, and `enter` for the detail panel. Overview shows a findings-by-surface bar chart and a `PASS/REVIEW/BLOCK` verdict badge; the **Baseline tab snapshots the current scan with `[s]` and shows drift (appeared/disappeared/rotated) vs the last baseline**. The bottom keybind/status bar exposes `[o]` offboarding sweep, `[r]` rescan, and `[q]` quit. In non-TTY contexts (pipes/CI) the usual help text is printed, preserving script backward compatibility. Every cleanup (delete) action applies only after explicit approval (y), and deleted targets are moved to `~/.agentguard/trash` (a recoverable backup) rather than hard-deleted.
+Run bare `agentguard` (or `agentguard repl`) in a TTY to open a tokscale-style full-screen admin dashboard. Switch the 6 top tabs (Overview/Agents/Credentials/Posture/Baseline/Offboard) with `tab`/`←→`, and move through the findings list with `↑↓` (or `j`/`k`) and `enter` for the detail panel — which shows the full path plus a **severity rationale and category-specific remediation guidance**. Keys: `f` severity filter, `g` severity sort, `/` live search (surface·path·evidence), `i` session-hide (writes no file, verdict/aggregate unchanged), `1`/`2`/`3` scan presets (Quick/Project/Full — Quick runs immediately, Full asks for confirmation) with live per-surface progress, `w` 30s auto-rescan (watch), `?` full keybind overlay, and mouse support (wheel scroll · tab click). Overview shows a findings-by-surface bar chart and a `PASS/REVIEW/BLOCK` verdict badge; the **Baseline tab snapshots the current scan with `[s]` and shows drift (appeared/disappeared/rotated) vs the last baseline**. The bottom bar exposes `[o]` offboarding sweep, `[r]` rescan, and `[q]` quit. In non-TTY contexts (pipes/CI) the usual help text is printed, preserving script backward compatibility. Every cleanup (delete) action applies only after explicit approval (y), and deleted targets are moved to `~/.agentguard/trash` (a recoverable backup) rather than hard-deleted.
 
 ## Why
 

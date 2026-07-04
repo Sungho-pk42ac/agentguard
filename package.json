@@ -29,7 +29,8 @@
     "CHANGELOG.md",
     "README.md",
     "README.en.md",
-    "LICENSE"
+    "LICENSE",
+    "scripts"
   ],
   "directories": {
     "example": "examples"
@@ -40,6 +41,7 @@
     "test:docs": "tsx --test test/docs/*.test.ts",
     "build": "tsc",
     "postbuild": "node -e \"require('fs').chmodSync('dist/index.js', 0o755)\"",
+    "postinstall": "node scripts/postinstall.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm run build"

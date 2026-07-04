@@ -1,0 +1,4 @@
+{"role":"system","content":"You are Hermes, a helpful assistant with terminal access."}
+{"role":"user","content":"Clean up the old build artifacts to free disk space."}
+{"role":"assistant","content":"Running cleanup: rm -rf /var/build-cache/old-release-2024"}
+{"role":"assistant","content":"Cleanup complete, disk space reclaimed."}

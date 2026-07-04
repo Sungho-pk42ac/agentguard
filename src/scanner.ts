@@ -133,6 +133,58 @@ export function scanFiles(root: string, policy: Policy = DEFAULT_POLICY): Findin
   return findings
 }
 
+const MAX_TRANSCRIPT_DEPTH = 8
+
+// Codex/Hermes 스타일 JSONL 에이전트 트랜스크립트를 인식해 원문(raw) 스캔에 더해
+// 각 줄을 JSON으로 디코딩한 문자열 값도 함께 스캔한다. JSON 이스케이프(예: \uXXXX)가
+// 평문 정규식의 문자 클래스를 끊어놓는 경우를 잡아낸다. JSONL이 아니면 원문 스캔과
+// 완전히 동일한 결과를 돌려준다(평문 입력은 오늘과 바이트 단위로 동일해야 함).
+export function scanTranscript(text: string, file = 'agent-log', policy: Policy = DEFAULT_POLICY): Finding[] {
+  const rawFindings = scanText(text, file, policy)
+  const objects = parseJsonl(text)
+  if (!objects) return rawFindings
+
+  const strings: string[] = []
+  for (const obj of objects) collectStrings(obj, 0, strings)
+  if (strings.length === 0) return rawFindings
+
+  const decodedFindings = scanText(strings.join('\n'), file, policy)
+  const seen = new Set(rawFindings.map((f) => `${f.id}:${f.evidence}`))
+  const extra = decodedFindings.filter((f) => !seen.has(`${f.id}:${f.evidence}`))
+  return [...rawFindings, ...extra]
+}
+
+// 비어있지 않은 모든 줄이 JSON 객체로 파싱되면 그 객체 배열을 반환하고, 아니면 null(= JSONL 아님)
+function parseJsonl(text: string): unknown[] | null {
+  const lines = text.split('\n').map((line) => line.trim()).filter((line) => line.length > 0)
+  if (lines.length === 0) return null
+
+  const objects: unknown[] = []
+  for (const line of lines) {
+    if (!line.startsWith('{')) return null
+    try {
+      const parsed: unknown = JSON.parse(line)
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+      objects.push(parsed)
+    } catch {
+      return null
+    }
+  }
+  return objects
+}
+
+// depth 상한을 두고 재귀적으로 모든 문자열 값을 수집한다 (필드명은 가리지 않는다: content/text/message 등 전부 포함)
+function collectStrings(value: unknown, depth: number, out: string[]): void {
+  if (depth > MAX_TRANSCRIPT_DEPTH) return
+  if (typeof value === 'string') {
+    out.push(value)
+  } else if (Array.isArray(value)) {
+    for (const item of value) collectStrings(item, depth + 1, out)
+  } else if (value && typeof value === 'object') {
+    for (const v of Object.values(value as Record<string, unknown>)) collectStrings(v, depth + 1, out)
+  }
+}
+
 export function scanDiff(diff: string, policy: Policy = DEFAULT_POLICY): Finding[] {
   const chunks = addedDiffChunks(diff)
   const added = chunks.join('\n')

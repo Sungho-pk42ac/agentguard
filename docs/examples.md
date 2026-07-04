@@ -58,6 +58,17 @@ agentguard scan-log --policy examples/agent-policy.yaml < examples/agent-transcr
 
 Expected result: findings for operations that should require review under the sample policy.
 
+## JSONL agent transcripts (Codex/Hermes)
+
+`scan-log` also recognizes JSONL agent transcripts (one JSON object per line, as produced by Codex- and Hermes-style agent runners). Each line is scanned as raw text as before, and any string values inside the parsed JSON (including nested `content` arrays) are decoded and scanned too, so secrets split across a JSON escape (e.g. a `\uXXXX` unicode escape) are still caught.
+
+```bash
+agentguard scan-log < examples/codex-transcript.jsonl
+agentguard scan-log < examples/hermes-transcript.jsonl
+```
+
+Expected result: `REVIEW` findings — a critical OpenAI-style API key finding decoded from a JSON-escaped `content` field in the Codex transcript, and a high-severity denied command (`rm -rf`) finding in the Hermes transcript. Plain-text (non-JSONL) input to `scan-log` is unaffected.
+
 ## Markdown report
 
 ```bash

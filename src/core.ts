@@ -1,5 +1,5 @@
 import { riskScore, toMarkdown, type MarkdownLanguage } from './report.js'
-import { scanDiff, scanFiles, scanMcpConfig, scanText } from './scanner.js'
+import { scanDiff, scanFiles, scanMcpConfig, scanText, scanTranscript } from './scanner.js'
 import { DEFAULT_POLICY, type Finding, type Policy } from './rules.js'
 
 export type ScanMode = 'diff' | 'mcp' | 'log' | 'text'
@@ -60,7 +60,7 @@ function scanByMode(mode: ScanMode, input: string, policy: Policy): Finding[] {
     case 'mcp':
       return scanMcpConfig(input, policy)
     case 'log':
-      return scanText(input, 'agent-log', policy)
+      return scanTranscript(input, 'agent-log', policy)
     case 'text':
       return scanText(input, 'stdin', policy)
   }

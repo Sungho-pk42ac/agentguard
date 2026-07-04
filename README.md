@@ -293,6 +293,46 @@ jobs:
           body-path: agent-risk-report.md
 ```
 
+## 컨트롤 플레인 (Fleet · Observe)
+
+조직 규모에서는 각 개발자 PC·CI가 로컬 스캔 결과를 중앙 **컨트롤 플레인**에 report하고, 보안팀이 조직 전체 리스크를 한 화면에서 봅니다. 핵심 원칙: **원문·비밀값은 대상 PC를 절대 벗어나지 않고, redacted 메타데이터·집계만 전송됩니다(하이브리드).** v0.4 범위는 **관측(Observe)** — 수집·집계·알림 — 이며, 정책 콘솔·트리아지·SSO/RBAC(거버넌스)와 컴플라이언스 리포트·티켓/SIEM 연동은 다음 단계입니다.
+
+### report agent — `agentguard report --push`
+
+기존 스캔 결과를 redact·서명해 control plane로 전송합니다. `--push`가 없으면 모든 명령이 기존과 100% 동일하게 동작합니다(하위호환). 전송 페이로드는 rule ID, surface, severity, home/username이 제거된 location, redacted evidence, fingerprint 해시만 담습니다. 전송 직전 redaction guard가 원문 시크릿 패턴을 발견하면 **네트워크 호출 없이** 종료합니다.
+
+```bash
+# CI (OIDC): GitHub/GitLab id-token으로 인증
+git diff origin/main...HEAD | AGENTGUARD_OIDC_TOKEN="$ID_TOKEN" \
+  agentguard scan-diff --push --endpoint https://cp.example --org acme
+
+# 개발자 PC (device token): ~/.agentguard/enrollment.json 사용
+agentguard scan-files . --push --endpoint https://cp.example
+```
+
+### control plane 서버 — `control-plane/`
+
+별도 패키지로 제공되는 하이브리드 SaaS 컨트롤 플레인입니다. redacted findings를 수집하고 조직별 집계 대시보드·리스크 추이·stale 자산·critical 알림(Slack/Teams webhook)을 제공합니다. 저장소는 `node:sqlite`(기본)·in-memory 포트로 로컬 검증 가능하며 Postgres는 프로덕션 어댑터입니다.
+
+```bash
+cd control-plane
+npm install
+npm test        # 36 tests: 서명 인증, 서버 redaction, 멀티테넌트 격리, 알림 dedup, 3-asset E2E
+npm start       # http://127.0.0.1:8787
+```
+
+| Method · Path | 설명 |
+|---|---|
+| `POST /v1/enroll` | 자산 등록 (CI = OIDC, PC = 디바이스 토큰) |
+| `POST /v1/reports` | redacted 리포트 수집 (서명 + 300초 freshness + 서버측 독립 redaction 재검사, 위반 시 422) |
+| `GET /v1/dashboard/summary` | surface·severity·자산별 findings 집계 (org 범위) |
+| `GET /v1/dashboard/trend` | 30일 누적 리스크 추이 |
+| `GET /v1/assets` | 자산 목록 + stale 경고 |
+| `GET /v1/findings` | 필터 가능한 findings 목록 |
+| `GET /?org=<id>` | 관리자 HTML 대시보드 |
+
+모든 read 엔드포인트는 세션/토큰의 orgId로 엄격히 범위가 제한되어 cross-tenant 경로가 없습니다. 서버는 클라이언트 sweep과 **독립적인** shape+entropy 휴리스틱으로 redaction을 재검사하고, 위반 시 아무것도 저장하지 않고 422로 거부합니다.
+
 ## 로컬 개발
 
 ```bash

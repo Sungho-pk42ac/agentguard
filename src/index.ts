@@ -9,6 +9,8 @@ import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import { MAX_FILE_BYTES } from './scanner.js'
 import { resolveScanInput, ScanInputError } from './scan-input.js'
 import type { Finding } from './rules.js'
+import { resolveIdentity, EnrollmentError } from './enrollment.js'
+import { buildReportPayload, pushReport, RedactionError, ReportPushError } from './report-push.js'
 import { shouldLaunchRepl } from './tui/entry.js'
 
 interface CliArgs {
@@ -19,6 +21,10 @@ interface CliArgs {
   readonly out?: string
   readonly policyPath?: string
   readonly markdownLanguage: MarkdownLanguage
+  readonly push: boolean
+  readonly endpoint?: string
+  readonly org?: string
+  readonly asset?: string
 }
 
 function printVersion(): never {
@@ -34,6 +40,7 @@ function usage(exitCode = 2): never {
   agentguard scan-mcp < config.toml
   agentguard scan-mcp config.toml
   agentguard report < input.txt
+  agentguard report --push --endpoint <url> [--org <id>] [--asset <id>]
   agentguard posture [경로] [--json]
   agentguard doctor [--lang ko|en]
   agentguard repl
@@ -52,6 +59,7 @@ AI 에이전트 보안 감사 — diff, 로그, MCP 설정, 파일을 검사해 
   # JSON · SARIF 출력
   agentguard scan-diff --json < diff.patch
   agentguard scan-mcp --sarif config.toml
+  agentguard scan-diff --push --endpoint https://cp.example < diff.patch
 
 Options:
   --help, -h                        도움말 출력
@@ -60,7 +68,10 @@ Options:
   --sarif                           GitHub 코드 스캐닝용 SARIF 2.1.0 출력
   --lang ko|en, --lang=ko|en        마크다운 리포트 언어 (기본값: ko)
   --policy <path>, --policy=<path>  agent-policy.yaml/json 로드
-  --out <file>, --out=<file>        결과를 파일로 저장`
+  --out <file>, --out=<file>        결과를 파일로 저장
+  --push                            스캔 결과(redacted만)를 control plane로 전송
+  --endpoint <url>                  control plane 주소 (--push와 함께 사용)
+  --org <id>, --asset <id>          조직·자산 식별자 (미지정 시 enrollment에서 해석)`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)
@@ -96,6 +107,10 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
   let out: string | undefined
   let policyPath: string | undefined
   let markdownLanguage: MarkdownLanguage = 'ko'
+  let push = false
+  let endpoint: string | undefined
+  let org: string | undefined
+  let asset: string | undefined
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -155,6 +170,29 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
       policyPath = value
       continue
     }
+    if (arg === '--push') {
+      push = true
+      continue
+    }
+    if (arg === '--endpoint' || arg === '--org' || arg === '--asset') {
+      const value = args[index + 1]
+      if (!isOptionValue(value)) return undefined
+      if (arg === '--endpoint') { if (endpoint !== undefined) return undefined; endpoint = value }
+      else if (arg === '--org') { if (org !== undefined) return undefined; org = value }
+      else { if (asset !== undefined) return undefined; asset = value }
+      index += 1
+      continue
+    }
+    if (arg.startsWith('--endpoint=') || arg.startsWith('--org=') || arg.startsWith('--asset=')) {
+      const eq = arg.indexOf('=')
+      const key = arg.slice(2, eq)
+      const value = arg.slice(eq + 1)
+      if (value.length === 0) return undefined
+      if (key === 'endpoint') { if (endpoint !== undefined) return undefined; endpoint = value }
+      else if (key === 'org') { if (org !== undefined) return undefined; org = value }
+      else { if (asset !== undefined) return undefined; asset = value }
+      continue
+    }
     if (arg.startsWith('--')) return undefined
     if (!cmd) cmd = arg
     else cleanArgs.push(arg)
@@ -162,7 +200,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
 
   if (!cmd) return undefined
   if (['--help', '-h', '--version', '-v'].includes(cmd) && cleanArgs.length > 0) return undefined
-  return { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage }
+  return { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage, push, endpoint, org, asset }
 }
 
 function isMarkdownLanguage(value: string | undefined): value is MarkdownLanguage {
@@ -255,7 +293,7 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
 } else {
   const parsedArgs = parseArgs(rawArgs)
   if (!parsedArgs) usage()
-  const { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage } = parsedArgs
+  const { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage, push, endpoint, org, asset } = parsedArgs
   if (cmd === '--help' || cmd === '-h') usage(0)
   if (cmd === '--version' || cmd === '-v') printVersion()
   if (!hasValidPositionalArgs(cmd, cleanArgs)) usage()
@@ -344,6 +382,49 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
       process.exit(2)
     }
   } else console.log(output)
+  if (push) {
+    if (!endpoint) {
+      console.error('--push requires --endpoint <control-plane-url>')
+      process.exit(2)
+    }
+    try {
+      const identity = resolveIdentity({ orgId: org, assetId: asset })
+      // buildReportPayload validates the wire schema AND runs the client
+      // redaction guard; a raw-secret leak throws HERE, before any network call.
+      const payload = buildReportPayload(findings, {
+        orgId: identity.orgId,
+        assetId: identity.assetId,
+        actor: identity.actor,
+      })
+      const result = await pushReport(endpoint, payload, identity)
+      let accepted: Record<string, unknown> = {}
+      try {
+        const parsed: unknown = JSON.parse(result.body)
+        if (parsed && typeof parsed === 'object') accepted = parsed as Record<string, unknown>
+      } catch {
+        // non-JSON body; ignore
+      }
+      const newCritical = accepted.newCriticalCount
+      console.error(
+        `Pushed ${payload.findings.length} finding(s) to ${endpoint} (org ${identity.orgId}, asset ${identity.assetId})` +
+          (newCritical !== undefined ? ` — ${String(newCritical)} new critical` : ''),
+      )
+    } catch (error: unknown) {
+      if (error instanceof RedactionError) {
+        console.error(`Redaction guard blocked the push (nothing left this machine): ${error.message}`)
+        process.exit(3)
+      }
+      if (error instanceof EnrollmentError) {
+        console.error(`Could not resolve enrollment: ${error.message}`)
+        process.exit(2)
+      }
+      if (error instanceof ReportPushError) {
+        console.error(`Report push failed: ${error.message}`)
+        process.exit(2)
+      }
+      throw error
+    }
+  }
   process.exit(findings.some((f) => f.severity === 'critical') ? 1 : 0)
 }
 

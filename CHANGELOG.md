@@ -6,6 +6,13 @@ The format follows a lightweight keep-a-changelog style. This project is pre-1.0
 
 ## [Unreleased]
 
+### Added
+
+- **Control plane (Fleet · Observe, Phase 1).** A hybrid-SaaS evolution: each developer PC and CI reports redacted findings to a central control plane, and a security team sees org-wide risk on one screen. Raw secrets and file bodies NEVER leave the reporting machine — only redacted metadata (rule ID, surface, severity, home/username-stripped location, redacted evidence, fingerprint) is transmitted.
+- **Report agent — `agentguard report --push`.** Opt-in flag on the scan commands that redacts, signs, and POSTs findings to a control plane (`--endpoint`, `--org`, `--asset`). Uses only Node built-ins + zod (no new runtime dependencies). A client redaction guard fails closed BEFORE any network call if a raw-secret pattern is present. Without `--push`, all commands behave byte-identically. Hybrid enrollment: CI via OIDC id-token, developer PC via a device token (`~/.agentguard/enrollment.json`).
+- **`control-plane/` package.** A standalone Node service: ingest API (`POST /v1/enroll`, `POST /v1/reports`) with signature + 300s freshness verification and an INDEPENDENT server-side redaction re-check (shape + entropy, 422 on violation, nothing persisted); multi-tenant, org-scoped storage over a `StoragePort` with `node:sqlite` and in-memory adapters (Postgres documented for production); a `TokenVerifier` (device-token HMAC + OIDC) and `NotifierPort` (Slack/Teams webhook + recording double); org-scoped aggregation (`/v1/dashboard/summary`, `/v1/dashboard/trend`, `/v1/assets`, `/v1/findings`); a server-rendered HTML dashboard; and critical-finding alerts deduped by (org, fingerprint). Shipped with 36 tests (contract parity, redaction invariant + adversarial, signature valid/tampered/stale, tenant isolation, alert dedup, storage parity, 3-asset E2E). Not included in the published CLI package.
+- Shared wire contract (`src/contract/report-payload.ts`): a single canonical zod schema imported by both the report agent and the control plane so the redaction/egress shape cannot drift; `buildFingerprint` and `stripUserPath` (home/username stripping) helpers.
+
 ## [0.3.0] - 2026-07-04
 
 ### Added

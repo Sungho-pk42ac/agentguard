@@ -1,0 +1,23 @@
+{
+  "name": "@pk42ac/agentguard-control-plane",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AgentGuard Control Plane — fleet ingest API + dashboard for redacted AI-agent security findings (Phase 1 / Observe)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3"
+  }
+}

@@ -230,6 +230,46 @@ jobs:
           body-path: agent-risk-report.md
 ```
 
+## Control Plane (Fleet · Observe)
+
+At org scale, each developer PC and CI reports its local scan results to a central **control plane**, so a security team sees fleet-wide risk on one screen. Core principle: **raw values and secrets never leave the target machine — only redacted metadata and aggregates are transmitted (hybrid).** The v0.4 scope is **Observe** (ingest, aggregate, alert); a policy console, triage, and SSO/RBAC (governance), plus compliance reports and ticketing/SIEM integrations, are the next phases.
+
+### report agent — `agentguard report --push`
+
+Redacts and signs local scan results, then sends them to the control plane. Without `--push`, every command behaves byte-identically to before (backward compatible). The payload only carries rule IDs, surface, severity, a home/username-stripped location, redacted evidence, and a fingerprint hash. A redaction guard runs immediately before egress and exits **without any network call** if it finds a raw-secret pattern.
+
+```bash
+# CI (OIDC): authenticate with a GitHub/GitLab id-token
+git diff origin/main...HEAD | AGENTGUARD_OIDC_TOKEN="$ID_TOKEN" \
+  agentguard scan-diff --push --endpoint https://cp.example --org acme
+
+# Developer PC (device token): uses ~/.agentguard/enrollment.json
+agentguard scan-files . --push --endpoint https://cp.example
+```
+
+### control plane server — `control-plane/`
+
+A separate hybrid-SaaS control-plane package. It ingests redacted findings and serves a per-org aggregation dashboard, risk trend, stale-asset warnings, and critical alerts (Slack/Teams webhook). Storage is a `node:sqlite` (default) / in-memory port for local verification; Postgres is the production adapter.
+
+```bash
+cd control-plane
+npm install
+npm test        # 36 tests: signature auth, server redaction, multi-tenant isolation, alert dedup, 3-asset E2E
+npm start       # http://127.0.0.1:8787
+```
+
+| Method · Path | Description |
+|---|---|
+| `POST /v1/enroll` | Enroll an asset (CI = OIDC, PC = device token) |
+| `POST /v1/reports` | Ingest a redacted report (signature + 300s freshness + independent server-side redaction re-check; 422 on violation) |
+| `GET /v1/dashboard/summary` | Findings by surface/severity/asset (org-scoped) |
+| `GET /v1/dashboard/trend` | 30-day cumulative risk trend |
+| `GET /v1/assets` | Asset list + stale warning |
+| `GET /v1/findings` | Filterable findings list |
+| `GET /?org=<id>` | Admin HTML dashboard |
+
+Every read endpoint is strictly scoped to the session/token orgId, so there is no cross-tenant path. The server re-checks redaction with a shape+entropy heuristic that is **independent** of the client sweep, and rejects violations with 422 while persisting nothing.
+
 ## Local development
 
 ```bash

@@ -215,7 +215,7 @@ function Scanning({ preset = 'quick' }: { preset?: Preset }): React.ReactElement
   const seconds = Math.floor((tick * 90) / 1000)
   const scopes = PRESET_SCOPE_LABELS[preset]
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
       <Banner />
       <Text color="cyan">에이전트 환경의 잔류 자격증명을 검사합니다.</Text>
       <Text color="cyan">
@@ -247,6 +247,7 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
   const app = useApp()
   const { stdout } = useStdout()
   const columns = stdout?.columns ?? 80
+  const rows = stdout?.rows
   const home = props.homeDir ?? homedir()
   const cwd = props.cwd ?? process.cwd()
 
@@ -595,7 +596,8 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
 
   if (state.offboardActive) {
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" minHeight={rows ?? 0}>
+        <Banner compact />
         <TabBar />
         <Box marginTop={1} flexDirection="column">
           <Offboard
@@ -609,27 +611,30 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
     )
   }
 
+  const chrome = !state.loading && !!data && !state.scanError
   return (
-    <Box flexDirection="column">
-      <TabBar />
-      {/* S1: help overlay replaces body when open */}
-      {state.overlayOpen ? (
-        <Box marginTop={1}>
-          <HelpOverlay />
-        </Box>
-      ) : (
-        <Box marginTop={1} flexDirection="column">
-          <Body />
-        </Box>
-      )}
-      {footer}
+    <Box flexDirection="column" minHeight={rows ?? 0}>
+      {chrome ? <Banner compact /> : null}
+      {chrome ? <TabBar /> : null}
+      <Box marginTop={chrome ? 1 : 0} flexDirection="column" flexGrow={1}>
+        {state.overlayOpen ? <HelpOverlay /> : <Body />}
+      </Box>
+      {chrome ? footer : null}
     </Box>
   )
 }
 
 export async function renderDashboard(): Promise<void> {
   setTerminalTitle(TERMINAL_TITLE)
+  const fullscreen = Boolean(process.stdout.isTTY)
+  // Enter the alternate screen buffer so the dashboard takes over the terminal
+  // like a full-screen window and restores the prior scrollback on exit.
+  if (fullscreen) process.stdout.write('\u001b[?1049h\u001b[2J\u001b[H')
   const instance = render(<Dashboard />)
-  await instance.waitUntilExit()
-  setTerminalTitle('')
+  try {
+    await instance.waitUntilExit()
+  } finally {
+    if (fullscreen) process.stdout.write('\u001b[?1049l')
+    setTerminalTitle('')
+  }
 }

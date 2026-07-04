@@ -1,44 +1,48 @@
 import { Box, Text } from 'ink'
 
-// Colored ASCII wordmark shown on the dashboard launch/loading screen (where the
-// old Node deprecation warning used to print). Pure presentation — no state, no
-// scan. Block-letter rows are fixed-width (25 cols) so the two words stay aligned.
-const AGENT: readonly string[] = [
-  ' ██   ███ ████ █  █ ████ ',
-  '█  █ █    █    ██ █  █   ',
-  '████ █ ██ ███  █ ██  █   ',
-  '█  █ █  █ █    █  █  █   ',
-  '█  █  ███ ████ █  █  █   ',
+// Large ASCII wordmark. "AGENTGUARD" in 5-row block letters (~50 cols) — shown big
+// and centered on the fullscreen loading splash. A `compact` one-line variant is
+// used as the dashboard header so the brand is present on the analysis view too.
+const LOGO: readonly string[] = [
+  ' ██   ███ ████ █  █ ████  ███ █  █  ██  ███  ███  ',
+  '█  █ █    █    ██ █  █   █    █  █ █  █ █  █ █  █ ',
+  '████ █ ██ ███  █ ██  █   █ ██ █  █ ████ ███  █  █ ',
+  '█  █ █  █ █    █  █  █   █  █ █  █ █  █ █ █  █  █ ',
+  '█  █  ███ ████ █  █  █    ███  ██  █  █ █  █ ███  ',
 ]
 
-const GUARD: readonly string[] = [
-  ' ███ █  █  ██  ███  ███  ',
-  '█    █  █ █  █ █  █ █  █ ',
-  '█ ██ █  █ ████ ███  █  █ ',
-  '█  █ █  █ █  █ █ █  █  █ ',
-  ' ███  ██  █  █ █  █ ███  ',
-]
+const TAGLINE = '로컬 AI 에이전트 생애주기 보안 스캐너'
 
 export interface BannerProps {
-  // Optional one-line tagline under the wordmark (defaults to the Korean subtitle).
+  // Single-line wordmark header (dashboard chrome) instead of the big block logo.
+  readonly compact?: boolean
   readonly tagline?: string
 }
 
-export function Banner({ tagline }: BannerProps = {}): React.ReactElement {
-  const subtitle = tagline ?? '로컬 AI 에이전트 생애주기 보안 스캐너  ·  v0.3.0'
+export function Banner({ compact, tagline }: BannerProps = {}): React.ReactElement {
+  const subtitle = tagline ?? TAGLINE
+
+  if (compact) {
+    return (
+      <Box>
+        <Text color="cyanBright" bold>
+          ◆ AGENTGUARD
+        </Text>
+        <Text dimColor>{'  ·  '}{subtitle}</Text>
+      </Box>
+    )
+  }
+
   return (
-    <Box flexDirection="column" marginBottom={1}>
-      {AGENT.map((row, i) => (
-        <Text key={`a${i}`} color="cyanBright" bold>
+    <Box flexDirection="column" alignItems="center" marginY={1}>
+      {LOGO.map((row, i) => (
+        <Text key={i} color="cyanBright" bold>
           {row}
         </Text>
       ))}
-      {GUARD.map((row, i) => (
-        <Text key={`g${i}`} color="green" bold>
-          {row}
-        </Text>
-      ))}
-      <Text dimColor>{subtitle}</Text>
+      <Box marginTop={1}>
+        <Text dimColor>{subtitle}</Text>
+      </Box>
     </Box>
   )
 }

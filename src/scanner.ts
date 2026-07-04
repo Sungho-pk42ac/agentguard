@@ -38,6 +38,7 @@ export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_
         severity: 'critical',
         category: 'secret',
         file,
+        line: lineAt(text, m.index ?? 0),
         evidence: redact(m[0]),
         recommendation: 'Remove the secret, rotate it, and load it from a secret manager or environment variable.',
       })
@@ -51,13 +52,15 @@ export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_
         severity: p.id === 'email' ? 'medium' : 'high',
         category: 'pii',
         file,
+        line: lineAt(text, m.index ?? 0),
         evidence: redact(m[0]),
         recommendation: 'Avoid logging or sending PII to agents/LLMs; pseudonymize or hash before use.',
       })
     }
   }
   for (const cmd of policy.denyCommands) {
-    if (text.includes(cmd)) {
+    const index = text.indexOf(cmd)
+    if (index !== -1) {
       const displayCommand = redactPolicyValue(cmd)
       findings.push({
         id: 'denied-command',
@@ -65,13 +68,15 @@ export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_
         severity: 'high',
         category: 'dangerous-command',
         file,
+        line: lineAt(text, index),
         evidence: displayCommand,
         recommendation: 'Require human approval or replace with a safer scoped command.',
       })
     }
   }
   for (const operation of policy.requireApproval) {
-    if (text.includes(operation)) {
+    const index = text.indexOf(operation)
+    if (index !== -1) {
       const displayOperation = redactPolicyValue(operation)
       findings.push({
         id: 'approval-required',
@@ -79,12 +84,18 @@ export function scanText(text: string, file = 'stdin', policy: Policy = DEFAULT_
         severity: 'medium',
         category: 'agent-behavior',
         file,
+        line: lineAt(text, index),
         evidence: displayOperation,
         recommendation: 'Require explicit human approval before running this operation.',
       })
     }
   }
   return findings
+}
+
+// 매치 위치(index)를 1-based 라인 번호로 변환한다 (SARIF region.startLine용)
+function lineAt(text: string, index: number): number {
+  return text.slice(0, index).split('\n').length
 }
 
 export function scanFiles(root: string, policy: Policy = DEFAULT_POLICY): Finding[] {

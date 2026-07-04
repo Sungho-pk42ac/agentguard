@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink'
 import { agentInventory } from './agent-inventory.js'
 import type { DashboardData } from './dashboard-data.js'
+import { glyph } from './theme.js'
 import { severityColor } from './view-model.js'
 
 // DUMB view. Onboarding inspection: which AI coding agents are installed and
@@ -19,14 +20,17 @@ export function AgentsView({ data }: { readonly data: DashboardData }): React.Re
   return (
     <Box flexDirection="column">
       <Text color="cyan">Agents — {agents.length} (installed AI coding tools · onboarding check)</Text>
-      {agents.map((a, i) => (
-        <Box key={i} flexDirection="column">
-          <Text color={severityColor(a.severity)} bold>
-            ● {a.name} <Text dimColor>({a.source})</Text>
-          </Text>
-          <Text dimColor>  {a.detail}</Text>
-        </Box>
-      ))}
+      {agents.map((a, i) => {
+        const surfaceIcon = glyph(a.source)
+        return (
+          <Box key={i} flexDirection="column">
+            <Text color={severityColor(a.severity)} bold>
+              ● {a.name} <Text dimColor>({surfaceIcon ? `${surfaceIcon} ` : ''}{a.source})</Text>
+            </Text>
+            <Text dimColor>  {a.detail}</Text>
+          </Box>
+        )
+      })}
     </Box>
   )
 }

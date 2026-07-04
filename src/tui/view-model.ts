@@ -18,7 +18,7 @@ export interface ExplorerItem {
 
 export const SEVERITY_COLOR: Record<Severity, string> = {
   critical: 'red',
-  high: 'magenta',
+  high: '#d78700',
   medium: 'yellow',
   low: 'gray',
 }

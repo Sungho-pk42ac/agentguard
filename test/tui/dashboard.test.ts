@@ -244,7 +244,7 @@ test('S6: i hides selected item; verdict+aggregate unchanged; rescan restores', 
   assert.ok(await waitFor(lastFrame, /Credentials — 2\/3/), 'display count should drop to 2 after hiding')
   const afterHide = lastFrame() ?? ''
   // .bashrc is hidden — should not appear as the selected item
-  assert.doesNotMatch(afterHide, /›.*shell-rc/)
+  assert.doesNotMatch(afterHide, /▸.*shell-rc/)
   // Verdict unchanged (still BLOCK, aggregate still 5 findings)
   assert.match(afterHide, /BLOCK/)
   // Rescan restores hidden set
@@ -440,4 +440,38 @@ test('LOW-fix: a scan failure surfaces an error instead of masking it as a clean
   assert.ok(await waitFor(lastFrame, /스캔 오류/), 'a failed scan must surface an error')
   assert.doesNotMatch(lastFrame() ?? '', /깨끗함/, 'must not render the clean empty-state on error')
   unmount()
+})
+// ─── S12: icon application ────────────────────────────────────────────────────
+
+test('S12: unicode tab icons present in loaded frame (default mode)', async () => {
+  const { lastFrame, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  const frame = lastFrame() ?? ''
+  // Tab bar contains unicode icons (● for overview tab, ◆ for agents, etc.)
+  assert.match(frame, /●/, 'overview unicode icon should be present')
+  unmount()
+})
+
+test('S12: AGENTGUARD_ASCII=1 → unicode tab icons absent from tab bar, no crash', async () => {
+  const orig = process.env['AGENTGUARD_ASCII']
+  process.env['AGENTGUARD_ASCII'] = '1'
+  try {
+    const { lastFrame, unmount } = mountDashboard()
+    assert.ok(await waitFor(lastFrame, /Findings by surface/))
+    const frame = lastFrame() ?? ''
+    // In ASCII mode the tab bar icons are ASCII replacements.
+    // ⊙ is the baseline tab unicode icon — it appears ONLY in the tab bar and
+    // nowhere in banner, content, or hardcoded glyphs, so it's a clean sentinel.
+    assert.doesNotMatch(frame, /⊙/, 'unicode icon ⊙ (baseline tab) must not appear in ASCII mode')
+    // ■ is the credentials tab icon — only appears in the tab bar on the overview frame.
+    assert.doesNotMatch(frame, /■/, 'unicode icon ■ (credentials tab) must not appear in ASCII mode')
+    // ● is the overview tab icon — in ASCII mode replaced by "o".
+    // (Note: ● also appears as the hardcoded severity dot in findings rows,
+    //  but the overview tab is active here so findings rows are not rendered.)
+    assert.doesNotMatch(frame, /●/, 'unicode icon ● (overview tab) must not appear in ASCII mode')
+    unmount()
+  } finally {
+    if (orig === undefined) delete process.env['AGENTGUARD_ASCII']
+    else process.env['AGENTGUARD_ASCII'] = orig
+  }
 })

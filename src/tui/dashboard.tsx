@@ -17,6 +17,9 @@ import { Offboard } from './offboard.js'
 import { classifyKey } from './classify-key.js'
 import { clampIndex, filterItems, nextSeverityFilter, sortItemsBySeverity } from './view-model.js'
 import { disableMouseSGR, enableMouseSGR, parseSGR } from './mouse.js'
+import { Panel } from './panel.js'
+import { glyph } from './theme.js'
+import { layoutForWidth } from './layout.js'
 
 // Project markers that make the current directory a real project root. The
 // always-on landing scan only walks cwd files when one is present AND cwd is
@@ -216,15 +219,18 @@ function Scanning({ preset = 'quick' }: { preset?: Preset }): React.ReactElement
   const scopes = PRESET_SCOPE_LABELS[preset]
   return (
     <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-      <Banner />
-      <Text color="cyan">에이전트 환경의 잔류 자격증명을 검사합니다.</Text>
-      <Text color="cyan">
-        {frame} Scanning… (collecting residual credentials)  {seconds}s
-      </Text>
-      {scopes.map((s) => (
-        <Text key={s} dimColor>  ▸ {s}</Text>
-      ))}
-      <Text dimColor>querying local configs + global npm inventory — this can take a few seconds</Text>
+      {/* S4: wrap Banner + tagline + spinner in ONE centered Panel */}
+      <Panel>
+        <Banner />
+        <Text color="cyan">에이전트 환경의 잔류 자격증명을 검사합니다.</Text>
+        <Text color="cyan">
+          {frame} Scanning… (collecting residual credentials)  {seconds}s
+        </Text>
+        {scopes.map((s) => (
+          <Text key={s} dimColor>  ▸ {s}</Text>
+        ))}
+        <Text dimColor>querying local configs + global npm inventory — this can take a few seconds</Text>
+      </Panel>
     </Box>
   )
 }
@@ -232,21 +238,43 @@ function Scanning({ preset = 'quick' }: { preset?: Preset }): React.ReactElement
 // Column offset in the tab bar where tabs begin (after "agentguard " prefix).
 const TABBAR_PREFIX_COLS = 'agentguard '.length
 
-/** Map a mouse click x-coordinate (1-indexed) to a TABS array index, or -1. */
-function tabIndexFromX(x: number): number {
-  let col = TABBAR_PREFIX_COLS + 1 // 1-indexed
+/** Map a mouse click x-coordinate (1-indexed) to a tab array index, or -1.
+ *
+ *  Tab geometry with icon + │ separators:
+ *    "agentguard " + " {icon}{label} " (per tab) + "│" (between tabs)
+ *  Tab width = 1 (space) + 1 (icon) + label.length + 1 (space)
+ *            = label.length + 3
+ *
+ *  The `columns` param is accepted for API consistency with the pure tabgeom
+ *  tests but is not used in the geometry calculation (tab widths are label-driven).
+ */
+export function tabIndexFromX(x: number, _columns?: number): number {
+  let col = TABBAR_PREFIX_COLS + 1 // 1-indexed; first tab starts here
   for (let i = 0; i < TABS.length; i++) {
-    const w = TABS[i].label.length + 2 // ' label '
+    const w = TABS[i].label.length + 3 // ' {icon}{label} '
     if (x >= col && x < col + w) return i
-    col += w
+    col += w + 1 // +1 for │ separator between tabs
   }
   return -1
+}
+
+// Physical row of the tab bar when the dashboard chrome is shown: the compact
+// banner occupies row 1, so the tab bar renders on row 2. Mouse input is inert
+// during offboard/overlay/confirm, so tabs are always at this row when clickable.
+export const TAB_BAR_ROW = 2
+
+// Resolve a mouse click (1-indexed x, y) to a tab index, or -1 when the click is
+// not on the tab-bar row.
+export function tabIndexFromClick(x: number, y: number, columns?: number): number {
+  return y === TAB_BAR_ROW ? tabIndexFromX(x, columns) : -1
 }
 
 export function Dashboard(props: DashboardProps): React.ReactElement {
   const app = useApp()
   const { stdout } = useStdout()
   const columns = stdout?.columns ?? 80
+  // S11: responsive layout config derived from terminal width.
+  const layout = layoutForWidth(columns)
   const rows = stdout?.rows
   const home = props.homeDir ?? homedir()
   const cwd = props.cwd ?? process.cwd()
@@ -356,8 +384,8 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
         dispatch({ type: 'move', delta: -1 })
       } else if (ev.kind === 'wheelDown') {
         dispatch({ type: 'move', delta: 1 })
-      } else if (ev.kind === 'click' && !ev.release && ev.y === 1) {
-        const idx = tabIndexFromX(ev.x)
+      } else if (ev.kind === 'click' && !ev.release) {
+        const idx = tabIndexFromClick(ev.x, ev.y)
         if (idx >= 0) dispatch({ type: 'setTab', tabId: TABS[idx].id })
       }
     }
@@ -501,16 +529,35 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
   const data = state.data
 
   function TabBar(): React.ReactElement {
+    // Build tab children as a flat array (no Box wrappers) so Ink's default
+    // row-flex layout keeps all tabs on a single line.
+    // Tab format: ' {icon}{label} ' = label.length+3 chars per tab, │ between.
+    // NOTE: at full width (prefix 11 + tabs/│ + space + badge ≈ 101 cols) the bar
+    // can exceed a narrow (≤100-col) terminal and Ink clips the trailing badge;
+    // it is not width-responsive (known limitation, like the <40-col case). Real
+    // terminals are typically wider. Clickable tabs render on row TAB_BAR_ROW (2).
+    const tabItems: React.ReactNode[] = []
+    TABS.forEach((t, i) => {
+      const isActive = t.id === state.activeTab
+      const icon = glyph(t.id)
+      if (i > 0) {
+        tabItems.push(<Text key={`sep-${i}`} color="gray">│</Text>)
+      }
+      tabItems.push(
+        <Text
+          key={t.id}
+          color={isActive ? 'cyan' : 'gray'}
+          inverse={isActive}
+        >
+          {' '}{icon}{t.label}{' '}
+        </Text>
+      )
+    })
     return (
       <Box>
         <Text color="cyan" bold>agentguard </Text>
-        {TABS.map((t) => (
-          <Text key={t.id} color={t.id === state.activeTab ? 'cyan' : 'gray'} inverse={t.id === state.activeTab}>
-            {' '}
-            {t.label}{' '}
-          </Text>
-        ))}
-        {data ? <Text>{'  '}</Text> : null}
+        {tabItems}
+        {data ? <Text> </Text> : null}
         {data ? <VerdictBadge verdict={data.verdict} critical={data.aggregate.critical} /> : null}
         {state.watchOn ? <Text color="cyan"> [watch]</Text> : null}
       </Box>
@@ -542,7 +589,9 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
       case 'overview':
         return (
           <Box flexDirection="column">
-            <HeroChart surfaces={data.surfaces} columns={columns} />
+            {/* S11: hide chart when terminal is too narrow */}
+            {layout.chart !== 'hidden' ? <HeroChart surfaces={data.surfaces} columns={columns} /> : <Text dimColor>narrow terminal — chart hidden</Text>}
+            {layout.warn ? <Text color="yellow">⚠ 터미널이 좁습니다</Text> : null}
           </Box>
         )
       case 'agents':

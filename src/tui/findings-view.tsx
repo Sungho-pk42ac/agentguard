@@ -1,6 +1,8 @@
 import { Box, Text } from 'ink'
 import type { Severity } from '../rules.js'
 import { lookupCategoryRemediation, severityRationaleKO } from './detail-model.js'
+import { Panel } from './panel.js'
+import { glyph } from './theme.js'
 import { clampIndex, type ExplorerItem, filterItems, severityColor, sortItemsBySeverity } from './view-model.js'
 
 const WINDOW = 10
@@ -41,14 +43,27 @@ export function FindingsView({ title, items, cursor, filter, detailOpen, hidden,
     </Text>
   )
 
-  if (filtered.length === 0) {
-    // S2: show 깨끗함 ✓ when the tab genuinely has 0 original items;
-    // otherwise show the filter-narrows message.
-    const emptyMsg = items.length === 0 ? '깨끗함 ✓  이 범주에서 발견된 항목이 없습니다.' : `No findings at severity ${filter ?? 'any'}.`
+  // S8: true-empty state (no items in this tab at all) → big ✓ + green Panel + 깨끗함
+  if (items.length === 0) {
     return (
       <Box flexDirection="column">
         {header}
-        <Text color={items.length === 0 ? 'green' : undefined} dimColor={items.length !== 0}>{emptyMsg}</Text>
+        <Panel>
+          <Box flexDirection="column" alignItems="center">
+            <Text color="green" bold>  ✓  </Text>
+            <Text color="green">깨끗함 — 이 범주에서 발견된 항목이 없습니다.</Text>
+          </Box>
+        </Panel>
+      </Box>
+    )
+  }
+
+  // Filter-narrowed (items exist but none pass the current filter/search)
+  if (filtered.length === 0) {
+    return (
+      <Box flexDirection="column">
+        {header}
+        <Text dimColor>{`No findings at severity ${filter ?? 'any'}.`}</Text>
       </Box>
     )
   }
@@ -61,18 +76,26 @@ export function FindingsView({ title, items, cursor, filter, detailOpen, hidden,
   return (
     <Box flexDirection="column">
       {header}
-      {page.map((item, offset) => {
-        const isSelected = start + offset === idx
-        return (
-          <Text key={`${item.id}-${start + offset}`} color={severityColor(item.severity)} inverse={isSelected}>
-            {isSelected ? '›' : ' '} [{item.severity.padEnd(8)}] {item.surface.padEnd(14)} {item.location}
-          </Text>
-        )
-      })}
+      {/* S5: list rows inside a Panel with paddingX=1 */}
+      <Panel>
+        {page.map((item, offset) => {
+          const isSelected = start + offset === idx
+          const surfaceGlyph = glyph(item.surface)
+          const surfaceDisplay = (surfaceGlyph ? surfaceGlyph + ' ' : '') + item.surface.padEnd(14)
+          return (
+            <Text
+              key={`${item.id}-${start + offset}`}
+              color={isSelected ? 'black' : severityColor(item.severity)}
+              backgroundColor={isSelected ? 'cyan' : undefined}
+            >
+              {isSelected ? '▸' : ' '} {'●'} [{item.severity.padEnd(8)}] {surfaceDisplay} {item.location}
+            </Text>
+          )
+        })}
+      </Panel>
       {detailOpen && selected ? (
-        // S5: detail panel — full path + severity rationale + category KO remediation + recommendation
-        <Box flexDirection="column" marginTop={1}>
-          <Text bold>세부정보 Detail</Text>
+        // S5: detail as a separate <Panel> sub-panel
+        <Panel title="세부정보 Detail">
           <Text>
             {selected.location}
             {selected.line ? `:${selected.line}` : ''}
@@ -84,7 +107,7 @@ export function FindingsView({ title, items, cursor, filter, detailOpen, hidden,
           })()}
           <Text>evidence: {selected.evidence}</Text>
           <Text dimColor>fix: {selected.recommendation}</Text>
-        </Box>
+        </Panel>
       ) : null}
     </Box>
   )

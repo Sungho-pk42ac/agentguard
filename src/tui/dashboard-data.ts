@@ -1,9 +1,10 @@
-import { collectResiduals, type ResidualScanOptions } from '../residual-scan.js'
+import { ALL_SCOPES, collectResiduals, type ResidualScanOptions } from '../residual-scan.js'
 import type { ResidualCredential } from '../residual.js'
 import { verdictForFindings, type ScanVerdict } from '../core.js'
 import type { Finding, Severity } from '../rules.js'
 import { severityScore } from '../rules.js'
 import { residualToItem, type ExplorerItem } from './view-model.js'
+import { scanNpmGlobalAsync } from '../detectors/npm-global.js'
 
 // Pure data layer for the dashboard. Runs ONE scan via existing exports
 // (collectResiduals — which already folds in agent-config posture, so there is
@@ -91,4 +92,16 @@ export function buildDashboardData(residuals: readonly ResidualCredential[], now
 export function loadDashboardData(options: LoadDashboardOptions = {}): DashboardData {
   const residuals = collectResiduals(options)
   return buildDashboardData(residuals, options.now)
+}
+
+// Async twin of loadDashboardData for the interactive dashboard. Runs the fast,
+// bounded local surfaces synchronously, then awaits the global npm CLI inventory
+// via non-blocking spawn so the loading spinner keeps animating instead of
+// freezing the terminal. Produces the same residual set as the sync path (npm
+// residuals appended after the local ones).
+export async function loadDashboardDataAsync(options: LoadDashboardOptions = {}): Promise<DashboardData> {
+  const effective = options.scope ?? ALL_SCOPES
+  const local = collectResiduals({ ...options, scope: effective.filter((s) => s !== 'npm-global') })
+  const npm = effective.includes('npm-global') ? await scanNpmGlobalAsync({ platform: options.platform }) : []
+  return buildDashboardData([...local, ...npm], options.now)
 }

@@ -1,16 +1,29 @@
 import { render, Box, Text, useApp, useInput, useStdout } from 'ink'
 import { homedir } from 'node:os'
-import { useEffect, useReducer } from 'react'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { type BaselineDiff, diffAgainstBaseline, loadBaseline, saveBaseline } from '../baseline.js'
 import type { Severity } from '../rules.js'
 import { AgentsView } from './agents-view.js'
 import { BaselineView } from './baseline-view.js'
-import { buildDashboardData, type DashboardData, loadDashboardData } from './dashboard-data.js'
+import { buildDashboardData, type DashboardData, loadDashboardDataAsync } from './dashboard-data.js'
 import { FindingsView } from './findings-view.js'
 import { Footer } from './footer.js'
 import { HeroChart, VerdictBadge } from './hero-chart.js'
 import { Offboard } from './offboard.js'
 import { nextSeverityFilter } from './view-model.js'
+
+// Project markers that make the current directory a real project root. The
+// always-on landing scan only walks cwd files when one is present AND cwd is
+// not the home directory, so launching `agentguard` from a broad location
+// (home, AppData, a drive root) can never trigger an enormous filesystem walk.
+const PROJECT_MARKERS = ['.git', 'package.json', 'pyproject.toml', 'go.mod', 'Cargo.toml', 'pom.xml', 'build.gradle', 'requirements.txt', 'Gemfile', 'tsconfig.json']
+
+function projectScanPath(cwd: string, home: string): string | undefined {
+  if (cwd === home) return undefined
+  return PROJECT_MARKERS.some((marker) => existsSync(join(cwd, marker))) ? cwd : undefined
+}
 
 export type TabId = 'overview' | 'agents' | 'credentials' | 'posture' | 'baseline' | 'offboard'
 
@@ -89,6 +102,29 @@ export interface DashboardProps {
 const EMPTY_DATA = (): DashboardData => buildDashboardData([], Date.now())
 const BASELINE_SCAN_ID = 'dashboard'
 
+// Animated loading view: runs its own interval so the terminal shows live motion
+// (braille spinner + elapsed seconds) while the async scan is in flight. Kept at
+// module scope so a Dashboard re-render never remounts it and resets the timer.
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+
+function Scanning(): React.ReactElement {
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 90)
+    return () => clearInterval(id)
+  }, [])
+  const frame = SPINNER_FRAMES[tick % SPINNER_FRAMES.length]
+  const seconds = Math.floor((tick * 90) / 1000)
+  return (
+    <Box flexDirection="column">
+      <Text color="cyan">
+        {frame} Scanning… (collecting residual credentials)  {seconds}s
+      </Text>
+      <Text dimColor>querying local configs + global npm inventory — this can take a few seconds</Text>
+    </Box>
+  )
+}
+
 export function Dashboard({ loader, onExit, homeDir }: DashboardProps): React.ReactElement {
   const app = useApp()
   const { stdout } = useStdout()
@@ -104,26 +140,43 @@ export function Dashboard({ loader, onExit, homeDir }: DashboardProps): React.Re
     baseline: { has: false, diff: null, message: null },
     now: Date.now(),
   })
+  const alive = useRef(true)
 
-  const runScan = loader ?? (() => loadDashboardData({ projectPath: process.cwd() }))
+  const projectPath = projectScanPath(process.cwd(), home)
+  const runScan = loader
   const exit = onExit ?? app.exit
 
   function rescan(): void {
     dispatch({ type: 'loading' })
-    // Async boundary BEFORE the synchronous scan so the loading frame paints.
+    // Async boundary BEFORE the scan so the loading frame paints. The default
+    // path awaits a non-blocking scan (npm inventory via spawn) so the spinner
+    // keeps animating; injected loaders (tests) stay synchronous.
     setTimeout(() => {
-      let data: DashboardData
-      try {
-        data = runScan()
-      } catch {
-        data = EMPTY_DATA()
+      if (runScan) {
+        let data: DashboardData
+        try {
+          data = runScan()
+        } catch {
+          data = EMPTY_DATA()
+        }
+        if (alive.current) dispatch({ type: 'data', data })
+        return
       }
-      dispatch({ type: 'data', data })
+      loadDashboardDataAsync(projectPath ? { projectPath } : {})
+        .then((data) => {
+          if (alive.current) dispatch({ type: 'data', data })
+        })
+        .catch(() => {
+          if (alive.current) dispatch({ type: 'data', data: EMPTY_DATA() })
+        })
     }, 0)
   }
 
   useEffect(() => {
     rescan()
+    return () => {
+      alive.current = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -195,7 +248,7 @@ export function Dashboard({ loader, onExit, homeDir }: DashboardProps): React.Re
   }
 
   function Body(): React.ReactElement {
-    if (state.loading || !data) return <Text color="cyan">Scanning… (collecting residual credentials)</Text>
+    if (state.loading || !data) return <Scanning />
     switch (state.activeTab) {
       case 'overview':
         return (
@@ -233,7 +286,7 @@ export function Dashboard({ loader, onExit, homeDir }: DashboardProps): React.Re
         <TabBar />
         <Box marginTop={1} flexDirection="column">
           <Offboard
-            scanOptions={{ projectPath: process.cwd() }}
+            scanOptions={projectPath ? { projectPath } : {}}
             applyOptions={{ homeDir: home }}
             onExit={() => dispatch({ type: 'closeOffboard' })}
           />

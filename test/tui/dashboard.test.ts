@@ -43,11 +43,11 @@ test('dashboard paints a loading frame BEFORE the (synchronous) scan runs', () =
   unmount()
 })
 
-test('dashboard renders 5 tabs + verdict badge + footer status after load', async () => {
+test('dashboard renders 6 tabs + verdict badge + footer status after load', async () => {
   const { lastFrame, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview hero should load')
   const frame = lastFrame() ?? ''
-  for (const label of ['Overview', 'Agents', 'Credentials', 'Posture', 'Offboard']) {
+  for (const label of ['Overview', 'Agents', 'Credentials', 'Posture', 'Baseline', 'Offboard']) {
     assert.match(frame, new RegExp(label), `tab ${label} missing`)
   }
   assert.match(frame, /\[tab\]/)

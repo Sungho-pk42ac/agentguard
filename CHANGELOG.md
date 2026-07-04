@@ -28,6 +28,11 @@ The format follows a lightweight keep-a-changelog style. This project is pre-1.0
 - `tsconfig` builds `.tsx` via `react-jsx`.
 - Demo asset and README/examples updated from the serve preview to the interactive session.
 
+### Fixed
+
+- Dashboard scan no longer freezes the terminal: the global npm CLI inventory runs via non-blocking `spawn`, and the loading view shows an animated spinner with an elapsed-seconds counter so an in-progress scan is visibly alive.
+- Launching the dashboard from a broad directory (home, a drive root) no longer triggers an enormous filesystem walk: landing-view project-file scanning is limited to real project roots (a `.git`/`package.json`/`pyproject.toml`/… marker present) and never the home directory. Explicit `scan-files` and the guided offboard scope are unchanged.
+
 ## [0.2.0] - 2026-07-03
 
 ### Added

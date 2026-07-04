@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { type ResidualCredential, residualId } from '../residual.js'
 
 // npm global AI-CLI inventory detector (NEW in v0.3.0). A globally installed AI
@@ -35,6 +35,7 @@ export interface NpmGlobalScanOptions {
   readonly run?: () => NpmRunResult
   readonly platform?: NodeJS.Platform
   readonly timeoutMs?: number
+  readonly runAsync?: () => Promise<NpmRunResult>
 }
 
 // Parse `npm ls -g --json --depth=0` output into a flat package list. npm exits
@@ -103,6 +104,55 @@ export function scanNpmGlobal(options: NpmGlobalScanOptions = {}): ResidualCrede
     return []
   }
   // npm missing (ENOENT) or timed out → skip gracefully.
+  if (result.error) return []
+  return aiCliResiduals(parseNpmGlobalList(result.stdout))
+}
+
+function defaultRunAsync(platform: NodeJS.Platform, timeoutMs: number): Promise<NpmRunResult> {
+  const command = platform === 'win32' ? 'npm.cmd' : 'npm'
+  return new Promise((resolve) => {
+    let stdout = ''
+    let settled = false
+    const done = (result: NpmRunResult): void => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(result)
+    }
+    let child: ReturnType<typeof spawn>
+    try {
+      // Static args make shell:true injection-safe; npm.cmd on win32 needs a shell.
+      child = spawn(command, ['ls', '-g', '--json', '--depth=0'], { shell: true })
+    } catch (error) {
+      resolve({ stdout: '', status: null, error: error as Error })
+      return
+    }
+    const timer = setTimeout(() => {
+      child.kill()
+      done({ stdout, status: null, error: new Error('npm ls -g timed out') })
+    }, timeoutMs)
+    child.stdout?.setEncoding('utf8')
+    child.stdout?.on('data', (chunk: string) => {
+      if (stdout.length < 8 * 1024 * 1024) stdout += chunk
+    })
+    child.on('error', (error) => done({ stdout, status: null, error }))
+    child.on('close', (code) => done({ stdout, status: code }))
+  })
+}
+
+// Async twin of scanNpmGlobal: runs `npm ls -g` via non-blocking spawn so the
+// caller's event loop stays free (the dashboard keeps its spinner animating
+// during it). Parsing and allowlisting are identical to the sync path.
+export async function scanNpmGlobalAsync(options: NpmGlobalScanOptions = {}): Promise<ResidualCredential[]> {
+  const platform = options.platform ?? process.platform
+  const timeoutMs = options.timeoutMs ?? 5000
+  const run = options.runAsync ?? (() => defaultRunAsync(platform, timeoutMs))
+  let result: NpmRunResult
+  try {
+    result = await run()
+  } catch {
+    return []
+  }
   if (result.error) return []
   return aiCliResiduals(parseNpmGlobalList(result.stdout))
 }

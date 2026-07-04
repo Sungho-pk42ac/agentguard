@@ -4,6 +4,7 @@ import {
   aiCliResiduals,
   parseNpmGlobalList,
   scanNpmGlobal,
+  scanNpmGlobalAsync,
 } from '../../src/detectors/npm-global.js'
 
 const SAMPLE = JSON.stringify({
@@ -60,4 +61,26 @@ test('scanNpmGlobal skips gracefully when the runner throws', () => {
     },
   })
   assert.deepEqual(residuals, [])
+})
+
+test('scanNpmGlobalAsync uses an injected async runner and reports AI CLIs', async () => {
+  const residuals = await scanNpmGlobalAsync({ runAsync: async () => ({ stdout: SAMPLE, status: 1 }) })
+  assert.equal(residuals.length, 2)
+  assert.deepEqual(
+    residuals.map((r) => r.location).sort(),
+    ['npm-global:@anthropic-ai/claude-code', 'npm-global:@openai/codex'],
+  )
+})
+
+test('scanNpmGlobalAsync skips gracefully when the runner errors or rejects', async () => {
+  const err = Object.assign(new Error('spawn npm ENOENT'), { code: 'ENOENT' })
+  assert.deepEqual(await scanNpmGlobalAsync({ runAsync: async () => ({ stdout: '', status: null, error: err }) }), [])
+  assert.deepEqual(
+    await scanNpmGlobalAsync({
+      runAsync: async () => {
+        throw new Error('boom')
+      },
+    }),
+    [],
+  )
 })

@@ -27,8 +27,8 @@ jobs:
           else
             [ "${GITHUB_REF_NAME#v}" = "$(node -p "require('./package.json').version")" ] || exit 1
           fi
+      - name: Update npm CLI for OIDC trusted publishing
+        run: npm install -g npm@latest
       - name: Publish to npm
         if: startsWith(github.ref, 'refs/tags/v')
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

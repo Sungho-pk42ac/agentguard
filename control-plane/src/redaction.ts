@@ -52,12 +52,15 @@ export function payloadRedactionCheck(payload: ReportPayload): RedactionCheck {
     ['actor.subject', payload.actor.subject],
     ['assetId', payload.assetId],
     ['orgId', payload.orgId],
+    ['scannedAt', payload.scannedAt],
+    ['agentVersion', payload.agentVersion],
   ]
   for (let i = 0; i < payload.findings.length; i++) {
     const f = payload.findings[i]
     candidates.push([`findings[${i}].evidenceRedacted`, f.evidenceRedacted])
     candidates.push([`findings[${i}].location`, f.location])
     candidates.push([`findings[${i}].ruleId`, f.ruleId])
+    candidates.push([`findings[${i}].surface`, f.surface])
   }
   for (const [field, value] of candidates) {
     if (looksLikeRawSecret(value)) return { leak: true, field }

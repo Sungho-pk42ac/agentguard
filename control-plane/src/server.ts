@@ -9,8 +9,9 @@ import {
   type ReadDeps,
 } from './dashboard.js'
 import type { FindingFilter, Severity } from './model.js'
+import type { ViewerAuth } from './verify/viewer.js'
 
-export type ControlPlaneDeps = IngestDeps & EnrollDeps & ReadDeps
+export type ControlPlaneDeps = IngestDeps & EnrollDeps & ReadDeps & { readonly viewerAuth: ViewerAuth }
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024
 
@@ -42,8 +43,19 @@ function normalizeHeaders(req: IncomingMessage): Record<string, string> {
   return out
 }
 
-function sessionOrg(url: URL, headers: Record<string, string>): string | undefined {
-  return url.searchParams.get('org') ?? headers['x-agentguard-session-org'] ?? undefined
+// Extract the viewer token: Authorization: Bearer, x-agentguard-viewer-key, or
+// ?key= (browser convenience). The org is derived from the AUTHENTICATED token,
+// never from a client-supplied ?org=.
+function viewerToken(url: URL, headers: Record<string, string>): string | undefined {
+  const auth = headers['authorization']
+  if (auth && auth.startsWith('Bearer ')) return auth.slice('Bearer '.length)
+  return headers['x-agentguard-viewer-key'] ?? url.searchParams.get('key') ?? undefined
+}
+
+function clampWindowDays(raw: string | null): number {
+  const n = Math.floor(Number((raw ?? '30d').replace('d', '')))
+  if (!Number.isFinite(n) || n < 1) return 30
+  return Math.min(n, 365)
 }
 
 const SEVERITIES = new Set<Severity>(['low', 'medium', 'high', 'critical'])
@@ -82,21 +94,24 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
     }
 
     if (method === 'GET') {
-      const org = sessionOrg(url, headers)
+      if (path === '/healthz') return sendJson(200, { ok: true })
+      // Reads are authorized: the org comes from the viewer token, not ?org=.
+      const org = deps.viewerAuth.resolveOrg(viewerToken(url, headers))
       if (path === '/' || path === '/dashboard') {
-        if (!org) return sendHtml(400, '<!doctype html><h1>AgentGuard Control Plane</h1><p>Add ?org=&lt;orgId&gt; to view a fleet.</p>')
+        if (!org) {
+          res.setHeader('www-authenticate', 'Bearer realm="agentguard"')
+          return sendHtml(401, '<!doctype html><h1>AgentGuard Control Plane</h1><p>Unauthorized — present a viewer token (Authorization: Bearer, or ?key=).</p>')
+        }
         return sendHtml(200, renderDashboardHtml(org, deps))
       }
-      if (path === '/healthz') return sendJson(200, { ok: true })
       if (path.startsWith('/v1/')) {
-        if (!org) return sendJson(401, { error: 'missing org session' })
+        if (!org) return sendJson(401, { error: 'unauthorized: valid viewer token required' })
         if (path === '/v1/dashboard/summary') {
           const r = handleSummary(org, deps)
           return sendJson(r.status, r.json)
         }
         if (path === '/v1/dashboard/trend') {
-          const raw = (url.searchParams.get('window') ?? '30d').replace('d', '')
-          const windowDays = Number(raw) > 0 ? Number(raw) : 30
+          const windowDays = clampWindowDays(url.searchParams.get('window'))
           const r = handleTrend(org, windowDays, deps)
           return sendJson(r.status, r.json)
         }
@@ -119,6 +134,8 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
 
     return sendJson(404, { error: 'not found' })
   } catch (error) {
-    return sendJson(500, { error: error instanceof Error ? error.message : 'internal error' })
+    // Log server-side; never leak internal exception detail to the network.
+    console.error('control-plane request error:', error)
+    return sendJson(500, { error: 'internal error' })
   }
 }

@@ -7,29 +7,32 @@ import { createControlPlane, type ControlPlaneDeps } from '../src/server.js'
 import { MemoryStorage } from '../src/storage/memory.js'
 import { RecordingNotifier } from '../src/notify/recording.js'
 import { StaticOidcVerifier } from '../src/verify/oidc.js'
+import { StaticViewerAuth } from '../src/verify/viewer.js'
 import { deviceHeaders, finding, oidcHeaders, payload } from './helpers.js'
 
 async function postJson(base: string, path: string, body: string, headers: Record<string, string>): Promise<{ status: number; json: any }> {
   const res = await fetch(`${base}${path}`, { method: 'POST', headers, body })
   return { status: res.status, json: await res.json().catch(() => ({})) }
 }
-async function getJson(base: string, path: string): Promise<{ status: number; json: any }> {
-  const res = await fetch(`${base}${path}`)
+async function getJson(base: string, path: string, viewerKey?: string): Promise<{ status: number; json: any }> {
+  const headers: Record<string, string> = viewerKey ? { authorization: `Bearer ${viewerKey}` } : {}
+  const res = await fetch(`${base}${path}`, { headers })
   return { status: res.status, json: await res.json().catch(() => ({})) }
 }
 
-test('E2E: 3 assets enroll -> report -> dashboard aggregates -> exactly one alert; re-report no dup; tenant isolation', async () => {
+test('E2E: 3 assets enroll -> report -> authorized dashboard aggregates -> one alert; re-report no dup; tenant isolation', async () => {
   const storage = new MemoryStorage()
   const notifier = new RecordingNotifier()
-  const oidc = new StaticOidcVerifier()
-  oidc.add('ci-token', { subject: 'repo:acme/web', provider: 'github' })
-  // seed a one-time PC enrollment code for orgA
+  const oidc = new StaticOidcVerifier({ 'ci-token': { subject: 'repo:acme/web', provider: 'github' } })
+  const viewerAuth = new StaticViewerAuth({ 'vk-orgA': 'orgA', 'vk-orgB': 'orgB' })
+  // seed one-time PC enrollment codes and the OIDC enrollment grant for orgA
   storage.putEnrollmentCode('orgA', createHash('sha256').update('CODE1').digest('hex'), Date.now() + 3_600_000)
   storage.putEnrollmentCode('orgA', createHash('sha256').update('CODE2').digest('hex'), Date.now() + 3_600_000)
+  storage.grantOidc('orgA', 'github', 'repo:acme/web')
 
-  const deps: ControlPlaneDeps = { storage, notifier, oidcVerifier: oidc, now: () => Date.now(), freshnessWindowSec: 300, staleThresholdHours: 48 }
+  const deps: ControlPlaneDeps = { storage, notifier, oidcVerifier: oidc, viewerAuth, now: () => Date.now(), freshnessWindowSec: 300, staleThresholdHours: 48 }
   const server = createControlPlane(deps)
-  server.listen(0)
+  server.listen(0, '127.0.0.1')
   await once(server, 'listening')
   const port = (server.address() as AddressInfo).port
   const base = `http://127.0.0.1:${port}`
@@ -54,52 +57,51 @@ test('E2E: 3 assets enroll -> report -> dashboard aggregates -> exactly one aler
     assert.equal(r1.json.newCriticalCount, 1)
 
     const body2 = JSON.stringify(payload('orgA', 'pc2', [finding({ severity: 'high', surface: 'mcp-risk', fingerprint: '2'.repeat(32) })]))
-    const r2 = await postJson(base, '/v1/reports', body2, deviceHeaders('pc2', tok2, body2, ts))
-    assert.equal(r2.status, 202)
+    assert.equal((await postJson(base, '/v1/reports', body2, deviceHeaders('pc2', tok2, body2, ts))).status, 202)
 
     const body3 = JSON.stringify(
       payload('orgA', 'ci1', [finding({ severity: 'medium', surface: 'secret', fingerprint: '3'.repeat(32) })], {
         actor: { type: 'oidc', subject: 'repo:acme/web', provider: 'github' },
       }),
     )
-    const r3 = await postJson(base, '/v1/reports', body3, oidcHeaders('ci1', 'ci-token', ts))
-    assert.equal(r3.status, 202)
+    assert.equal((await postJson(base, '/v1/reports', body3, oidcHeaders('ci1', 'ci-token', ts))).status, 202)
 
-    // ── dashboard aggregates all three assets ──
-    const summary = await getJson(base, '/v1/dashboard/summary?org=orgA')
+    // ── read access is AUTHORIZED: no token -> 401 ──
+    assert.equal((await getJson(base, '/v1/dashboard/summary')).status, 401)
+    assert.equal((await getJson(base, '/v1/findings')).status, 401)
+
+    // ── authorized read for orgA aggregates all three assets ──
+    const summary = await getJson(base, '/v1/dashboard/summary', 'vk-orgA')
     assert.equal(summary.status, 200)
     assert.equal(summary.json.totalFindings, 3)
     assert.equal(summary.json.byAsset.length, 3)
     assert.equal(summary.json.bySeverity.critical, 1)
 
-    const assets = await getJson(base, '/v1/assets?org=orgA')
-    assert.equal(assets.json.assets.length, 3)
+    assert.equal((await getJson(base, '/v1/assets', 'vk-orgA')).json.assets.length, 3)
+    assert.equal((await getJson(base, '/v1/dashboard/trend?window=30d', 'vk-orgA')).json.points.length, 30)
+    // window is clamped (no event-loop DoS)
+    assert.equal((await getJson(base, '/v1/dashboard/trend?window=999999999d', 'vk-orgA')).json.points.length, 365)
 
-    const trend = await getJson(base, '/v1/dashboard/trend?org=orgA&window=30d')
-    assert.equal(trend.json.points.length, 30)
-
-    // ── exactly one alert fired for the single critical finding ──
+    // ── exactly one alert for the single critical finding ──
     assert.equal(notifier.sent.length, 1)
 
     // ── re-report the critical finding: no duplicate alert ──
     const ts2 = Math.floor(Date.now() / 1000)
     const rDup = await postJson(base, '/v1/reports', body1, deviceHeaders('pc1', tok1, body1, ts2))
-    assert.equal(rDup.status, 202)
     assert.equal(rDup.json.newCriticalCount, 0)
     assert.equal(notifier.sent.length, 1, 'dedup: still one alert after re-report')
 
-    // ── tenant isolation: orgB sees nothing ──
-    const otherOrg = await getJson(base, '/v1/dashboard/summary?org=orgB')
-    assert.equal(otherOrg.json.totalFindings, 0)
-    const findingsA = await getJson(base, '/v1/findings?org=orgA')
-    const findingsB = await getJson(base, '/v1/findings?org=orgB')
-    assert.equal(findingsA.json.findings.length, 3)
-    assert.equal(findingsB.json.findings.length, 0)
+    // ── TENANT ISOLATION: an orgB viewer token sees only orgB (empty), never orgA ──
+    const orgBSummary = await getJson(base, '/v1/dashboard/summary', 'vk-orgB')
+    assert.equal(orgBSummary.json.totalFindings, 0)
+    assert.equal((await getJson(base, '/v1/findings', 'vk-orgB')).json.findings.length, 0)
+    assert.equal((await getJson(base, '/v1/findings', 'vk-orgA')).json.findings.length, 3)
 
-    // ── HTML dashboard renders ──
-    const html = await fetch(`${base}/?org=orgA`).then((r) => r.text())
+    // ── HTML dashboard requires a viewer token ──
+    assert.equal((await fetch(`${base}/`)).status, 401)
+    const html = await fetch(`${base}/?key=vk-orgA`).then((r) => r.text())
     assert.match(html, /AgentGuard Control Plane/)
-    assert.match(html, /BLOCK/) // critical present -> BLOCK verdict badge
+    assert.match(html, /BLOCK/)
   } finally {
     server.close()
     await once(server, 'close')

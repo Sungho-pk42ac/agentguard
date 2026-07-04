@@ -35,5 +35,9 @@ export interface StoragePort {
   putEnrollmentCode(orgId: string, codeHash: string, expiresAt: number): void
   consumeEnrollmentCode(orgId: string, codeHash: string, now: number): boolean
 
+  // ── OIDC enrollment grants (which provider:subject may enroll into an org) ──
+  grantOidc(orgId: string, provider: string, subject: string): void
+  isOidcGranted(orgId: string, provider: string, subject: string): boolean
+
   close(): void
 }

@@ -11,6 +11,7 @@ export class MemoryStorage implements StoragePort {
   private readonly alerts = new Map<string, AlertRecord>()
   private readonly ingests: IngestEventRecord[] = []
   private readonly codes = new Map<string, number>()
+  private readonly oidcGrants = new Set<string>()
 
   private assetKey(orgId: string, assetId: string): string {
     return `${orgId}\u0000${assetId}`
@@ -85,6 +86,13 @@ export class MemoryStorage implements StoragePort {
     if (expiresAt === undefined) return false
     this.codes.delete(key) // single-use regardless of expiry outcome
     return expiresAt >= now
+  }
+
+  grantOidc(orgId: string, provider: string, subject: string): void {
+    this.oidcGrants.add(`${orgId}\u0000${provider}\u0000${subject}`)
+  }
+  isOidcGranted(orgId: string, provider: string, subject: string): boolean {
+    return this.oidcGrants.has(`${orgId}\u0000${provider}\u0000${subject}`)
   }
 
   close(): void {

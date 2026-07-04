@@ -73,6 +73,10 @@ export async function handleReport(rawBody: string, headers: Record<string, stri
   const asset = deps.storage.getAsset(orgId, headerAsset)
   if (!asset) return { status: 401, json: { error: 'unknown or unenrolled asset' } }
 
+  // Freshness bounds replay to a 300s window. A replay within that window has no
+  // effect: finding upsert is idempotent (keyed on fingerprint) and alerts dedup
+  // on (org, fingerprint), so no new data or duplicate alert can be injected. A
+  // nonce/jti cache for strict once-only semantics is a follow-up.
   const ts = Number(headers['x-agentguard-timestamp'])
   if (!Number.isFinite(ts) || Math.abs(Math.floor(now / 1000) - ts) > windowSec) {
     return { status: 401, json: { error: 'missing or stale request timestamp' } }
@@ -137,7 +141,16 @@ export function handleEnroll(rawBody: string, deps: EnrollDeps): HandlerResponse
   if (typeof body.oidcToken === 'string' && body.oidcToken.length > 0) {
     const claims = deps.oidcVerifier.verify(body.oidcToken)
     if (!claims) return { status: 401, json: { error: 'OIDC token verification failed' } }
+    // Authorization: the verified subject/provider must be pre-granted for this
+    // org. Without this, any holder of a verifiable token could self-enroll into
+    // a victim org and inject reports.
+    if (!deps.storage.isOidcGranted(orgId, claims.provider, claims.subject)) {
+      return { status: 403, json: { error: 'OIDC identity is not authorized to enroll into this org' } }
+    }
     const assetId = typeof body.assetId === 'string' && body.assetId.length > 0 ? body.assetId : `ci-${claims.provider}`
+    if (deps.storage.getAsset(orgId, assetId)) {
+      return { status: 409, json: { error: 'asset already enrolled' } }
+    }
     deps.storage.createAsset({
       orgId,
       assetId,
@@ -159,6 +172,9 @@ export function handleEnroll(rawBody: string, deps: EnrollDeps): HandlerResponse
       return { status: 401, json: { error: 'invalid or expired enrollment code' } }
     }
     const assetId = typeof body.assetId === 'string' && body.assetId.length > 0 ? body.assetId : `pc-${randomBytes(4).toString('hex')}`
+    if (deps.storage.getAsset(orgId, assetId)) {
+      return { status: 409, json: { error: 'asset already enrolled' } }
+    }
     const deviceToken = (deps.mintToken ?? (() => randomBytes(24).toString('hex')))()
     deps.storage.createAsset({
       orgId,

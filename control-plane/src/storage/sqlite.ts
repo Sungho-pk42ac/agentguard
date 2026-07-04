@@ -67,6 +67,10 @@ export class SqliteStorage implements StoragePort {
         org_id TEXT NOT NULL, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL,
         PRIMARY KEY (org_id, code_hash)
       );
+      CREATE TABLE IF NOT EXISTS oidc_grants (
+        org_id TEXT NOT NULL, provider TEXT NOT NULL, subject TEXT NOT NULL,
+        PRIMARY KEY (org_id, provider, subject)
+      );
     `)
   }
 
@@ -176,6 +180,14 @@ export class SqliteStorage implements StoragePort {
     if (row === undefined) return false
     this.db.prepare(`DELETE FROM enrollment_codes WHERE org_id = ? AND code_hash = ?`).run(orgId, codeHash)
     return row.expires_at >= now
+  }
+
+  grantOidc(orgId: string, provider: string, subject: string): void {
+    this.db.prepare(`INSERT OR IGNORE INTO oidc_grants (org_id, provider, subject) VALUES (?, ?, ?)`).run(orgId, provider, subject)
+  }
+
+  isOidcGranted(orgId: string, provider: string, subject: string): boolean {
+    return this.db.prepare(`SELECT 1 FROM oidc_grants WHERE org_id = ? AND provider = ? AND subject = ?`).get(orgId, provider, subject) !== undefined
   }
 
   close(): void {

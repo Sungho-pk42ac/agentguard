@@ -30,16 +30,22 @@ export async function processAlerts(
     if (deps.storage.alertExists(orgId, finding.fingerprint)) continue
     const firedAt = deps.now()
     deps.storage.recordAlert({ orgId, fingerprint: finding.fingerprint, severity: finding.severity, firedAt, channel })
-    await deps.notifier.notify({
-      orgId,
-      assetId,
-      ruleId: finding.ruleId,
-      surface: finding.surface,
-      severity: finding.severity,
-      fingerprint: finding.fingerprint,
-      location: finding.location,
-      firedAt,
-    })
+    // Best-effort delivery: a failing/slow notifier must never fail the ingest
+    // (the report is already persisted). Delivery errors are logged, not thrown.
+    try {
+      await deps.notifier.notify({
+        orgId,
+        assetId,
+        ruleId: finding.ruleId,
+        surface: finding.surface,
+        severity: finding.severity,
+        fingerprint: finding.fingerprint,
+        location: finding.location,
+        firedAt,
+      })
+    } catch (error) {
+      console.error(`alert delivery failed for ${orgId}/${finding.fingerprint}:`, error instanceof Error ? error.message : error)
+    }
     fired += 1
   }
   return fired

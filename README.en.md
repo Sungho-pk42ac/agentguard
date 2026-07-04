@@ -21,7 +21,7 @@ AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe a
 ## Install
 
 ```bash
-npm install -g agentguard
+npm install -g @pk42ac/agentguard
 ```
 
 ## Quick start

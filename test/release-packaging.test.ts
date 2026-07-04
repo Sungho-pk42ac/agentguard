@@ -45,7 +45,7 @@ test('npm package tarball installs a working agentguard bin', () => {
 test('README documents npm install, package smoke, and provenance release checklist', () => {
   const readme = readFileSync('README.md', 'utf8')
 
-  assert.match(readme, /npm install -g agentguard/)
+  assert.match(readme, /npm install -g @pk42ac\/agentguard/)
   assert.match(readme, /agentguard scan-files \./)
   assert.match(readme, /npm pack --dry-run/)
   assert.match(readme, /npm publish --provenance --access public/)

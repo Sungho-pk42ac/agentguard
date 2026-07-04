@@ -59,6 +59,18 @@ test('README roadmap does not list implemented work as future roadmap items', ()
   assert.notEqual(roadmap, undefined, 'README should keep a Roadmap section')
   assert.doesNotMatch(roadmap, /^- GitHub Action PR comment$/m)
   assert.doesNotMatch(roadmap, /^- policy-as-code \(`agent-policy\.yaml`\)$/m)
+  assert.doesNotMatch(roadmap, /^- Codex\/Hermes transcript adapters$/m)
+})
+
+test('roadmap doc does not list implemented work as future roadmap items', () => {
+  const roadmap = readFileSync('docs/roadmap.md', 'utf8')
+
+  assert.doesNotMatch(roadmap, /Claude Desktop MCP config/)
+  assert.doesNotMatch(roadmap, /Cursor MCP config/)
+  assert.doesNotMatch(roadmap, /read-only filesystem MCP use/)
+  assert.doesNotMatch(roadmap, /SARIF rule metadata/)
+  assert.doesNotMatch(roadmap, /rule metadata in JSON\/SARIF/)
+  assert.doesNotMatch(roadmap, /^- Codex\/Hermes transcript adapters\.$/m)
 })
 
 test('release workflow publishes with provenance and a version guard', () => {

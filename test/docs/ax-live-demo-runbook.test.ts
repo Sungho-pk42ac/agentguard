@@ -92,6 +92,33 @@ test('AX live demo runbook commands use existing fixtures and implemented CLI su
   assert.match(runbook, /SARIF/)
 })
 
+test('AX live demo runbook documents local agent config posture and JSONL transcript evidence', () => {
+  const runbook = readRunbook()
+
+  assert.match(runbook, /^## 추가 evidence: 로컬 agent config posture와 JSONL transcript/m)
+
+  const extraFixturePaths = [
+    'examples/claude-desktop-config.json',
+    'examples/cursor-mcp.json',
+    'examples/codex-transcript.jsonl',
+  ] as const
+
+  for (const fixturePath of extraFixturePaths) {
+    assert.ok(existsSync(join(repoRoot, fixturePath)), `${fixturePath} should exist`)
+    expectLiteral(runbook, fixturePath)
+  }
+
+  const extraCommands = [
+    'node dist/index.js scan-mcp < examples/claude-desktop-config.json',
+    'node dist/index.js scan-mcp < examples/cursor-mcp.json',
+    'node dist/index.js scan-log < examples/codex-transcript.jsonl',
+  ] as const
+
+  for (const command of extraCommands) {
+    expectLiteral(runbook, command)
+  }
+})
+
 test('AX live demo runbook cites public references without unsupported claims', () => {
   const runbook = readRunbook()
   const requiredUrls = [

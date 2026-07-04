@@ -99,6 +99,14 @@ test('AX SARIF reviewer loop card uses exact commands backed by existing fixture
   assert.match(card, /agent transcript|transcript\/log/i)
 })
 
+test('AX SARIF reviewer loop card documents enriched SARIF rule metadata and region line numbers', () => {
+  const card = readCard()
+
+  for (const term of ['fullDescription', 'helpUri', 'defaultConfiguration.level', 'region.startLine'] as const) {
+    expectLiteral(card, term)
+  }
+})
+
 test('AX SARIF reviewer loop card cites public references with borrow avoid action notes', () => {
   const card = readCard()
 

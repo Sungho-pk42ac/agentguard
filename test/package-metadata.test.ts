@@ -19,7 +19,8 @@ const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.me
 
 test('npm package metadata links users to the source, issues, and product category', () => {
   assert.equal(packageJson.name, 'agentguard')
-  assert.equal(packageJson.bin?.agentguard, './dist/index.js')
+  assert.equal(packageJson.bin?.agentguard, 'dist/index.js')
+  assert.ok(!packageJson.bin?.agentguard.startsWith('./'), 'bin path should have no leading "./" so npm publish does not auto-correct it')
   assert.ok(packageJson.files?.includes('dist'))
   assert.ok(packageJson.files?.includes('examples'))
 

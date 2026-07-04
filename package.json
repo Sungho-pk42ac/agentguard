@@ -51,7 +51,7 @@
     "node": ">=20"
   },
   "bin": {
-    "agentguard": "./dist/index.js"
+    "agentguard": "dist/index.js"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",

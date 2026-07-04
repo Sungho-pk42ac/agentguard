@@ -8,8 +8,15 @@ type SarifReportingDescriptor = {
   readonly shortDescription: {
     readonly text: string
   }
+  readonly fullDescription: {
+    readonly text: string
+  }
   readonly help: {
     readonly text: string
+  }
+  readonly helpUri: string
+  readonly defaultConfiguration: {
+    readonly level: SarifLevel
   }
   readonly properties: {
     readonly 'security-severity': string
@@ -17,6 +24,8 @@ type SarifReportingDescriptor = {
     readonly tags: readonly ['security', 'agentguard']
   }
 }
+
+const RULES_DOC_URI = 'https://github.com/Sungho-pk42ac/agentguard/blob/main/docs/rules.md'
 
 type SarifResult = {
   readonly ruleId: string
@@ -184,7 +193,10 @@ function sarifRules(findings: Finding[]): SarifReportingDescriptor[] {
       id: finding.id,
       name: finding.category,
       shortDescription: { text: finding.title },
+      fullDescription: { text: `${finding.title}. ${finding.recommendation}` },
       help: { text: finding.recommendation },
+      helpUri: RULES_DOC_URI,
+      defaultConfiguration: { level: sarifLevel(finding) },
       properties: {
         'security-severity': sarifSecuritySeverity(finding),
         precision: 'high',

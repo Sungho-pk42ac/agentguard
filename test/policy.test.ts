@@ -87,6 +87,19 @@ test('loadPolicy parses the example policy as the full policy surface', () => {
   assert.ok(policy.mcp.requireApprovalTools.includes('github.merge_pull_request'))
 })
 
+test('loadPolicy parses the read-only filesystem example policy without silently dropping overrides', () => {
+  const policy = loadPolicy(join(process.cwd(), 'examples', 'agent-policy.readonly.yaml'))
+
+  assert.ok(policy.denyRead.includes('~/.ssh/**'))
+  assert.ok(policy.denyRead.includes('.aws/**'))
+  assert.ok(policy.mcp.requireApprovalTools.includes('filesystem.write_file'))
+  assert.ok(policy.mcp.requireApprovalTools.includes('filesystem.move_file'))
+  assert.ok(policy.mcp.denyTools.includes('filesystem.delete_file'))
+  // overrides.mcp.deny_servers replaces the default list, so 'filesystem' must not survive silently
+  assert.ok(!policy.mcp.denyServers.includes('filesystem'))
+  assert.ok(policy.mcp.denyServers.includes('postgres'))
+})
+
 test('loadPolicy reports malformed files without leaking file contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-policy-'))
   const path = join(dir, 'agent-policy.yaml')

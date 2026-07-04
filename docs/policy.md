@@ -28,6 +28,35 @@ mcp:
     - shell
 ```
 
+### Read-only filesystem MCP example
+
+See [`examples/agent-policy.readonly.yaml`](../examples/agent-policy.readonly.yaml) for teams that want to allow a
+filesystem MCP server but keep it effectively read-only. It overrides the default `mcp.deny_servers` list to permit
+`filesystem` (instead of denying the whole server), then guards the write-capable tools individually:
+
+```yaml
+overrides:
+  mcp:
+    deny_servers:
+      - postgres
+      - supabase
+      - github
+      - slack
+      - google
+      - drive
+deny_read:
+  - .aws/**
+  - .kube/**
+  - .gnupg/**
+mcp:
+  deny_tools:
+    - filesystem.delete_file
+  require_approval_tools:
+    - filesystem.write_file
+    - filesystem.move_file
+    - filesystem.create_directory
+```
+
 ## Supported shapes
 
 AgentGuard intentionally accepts several aliases so teams can write policy files in the language they already use.

@@ -4,7 +4,7 @@ import { scanStructuredMcpConfig } from './mcp-structured-scan.js'
 import { DEFAULT_POLICY, type Finding, PII_PATTERNS, type Policy, SECRET_PATTERNS, SENSITIVE_FILE_RE } from './rules.js'
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.next', 'dist', 'build', 'coverage', '.turbo', '.cache'])
-const MAX_FILE_BYTES = 512_000
+export const MAX_FILE_BYTES = 512_000
 const MCP_WIDE_FILESYSTEM_ROOT_RE =
   /["']?(?:root|roots|args|allow(?:ed)?_directories|directories|paths?)["']?\s*[:=]\s*(?:\[[^\]]*?(?:"\/"|'\/'|[A-Za-z]:[\\/](?=["'\],\s]))|(?:"\/"|'\/'|[A-Za-z]:[\\/](?=["'\],\s])))/i
 const MCP_WRITABLE_PATH_RE =

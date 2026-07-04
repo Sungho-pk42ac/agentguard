@@ -48,7 +48,7 @@ export const SECRET_PATTERNS: Array<{ id: string; title: string; re: RegExp }> =
 
 export const PII_PATTERNS: Array<{ id: string; title: string; re: RegExp }> = [
   { id: 'kr-phone', title: 'Korean phone number', re: /01[016789][-\s]?\d{3,4}[-\s]?\d{4}/g },
-  { id: 'email', title: 'Email address', re: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi },
+  { id: 'email', title: 'Email address', re: /[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}/gi },
   { id: 'kr-rrn-like', title: 'Korean resident-registration-like number', re: /\d{6}[-\s]?[1-4]\d{6}/g },
 ]
 

@@ -1,0 +1,42 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AgentGuard logo">
+  <defs>
+    <linearGradient id="ag-shield" x1="64" y1="40" x2="192" y2="222" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#132a3f"/>
+      <stop offset="1" stop-color="#0a1420"/>
+    </linearGradient>
+    <linearGradient id="ag-edge" x1="48" y1="40" x2="208" y2="222" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8be9f2"/>
+      <stop offset="0.55" stop-color="#4bb9cf"/>
+      <stop offset="1" stop-color="#2f8ba3"/>
+    </linearGradient>
+    <linearGradient id="ag-node" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9beef6"/>
+      <stop offset="1" stop-color="#5bc6d8"/>
+    </linearGradient>
+    <filter id="ag-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- shield -->
+  <path d="M64 40 H192 Q208 40 208 56 V120 Q208 178 128 222 Q48 178 48 120 V56 Q48 40 64 40 Z"
+        fill="url(#ag-shield)" stroke="url(#ag-edge)" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- scan sweep -->
+  <path d="M52 126 H204" stroke="#e8a33d" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+  <path d="M52 126 H132" stroke="#e8a33d" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- agent node graph (root orchestrates tool nodes; one flagged) -->
+  <g filter="url(#ag-glow)">
+    <path d="M128 92 L96 152" stroke="#6fd3e2" stroke-width="6" stroke-linecap="round"/>
+    <path d="M128 92 L128 152" stroke="#6fd3e2" stroke-width="6" stroke-linecap="round"/>
+    <path d="M128 92 L162 152" stroke="#6fd3e2" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="128" cy="86" r="15" fill="url(#ag-node)"/>
+    <circle cx="96" cy="158" r="12" fill="url(#ag-node)"/>
+    <circle cx="128" cy="158" r="12" fill="url(#ag-node)"/>
+    <circle cx="162" cy="158" r="12" fill="#e8a33d"/>
+  </g>
+  <!-- caught-risk ping on the flagged node -->
+  <circle cx="162" cy="158" r="18" fill="none" stroke="#e8a33d" stroke-width="2.5" opacity="0.55"/>
+</svg>

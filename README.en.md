@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/banner.png" alt="AgentGuard" width="840" />
+</p>
+
 # AgentGuard
 
 [한국어](README.md)
@@ -5,7 +9,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-593%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-668%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -18,7 +22,22 @@ AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe a
 As of v0.3.0, AgentGuard delivers **AI coding agent lifecycle security** as a local workflow — an **onboarding inspection** of the AI tools and permissions installed on a new hire's machine, an **offboarding sweep** that finds residual credentials on a departing employee's machine and deletes them only after explicit approval (with an audit report), and an **admin-only local terminal dashboard** (`agentguard`) to run it all. It works offline on the target machine, with no web or central server.
 
 <p align="center">
-  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard dashboard terminal screenshot showing the 6-tab keyboard navigation and findings exploration" width="920" />
+  <img src="docs/screenshot-overview.png" alt="AgentGuard dashboard terminal screenshot — Overview tab: findings-by-surface bar chart with a PASS/REVIEW/BLOCK verdict badge" width="900" />
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshot-credentials.png" alt="Credentials tab with detail panel" /><br/><sub><b>Credentials</b> — findings explorer + detail (severity rationale, redacted evidence, fix)</sub></td>
+    <td width="50%"><img src="docs/screenshot-posture.png" alt="Posture tab" /><br/><sub><b>Posture</b> — over-permissioned MCP/agent config</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshot-agents.png" alt="Agents tab" /><br/><sub><b>Agents</b> — installed AI CLI/tool inventory</sub></td>
+    <td width="50%"><img src="docs/screenshot-offboard.png" alt="Offboard tab" /><br/><sub><b>Offboard</b> — approval-gated offboarding sweep</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshot-cli.png" alt="AgentGuard CLI report — doctor and scan-diff" width="860" />
 </p>
 
 ## Install

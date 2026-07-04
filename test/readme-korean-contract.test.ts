@@ -56,16 +56,16 @@ test('root README keeps machine-facing contracts English-compatible', () => {
   assert.match(rootReadme, /mcp\.broad_filesystem_access/)
 })
 
-test('root README terminal demo shows the local service preview while preserving English-compatible output fields', () => {
-  assert.match(rootReadme, /alt="[^"]*로컬 SaaS 미리보기 터미널 스크린샷[^"]*"/)
-  assert.match(terminalDemoSvg, /AgentGuard serve 로컬 서비스 터미널 스크린샷/)
-  assert.match(terminalDemoSvg, /로컬 SaaS 미리보기: CLI 엔진을 브라우저\/API에서 실행/)
-  assert.match(terminalDemoSvg, /JSON\/SARIF\/API\/machine fields는 English-compatible/)
-  assert.match(terminalDemoSvg, /AgentGuard Serve/)
-  assert.match(terminalDemoSvg, /Status/)
-  assert.match(terminalDemoSvg, /READY/)
-  assert.match(terminalDemoSvg, /POST \/api\/scan/)
-  assert.match(terminalDemoSvg, /diff, mcp, log, text/)
+test('root README terminal demo shows the interactive dashboard while preserving English-compatible output fields', () => {
+  assert.match(rootReadme, /alt="[^"]*대시보드 터미널 스크린샷[^"]*"/)
+  assert.match(terminalDemoSvg, /AgentGuard 대시보드 터미널 스크린샷/)
+  assert.match(terminalDemoSvg, /JSON\/SARIF\/machine fields는 English-compatible/)
+  assert.match(terminalDemoSvg, /Findings by surface/)
+  assert.match(terminalDemoSvg, /\[critical\] shell-rc/)
+  assert.match(terminalDemoSvg, /\[o\] offboard/)
+  assert.match(terminalDemoSvg, /~\/\.agentguard\/trash/)
+  // No residual serve/HTTP preview vocabulary remains in the demo asset.
+  assert.doesNotMatch(terminalDemoSvg, /agentguard serve|POST \/api\/scan|127\.0\.0\.1/)
 })
 
 test('root README does not imply CLI commands or rule IDs are renamed to Korean', () => {

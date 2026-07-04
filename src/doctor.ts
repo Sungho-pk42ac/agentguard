@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from 'node:fs'
 import { scanInput } from './core.js'
+import { UPDATE_COMMAND } from './update-check.js'
 
 export type DoctorLanguage = 'ko' | 'en'
 
@@ -16,7 +17,8 @@ interface DoctorResult {
 
 export function runDoctor(lang: DoctorLanguage = 'ko'): DoctorResult {
   const checks = [packageVersionCheck(lang), examplesDirectoryCheck(lang), scannerSmokeCheck(lang)]
-  const output = [doctorTitle(lang), ...checks.map((check) => `${check.passed ? 'PASS' : 'FAIL'} ${check.label} - ${check.detail}`)].join('\n')
+  const lines = [doctorTitle(lang), ...checks.map((check) => `${check.passed ? 'PASS' : 'FAIL'} ${check.label} - ${check.detail}`), updateHint(lang)]
+  const output = lines.join('\n')
 
   return {
     exitCode: checks.every((check) => check.passed) ? 0 : 1,
@@ -26,6 +28,12 @@ export function runDoctor(lang: DoctorLanguage = 'ko'): DoctorResult {
 
 function doctorTitle(lang: DoctorLanguage): string {
   return lang === 'ko' ? 'AgentGuard 준비 상태' : 'AgentGuard readiness'
+}
+
+function updateHint(lang: DoctorLanguage): string {
+  return lang === 'ko'
+    ? `INFO 업데이트 - 최신 버전 설치: ${UPDATE_COMMAND}`
+    : `INFO update - install the latest: ${UPDATE_COMMAND}`
 }
 
 function packageVersionCheck(lang: DoctorLanguage): DoctorCheck {

@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-359%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-457%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -16,7 +16,7 @@ Licensed under the [Apache License 2.0](LICENSE).
 AgentGuard는 한국 팀이 에이전트 기반 개발을 운영할 때 노출될 수 있는 비밀 값, 위험한 MCP 권한, 에이전트 셸 동작, PR diff 리스크를 배포 전에 확인하도록 돕습니다. 지금의 한국어 우선 범위는 문서, 정책 설명, 팀 협업 가이드, 기본 터미널/Markdown 리포트입니다. CLI commands, rule IDs, JSON/SARIF/API/machine fields는 CI/CD와 글로벌 보안 도구 연동을 위해 English-compatible, global-standard 계약으로 유지합니다.
 
 <p align="center">
-  <img src="docs/agentguard-terminal-demo.svg" alt="agentguard serve가 ASCII 배너와 READY 서비스 카드를 보여주는 로컬 SaaS 미리보기 터미널 스크린샷" width="920" />
+  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard 대시보드 터미널 스크린샷 — 5탭 키보드 네비게이션과 findings 탐색" width="920" />
 </p>
 
 ## 설치
@@ -49,11 +49,11 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 # Scan Codex/MCP config
 agentguard scan-mcp < ~/.codex/config.toml
 
-# 로컬 SaaS 미리보기: 브라우저/API에서 같은 CLI 엔진 실행
-agentguard serve --port 8787
+# 인터랙티브 대시보드 (TTY): 5탭 키보드 네비게이션 + /offboard 스윕
+agentguard        # 또는: agentguard repl
 ```
 
-브라우저에서 `http://127.0.0.1:8787`을 열면 MCP 설정, PR diff, 에이전트 로그, 일반 텍스트를 넣어 `PASS / REVIEW / BLOCK` verdict와 한국어 Markdown 리포트를 확인할 수 있습니다. 이 기능은 로컬 preview/API surface이며, 아직 hosted production SaaS, auth, billing, database, customer upload 기능을 주장하지 않습니다.
+TTY에서 맨 `agentguard`(또는 `agentguard repl`)를 실행하면 tokscale 스타일 **풀스크린 관리자 대시보드**가 열립니다. 상단 5개 탭(Overview/Agents/Credentials/Posture/Offboard)을 `tab`/`←→`로 전환하고, 심각도 색상 findings 리스트를 `↑↓` 탐색·`f` 필터·`enter` 상세로 살펴봅니다. Overview에는 서피스별 findings 바 차트와 `PASS/REVIEW/BLOCK` verdict 배지가, 하단에는 단축키/상태 바(`[o]` 오프보딩 스윕 · `[r]` 재스캔 · `[q]` 종료)가 표시됩니다. non-TTY(파이프/CI)에서는 기존 도움말이 그대로 출력되어 스크립트 하위호환이 유지됩니다. 모든 정리(삭제) 작업은 명시적 승인(y) 후에만 적용되며, 삭제 대상은 `~/.agentguard/trash`로 이동(백업)되어 복구 가능합니다.
 
 ## 왜 필요한가
 

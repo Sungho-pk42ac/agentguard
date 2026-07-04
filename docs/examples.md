@@ -77,25 +77,19 @@ agentguard scan-diff --out agent-risk-report.md < examples/risky-pr.diff
 
 A sample report is stored at [`examples/expected-report.md`](../examples/expected-report.md).
 
-## Local SaaS preview
+## Interactive session
 
-Run the same AgentGuard CLI engine behind a local browser/API surface:
-
-```bash
-agentguard serve --port 8787
-```
-
-Then open `http://127.0.0.1:8787`, or call the API directly:
+Run bare `agentguard` (or `agentguard repl`) in a TTY to open the full-screen interactive session:
 
 ```bash
-curl -s http://127.0.0.1:8787/api/scan \
-  -H 'content-type: application/json' \
-  -d '{"mode":"mcp","input":"{\"mcpServers\":{\"filesystem\":{\"args\":[\"--allow-write\",\"/\"]}}}"}'
+agentguard        # or: agentguard repl
 ```
 
-Supported API modes are `diff`, `mcp`, `log`, and `text`. The JSON response includes `verdict`, `findingCount`, `findings`, and `markdown`.
+Slash commands: `/scan [path]`, `/posture [path]`, `/offboard`, `/baseline [--save|--diff] [--track-rotation]`, `/doctor`, `/help`, `/quit`. Findings are browsed as a severity-colored list with ↑↓ navigation, an `f` severity filter, a `/` text filter, and a detail panel.
 
-Boundary: this is a local SaaS preview for demos and reviewer verification. It is not a hosted production SaaS and does not include auth, billing, database storage, customer uploads, or public deployment claims.
+`/offboard` runs the guided offboarding sweep: pick a scan scope, review residual credentials across shell rc files, AI tool config dirs, agent MCP configs, npm global AI CLIs, and project files, then approve cleanup. Deletions move targets to `~/.agentguard/trash` (recoverable) and write a zod-validated audit report (JSON + Markdown) under `~/.agentguard/reports`.
+
+Boundary: the interactive session runs only in a TTY. In non-TTY contexts (pipes/CI) AgentGuard prints its usual help text, so existing subcommands and scripts are unchanged.
 
 ## Enterprise AX rollout scenarios
 

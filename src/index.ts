@@ -7,8 +7,8 @@ import { loadPolicy, PolicyLoadError } from './policy.js'
 import { scanAgentPosture, postureReportToText } from './posture.js'
 import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import { MAX_FILE_BYTES } from './scanner.js'
-import { startPreviewServer } from './server.js'
 import type { Finding } from './rules.js'
+import { shouldLaunchRepl } from './tui/entry.js'
 
 interface CliArgs {
   readonly cmd: string
@@ -34,7 +34,7 @@ function usage(exitCode = 2): never {
   agentguard report < input.txt
   agentguard posture [path] [--json]
   agentguard doctor [--lang ko|en]
-  agentguard serve [--port <number>]
+  agentguard repl
 
 Options:
   --help, -h                    Print this usage information
@@ -44,18 +44,6 @@ Options:
   --lang ko|en, --lang=ko|en     Markdown report language (default: ko)
   --policy <path>, --policy=<path>  Load agent-policy.yaml/json
   --out <file>, --out=<file>        Write output to file`
-  if (exitCode === 0) console.log(output)
-  else console.error(output)
-  process.exit(exitCode)
-}
-
-function serveUsage(exitCode = 2): never {
-  const output = `Usage:
-  agentguard serve [--port <number>]
-
-Options:
-  --help, -h                    Print serve usage information
-  --port <number>, --port=<number>  Local HTTP port (default: 8787; 0 selects a random port)`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)
@@ -174,10 +162,6 @@ function hasValidPositionalArgs(cmd: string, cleanArgs: readonly string[]): bool
   return true
 }
 
-interface ServeArgs {
-  readonly port: number
-}
-
 interface DoctorArgs {
   readonly lang: DoctorLanguage
 }
@@ -185,31 +169,6 @@ interface DoctorArgs {
 interface PostureArgs {
   readonly path: string
   readonly json: boolean
-}
-
-function parseServeArgs(args: readonly string[]): ServeArgs | undefined {
-  let port = 8787
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index]
-    if (arg === '--help' || arg === '-h') serveUsage(0)
-    if (arg === '--port') {
-      const value = args[index + 1]
-      if (!isOptionValue(value)) return undefined
-      const parsedPort = parsePort(value)
-      if (parsedPort === undefined) return undefined
-      port = parsedPort
-      index += 1
-      continue
-    }
-    if (arg.startsWith('--port=')) {
-      const parsedPort = parsePort(arg.slice('--port='.length))
-      if (parsedPort === undefined) return undefined
-      port = parsedPort
-      continue
-    }
-    return undefined
-  }
-  return { port }
 }
 
 function parseDoctorArgs(args: readonly string[]): DoctorArgs | undefined {
@@ -253,23 +212,12 @@ function parsePostureArgs(args: readonly string[]): PostureArgs | undefined {
   return { path, json }
 }
 
-function parsePort(value: string): number | undefined {
-  if (!/^\d+$/.test(value)) return undefined
-  const port = Number(value)
-  return Number.isInteger(port) && port >= 0 && port <= 65_535 ? port : undefined
-}
-
 const rawArgs = process.argv.slice(2)
-if (rawArgs[0] === 'serve') {
-  const serveArgs = parseServeArgs(rawArgs.slice(1))
-  if (serveArgs === undefined) serveUsage()
-  try {
-    await startPreviewServer({ port: serveArgs.port })
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error)
-    console.error(`Could not start server: ${message}`)
-    process.exit(2)
-  }
+if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdout.isTTY))) {
+  // NOTE: shouldLaunchRepl (and the explicit `repl`/`--interactive` triggers)
+  // now launch the dashboard, not the retired REPL. Name kept for continuity.
+  const { renderDashboard } = await import('./tui/dashboard.js')
+  await renderDashboard()
 } else if (rawArgs[0] === 'doctor') {
   const doctorArgs = parseDoctorArgs(rawArgs.slice(1))
   if (doctorArgs === undefined) doctorUsage()

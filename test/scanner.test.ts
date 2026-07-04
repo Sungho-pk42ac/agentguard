@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { scanDiff, scanFiles, scanMcpConfig, scanText } from '../src/scanner.js'
+import { scanDiff, scanFiles, scanMcpConfig, scanText, walkFiles } from '../src/scanner.js'
 import { riskScore, toSarif } from '../src/report.js'
 import type { Finding, Policy } from '../src/rules.js'
 
@@ -1104,4 +1104,31 @@ test('email PII regex resolves quickly on large @-less input (ReDoS guard)', () 
   scanText(text)
   const elapsed = performance.now() - start
   assert.ok(elapsed < 2000, `expected scan of 200kB @-less text under 2000ms, took ${elapsed.toFixed(0)}ms`)
+})
+
+test('walkFiles surfaces a missing root as an error the caller can report', () => {
+  assert.throws(() => walkFiles(join(tmpdir(), `agentguard-missing-${Date.now()}`)))
+})
+
+test('walkFiles skips an unreadable nested directory instead of aborting the whole scan', () => {
+  const root = mkdtempSync(join(tmpdir(), 'agentguard-unreadable-'))
+  writeFileSync(join(root, 'ok.txt'), 'hello')
+  const locked = join(root, 'locked')
+  mkdirSync(locked)
+  writeFileSync(join(locked, 'inside.txt'), 'x')
+  try {
+    chmodSync(locked, 0o000)
+  } catch {
+    // chmod is a no-op on some platforms (e.g. Windows); the scan must still pass.
+  }
+  try {
+    const files = walkFiles(root)
+    assert.ok(files.some((f) => f.endsWith('ok.txt')), 'readable siblings are still discovered')
+  } finally {
+    try {
+      chmodSync(locked, 0o755)
+    } catch {
+      // best effort restore for cleanup
+    }
+  }
 })

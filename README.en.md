@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-359%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-457%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -16,7 +16,7 @@ Licensed under the [Apache License 2.0](LICENSE).
 AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe agent shell behavior, and risky PR diffs before they reach production.
 
 <p align="center">
-  <img src="docs/agentguard-terminal-demo.svg" alt="agentguard serve terminal screenshot showing the ASCII banner and READY local service card" width="920" />
+  <img src="docs/agentguard-terminal-demo.svg" alt="AgentGuard dashboard terminal screenshot showing the 5-tab keyboard navigation and findings exploration" width="920" />
 </p>
 
 ## Install
@@ -49,11 +49,11 @@ git diff origin/main...HEAD | agentguard scan-diff --sarif --out agentguard.sari
 # Scan Codex/MCP config
 agentguard scan-mcp < ~/.codex/config.toml
 
-# Local SaaS preview: run the same scanner engine through a browser/API
-agentguard serve --port 8787
+# Interactive dashboard (TTY): 5-tab keyboard navigation + /offboard sweep
+agentguard        # or: agentguard repl
 ```
 
-Open `http://127.0.0.1:8787` to scan MCP configs, PR diffs, agent logs, or plain text through the local `PASS / REVIEW / BLOCK` preview. This is a local preview/API surface, not a hosted production SaaS, auth, billing, database, or customer-upload claim.
+Run bare `agentguard` (or `agentguard repl`) in a TTY to open a tokscale-style full-screen admin dashboard. Switch the 5 top tabs (Overview/Agents/Credentials/Posture/Offboard) with `tab`/`←→`, and browse the severity-colored findings list with `↑↓`, `f` to filter by severity, and `enter` for the detail panel. Overview shows a findings-by-surface bar chart and a `PASS/REVIEW/BLOCK` verdict badge; the bottom keybind/status bar exposes `[o]` offboarding sweep, `[r]` rescan, and `[q]` quit. In non-TTY contexts (pipes/CI) the usual help text is printed, preserving script backward compatibility. Every cleanup (delete) action applies only after explicit approval (y), and deleted targets are moved to `~/.agentguard/trash` (a recoverable backup) rather than hard-deleted.
 
 ## Why
 

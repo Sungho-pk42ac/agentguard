@@ -5,3 +5,8 @@ coverage/
 *.log
 .env
 .env.*
+
+# agent workflow/runtime state (not product)
+.gjc/
+.omc/
+.ouroboros/

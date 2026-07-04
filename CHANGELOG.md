@@ -6,6 +6,28 @@ The format follows a lightweight keep-a-changelog style. This project is pre-1.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-04
+
+### Added
+
+- Interactive tokscale-style admin dashboard: bare `agentguard` in a TTY (or `agentguard repl`) opens a full-screen, keyboard-navigated dashboard with 5 tabs (Overview/Agents/Credentials/Posture/Offboard), a findings-by-surface bar chart, and a PASS/REVIEW/BLOCK verdict badge. Replaces the earlier slash-command REPL; non-interactive subcommands stay unchanged.
+- Findings views: severity-colored lists with ↑↓ navigation, an `f` severity filter, and an `enter` detail panel; a bottom keybind/status bar shows finding/critical counts and last-scan time. Agents tab surfaces installed AI-agent inventory for onboarding inspection.
+- `/offboard` guided sweep: scope selection → residual scan (5 detection surfaces × 3 OS) → review → approval gate → recoverable cleanup → zod-validated audit report (JSON + Markdown).
+- New detectors: shell rc key detector (`.bashrc`/`.zshrc`/PowerShell `$PROFILE`) and npm global AI CLI inventory.
+- Baseline snapshots + diff under `~/.agentguard/` (appeared/disappeared), with opt-in `--track-rotation` value-fingerprint rotation detection. Default snapshots store zero secret material.
+- Approval-gated cleanup actions: no file is modified/deleted without explicit approval; deletions move to `~/.agentguard/trash/<timestamp>/` (recoverable), with cross-volume (EXDEV) and locked-file (EBUSY) handling.
+- Public zod contracts (`schemaVersion`) for audit reports and baselines.
+
+### Removed
+
+- **BREAKING:** removed `agentguard serve` and the local HTTP/browser preview (`src/server.ts`, `/api/scan`, `/healthz`). AgentGuard is a local offline CLI/TUI; there is no HTTP surface. All non-interactive subcommands and their exit codes are unchanged.
+
+### Changed
+
+- New runtime dependencies limited to `ink` (+ `react`) for the interactive session; no AI/LLM SDK (the AI shell is deferred to v0.4.0).
+- `tsconfig` builds `.tsx` via `react-jsx`.
+- Demo asset and README/examples updated from the serve preview to the interactive session.
+
 ## [0.2.0] - 2026-07-03
 
 ### Added

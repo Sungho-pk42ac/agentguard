@@ -13,17 +13,32 @@ const MCP_ENV_TOKEN_RE = /(?:^|\n)\s*[A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)
 
 export function walkFiles(root: string): string[] {
   const out: string[] = []
-  function walk(dir: string) {
-    for (const name of readdirSync(dir)) {
+  function walk(dir: string, isRoot: boolean) {
+    let names: string[]
+    try {
+      names = readdirSync(dir)
+    } catch (error) {
+      // A missing/not-a-dir/unreadable ROOT is a real error the caller reports;
+      // an unreadable NESTED dir (e.g. Windows-protected home subdirs) is skipped
+      // so one locked entry never aborts the whole scan.
+      if (isRoot) throw error
+      return
+    }
+    for (const name of names) {
       if (SKIP_DIRS.has(name)) continue
       const full = join(dir, name)
-      if (lstatSync(full).isSymbolicLink()) continue
-      const st = statSync(full)
-      if (st.isDirectory()) walk(full)
+      let st: ReturnType<typeof statSync>
+      try {
+        if (lstatSync(full).isSymbolicLink()) continue
+        st = statSync(full)
+      } catch {
+        continue
+      }
+      if (st.isDirectory()) walk(full, false)
       else if (st.isFile() && st.size <= MAX_FILE_BYTES) out.push(full)
     }
   }
-  walk(root)
+  walk(root, true)
   return out
 }
 
@@ -127,7 +142,12 @@ export function scanFiles(root: string, policy: Policy = DEFAULT_POLICY): Findin
       continue
     }
     if (/\.(png|jpg|jpeg|webp|gif|pdf|pptx|docx|hwpx|zip|sqlite|db)$/i.test(rel)) continue
-    const text = readFileSync(file, 'utf8')
+    let text: string
+    try {
+      text = readFileSync(file, 'utf8')
+    } catch {
+      continue
+    }
     findings.push(...scanText(text, rel, policy))
   }
   return findings

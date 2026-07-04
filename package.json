@@ -1,6 +1,6 @@
 {
   "name": "@pk42ac/agentguard",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "AgentOps security scanner for AI coding agents, MCP configs, transcripts, and PR diffs",
   "keywords": [
     "agentops",
@@ -36,7 +36,7 @@
   },
   "scripts": {
     "test": "npm run test:behavior && npm run test:docs",
-    "test:behavior": "tsx --test test/*.test.ts",
+    "test:behavior": "tsx --test test/*.test.ts test/tui/*.test.ts test/detectors/*.test.ts",
     "test:docs": "tsx --test test/docs/*.test.ts",
     "build": "tsc",
     "postbuild": "node -e \"require('fs').chmodSync('dist/index.js', 0o755)\"",
@@ -54,11 +54,15 @@
     "agentguard": "dist/index.js"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
-    "tsx": "^4.22.4",
+    "@types/node": "^26.1.0",
+    "@types/react": "^18.3.31",
+    "ink-testing-library": "^4.0.0",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "ink": "^5.2.1",
+    "react": "^18.3.1",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   }

@@ -2,6 +2,7 @@
 
 [한국어](README.md)
 
+[![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
 ![Tests](https://img.shields.io/badge/tests-359%20passing-brightgreen)
@@ -246,6 +247,5 @@ This first version is intentionally small:
 
 ## Roadmap
 
-- Codex/Hermes transcript adapters
 - MCP permission graph
 - dashboard for agent audit trails

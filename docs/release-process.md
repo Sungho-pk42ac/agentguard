@@ -16,21 +16,20 @@ AgentGuard ships to npm via a tag-triggered GitHub Actions workflow (`.github/wo
 
 The version guard strips the leading `v` from `GITHUB_REF_NAME` before comparing to `package.json`'s `version` field (`vX.Y.Z` vs `X.Y.Z`). A mismatched tag fails the workflow before anything is published.
 
-## Token setup
+## Trusted publishing (OIDC)
 
-Publishing needs an npm access token stored as the repository secret **`NPM_TOKEN`** (Settings -> Secrets and variables -> Actions).
+`@pk42ac/agentguard` exists on npm as of the `0.2.0` publish. Publishing now authenticates via npm's [trusted publishing](https://docs.npmjs.com/trusted-publishers) OIDC flow instead of a long-lived access token -- `release.yml` no longer stores or reads any npm auth secret.
 
-Create the token as either:
+The npm package has a Trusted Publisher configured with these exact values:
 
-- a classic **"Automation"** token, or
-- a granular access token scoped to **"All packages" (read and write)**.
+- Provider: GitHub Actions
+- Organization or user: `Sungho-pk42ac`
+- Repository: `agentguard`
+- Workflow filename: `release.yml`
+- Environment: (none)
 
-`@pk42ac/agentguard` does not exist on npm yet, so a granular token cannot be scoped to this package specifically -- it won't appear in the package picker until after the first publish. After the first successful publish, the token can be narrowed to just this package, or replaced entirely by OIDC trusted publishing (see below).
+`release.yml` requests the `id-token: write` permission and, right before publishing, runs `npm install -g npm@latest` -- OIDC trusted publishing requires npm >= 11.5, and GitHub's Node 22 runners currently bundle npm 10.x, so the CLI must be updated in-job or the publish step cannot mint an OIDC token.
 
 ## workflow_dispatch rehearsal
 
 `release.yml` also accepts manual `workflow_dispatch` runs. A dispatch run executes the full pipeline (install, typecheck, tests, build) and the version guard step prints the version that *would* be published, but the publish step is guarded by `if: startsWith(github.ref, 'refs/tags/v')` and is skipped. Use this to rehearse the release pipeline before pushing a real tag.
-
-## OIDC / trusted publishing migration
-
-npm supports [trusted publishing](https://docs.npmjs.com/trusted-publishers) via OIDC, which removes the need for a long-lived `NPM_TOKEN` secret. This requires the package to already exist on npm, so it isn't available for the first release. After `@pk42ac/agentguard`'s first publish, configure trusted publishing for this repository and workflow, then remove the `NPM_TOKEN` secret and the `NODE_AUTH_TOKEN` env from `release.yml`.

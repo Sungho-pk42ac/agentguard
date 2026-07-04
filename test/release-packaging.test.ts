@@ -73,20 +73,24 @@ test('roadmap doc does not list implemented work as future roadmap items', () =>
   assert.doesNotMatch(roadmap, /^- Codex\/Hermes transcript adapters\.$/m)
 })
 
-test('release workflow publishes with provenance and a version guard', () => {
+test('release workflow publishes with provenance, a version guard, and OIDC trusted publishing', () => {
   const workflow = readFileSync('.github/workflows/release.yml', 'utf8')
 
   assert.match(workflow, /--provenance/)
   assert.match(workflow, /GITHUB_REF_NAME#v/)
-  assert.match(workflow, /NODE_AUTH_TOKEN/)
   assert.match(workflow, /id-token: write/)
   assert.match(workflow, /workflow_dispatch/)
+  assert.match(workflow, /npm install -g npm@latest/)
+  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN/)
+  assert.doesNotMatch(workflow, /NPM_TOKEN/)
 })
 
-test('release process docs describe the tag flow and the OIDC migration path', () => {
+test('release process docs describe the tag flow and the configured trusted publisher', () => {
   const docs = readFileSync('docs/release-process.md', 'utf8')
 
   assert.match(docs, /git tag v/)
   assert.match(docs, /OIDC/)
   assert.match(docs, /trusted publishing/)
+  assert.doesNotMatch(docs, /NPM_TOKEN/)
+  assert.doesNotMatch(docs, /does not exist on npm yet/)
 })

@@ -1033,6 +1033,22 @@ test('scanDiff treats header-like text inside raw added lines as content', () =>
   assert.ok(findingIds.includes('github-token'))
 })
 
+test('scanFiles tracks 1-based line numbers so SARIF results carry region.startLine', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentguard-sarif-line-'))
+  const workspace = join(dir, 'workspace')
+  mkdirSync(workspace)
+  writeFileSync(join(workspace, 'secret.txt'), 'line one\nline two\nGITHUB_TOKEN=ghp_abcdefghijklmnopqrstuvwxyz\n')
+
+  const findings = scanFiles(workspace)
+  const finding = findings.find((f) => f.id === 'github-token')
+  assert.ok(finding, 'expected a github-token finding')
+  assert.equal(finding.line, 3)
+
+  const sarif = JSON.parse(toSarif(findings))
+  const result = sarif.runs[0].results.find((r: { ruleId: string }) => r.ruleId === 'github-token')
+  assert.equal(result.locations[0].physicalLocation.region.startLine, 3)
+})
+
 test('emits SARIF for GitHub code scanning', () => {
   const findings = scanDiff('+ const token = "ghp_abcdefghijklmnopqrstuvwxyz"')
   const sarif = JSON.parse(toSarif(findings))

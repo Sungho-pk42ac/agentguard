@@ -25,7 +25,7 @@ Create the token as either:
 - a classic **"Automation"** token, or
 - a granular access token scoped to **"All packages" (read and write)**.
 
-`agentguard` does not exist on npm yet, so a granular token cannot be scoped to this package specifically -- it won't appear in the package picker until after the first publish. After the first successful publish, the token can be narrowed to just this package, or replaced entirely by OIDC trusted publishing (see below).
+`@pk42ac/agentguard` does not exist on npm yet, so a granular token cannot be scoped to this package specifically -- it won't appear in the package picker until after the first publish. After the first successful publish, the token can be narrowed to just this package, or replaced entirely by OIDC trusted publishing (see below).
 
 ## workflow_dispatch rehearsal
 
@@ -33,4 +33,4 @@ Create the token as either:
 
 ## OIDC / trusted publishing migration
 
-npm supports [trusted publishing](https://docs.npmjs.com/trusted-publishers) via OIDC, which removes the need for a long-lived `NPM_TOKEN` secret. This requires the package to already exist on npm, so it isn't available for the first release. After `agentguard`'s first publish, configure trusted publishing for this repository and workflow, then remove the `NPM_TOKEN` secret and the `NODE_AUTH_TOKEN` env from `release.yml`.
+npm supports [trusted publishing](https://docs.npmjs.com/trusted-publishers) via OIDC, which removes the need for a long-lived `NPM_TOKEN` secret. This requires the package to already exist on npm, so it isn't available for the first release. After `@pk42ac/agentguard`'s first publish, configure trusted publishing for this repository and workflow, then remove the `NPM_TOKEN` secret and the `NODE_AUTH_TOKEN` env from `release.yml`.

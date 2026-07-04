@@ -257,10 +257,12 @@ test('CLI scan-files reports missing workspace paths without a raw stack trace',
 test('CLI rejects unexpected extra positional arguments', () => {
   const cases: Array<{ command: string; args: string[]; input?: string }> = [
     { command: 'scan-files', args: ['.', 'extra-path'] },
-    { command: 'scan-diff', args: ['unexpected.patch'], input: '' },
-    { command: 'scan-log', args: ['unexpected.log'], input: 'agent completed without sensitive output\n' },
-    { command: 'scan-mcp', args: ['unexpected.toml'], input: '[mcp_servers.github]\ncommand = "github"\n' },
-    { command: 'report', args: ['unexpected.txt'], input: 'agent completed without sensitive output\n' },
+    // scan-diff/log/mcp/report now accept 0..1 positional (S12).
+    // Two positionals must still be rejected.
+    { command: 'scan-diff', args: ['first.patch', 'extra.patch'], input: '' },
+    { command: 'scan-log', args: ['first.log', 'extra.log'], input: 'agent completed without sensitive output\n' },
+    { command: 'scan-mcp', args: ['first.toml', 'extra.toml'], input: '[mcp_servers.github]\ncommand = "github"\n' },
+    { command: 'report', args: ['first.txt', 'extra.txt'], input: 'agent completed without sensitive output\n' },
   ]
 
   for (const testCase of cases) {
@@ -277,5 +279,78 @@ test('CLI rejects unexpected extra positional arguments', () => {
     assert.equal(result.status, 2, `${testCase.command} should reject extra positional args`)
     assert.equal(result.stdout, '')
     assert.match(result.stderr, /^Usage:/, `${testCase.command} should print usage to stderr`)
+  }
+})
+// ── S12 guard tests ──────────────────────────────────────────────────────────
+
+test('CLI scan-mcp piped with no path and piped with a redundant path produce identical output (stdin-first)', () => {
+  const input = '[mcp_servers.github]\ncommand = "github"\n'
+
+  const withoutPath = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-mcp'],
+    { cwd: process.cwd(), input, encoding: 'utf8', timeout: 15_000 },
+  )
+
+  const withPath = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', 'src/index.ts', 'scan-mcp', 'redundant-path.toml'],
+    { cwd: process.cwd(), input, encoding: 'utf8', timeout: 15_000 },
+  )
+
+  assert.equal(withPath.status, withoutPath.status, 'exit code must be identical with/without redundant path')
+  assert.equal(withPath.stdout, withoutPath.stdout, 'stdout must be byte-identical with/without redundant path')
+})
+
+test('CLI JSON and SARIF output is byte-identical with or without a redundant path when piped (scan-diff, scan-mcp)', () => {
+  const mcpInput = '[mcp_servers.github]\ncommand = "github"\n'
+  const diffInput = '--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new\n'
+
+  const cases = [
+    { cmd: 'scan-diff', input: diffInput, flag: '--json' },
+    { cmd: 'scan-diff', input: diffInput, flag: '--sarif' },
+    { cmd: 'scan-mcp', input: mcpInput, flag: '--json' },
+    { cmd: 'scan-mcp', input: mcpInput, flag: '--sarif' },
+  ] as const
+
+  for (const { cmd, input: caseInput, flag } of cases) {
+    const without = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', cmd, flag],
+      { cwd: process.cwd(), input: caseInput, encoding: 'utf8', timeout: 15_000 },
+    )
+    const withPath = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', cmd, 'redundant-path.txt', flag],
+      { cwd: process.cwd(), input: caseInput, encoding: 'utf8', timeout: 15_000 },
+    )
+    assert.equal(
+      withPath.status, without.status,
+      `${cmd} ${flag}: exit code must be identical with/without redundant path`,
+    )
+    assert.equal(
+      withPath.stdout, without.stdout,
+      `${cmd} ${flag}: stdout must be byte-identical with/without redundant path`,
+    )
+  }
+})
+
+// ── S13 --help assertions (KO-first + PowerShell examples) ───────────────────
+
+test('CLI --help shows Korean-first content with PowerShell-friendly examples', () => {
+  for (const helpFlag of ['--help', '-h']) {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/index.ts', helpFlag],
+      { cwd: process.cwd(), encoding: 'utf8' },
+    )
+
+    assert.equal(result.status, 0, `${helpFlag} should exit 0`)
+    // File-path example (PowerShell-friendly, no redirect needed)
+    assert.match(result.stdout, /agentguard scan-mcp config\.toml/, `${helpFlag} should show file-path example`)
+    // PowerShell pipe example
+    assert.match(result.stdout, /Get-Content config\.toml \| agentguard scan-mcp/, `${helpFlag} should show PowerShell pipe example`)
+    // Korean prose present (AI 에이전트 보안 감사)
+    assert.match(result.stdout, /AI 에이전트 보안 감사/, `${helpFlag} should contain Korean description`)
   }
 })

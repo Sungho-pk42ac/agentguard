@@ -7,6 +7,7 @@ import { loadPolicy, PolicyLoadError } from './policy.js'
 import { scanAgentPosture, postureReportToText } from './posture.js'
 import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import { MAX_FILE_BYTES } from './scanner.js'
+import { resolveScanInput, ScanInputError } from './scan-input.js'
 import type { Finding } from './rules.js'
 import { shouldLaunchRepl } from './tui/entry.js'
 
@@ -27,23 +28,39 @@ function printVersion(): never {
 
 function usage(exitCode = 2): never {
   const output = `Usage:
-  agentguard scan-files [path]
+  agentguard scan-files [경로]
   agentguard scan-diff < diff.patch
   agentguard scan-log < transcript.log
   agentguard scan-mcp < config.toml
+  agentguard scan-mcp config.toml
   agentguard report < input.txt
-  agentguard posture [path] [--json]
+  agentguard posture [경로] [--json]
   agentguard doctor [--lang ko|en]
   agentguard repl
 
+AI 에이전트 보안 감사 — diff, 로그, MCP 설정, 파일을 검사해 위험 행동을 탐지합니다.
+
+사용 예시:
+  # Unix / macOS
+  cat diff.patch | agentguard scan-diff
+  agentguard scan-mcp config.toml
+
+  # PowerShell (Windows)
+  Get-Content config.toml | agentguard scan-mcp
+  Get-Content diff.patch | agentguard scan-diff
+
+  # JSON · SARIF 출력
+  agentguard scan-diff --json < diff.patch
+  agentguard scan-mcp --sarif config.toml
+
 Options:
-  --help, -h                    Print this usage information
-  --version, -v                 Print the package version
-  --json                         Print JSON findings
-  --sarif                        Print SARIF 2.1.0 for GitHub code scanning
-  --lang ko|en, --lang=ko|en     Markdown report language (default: ko)
-  --policy <path>, --policy=<path>  Load agent-policy.yaml/json
-  --out <file>, --out=<file>        Write output to file`
+  --help, -h                        도움말 출력
+  --version, -v                     버전 출력
+  --json                            JSON 형식으로 결과 출력
+  --sarif                           GitHub 코드 스캐닝용 SARIF 2.1.0 출력
+  --lang ko|en, --lang=ko|en        마크다운 리포트 언어 (기본값: ko)
+  --policy <path>, --policy=<path>  agent-policy.yaml/json 로드
+  --out <file>, --out=<file>        결과를 파일로 저장`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)
@@ -158,7 +175,7 @@ function isOptionValue(value: string | undefined): value is string {
 
 function hasValidPositionalArgs(cmd: string, cleanArgs: readonly string[]): boolean {
   if (cmd === 'scan-files') return cleanArgs.length <= 1
-  if (cmd === 'scan-diff' || cmd === 'scan-log' || cmd === 'scan-mcp' || cmd === 'report') return cleanArgs.length === 0
+  if (cmd === 'scan-diff' || cmd === 'scan-log' || cmd === 'scan-mcp' || cmd === 'report') return cleanArgs.length <= 1
   return true
 }
 
@@ -269,8 +286,32 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
     }
   })()
   try {
+    const input = cmd === 'scan-files'
+      ? ''
+      : (() => {
+          try {
+            return resolveScanInput({
+              isTTY: Boolean(process.stdin.isTTY),
+              arg: cleanArgs[0],
+              readStdin: stdin,
+              readFile: (p) => {
+                const raw = readFileSync(p)
+                if (raw.byteLength > MAX_FILE_BYTES) {
+                  throw new Error(`input is ${raw.byteLength} bytes, exceeding the ${MAX_FILE_BYTES} byte limit. Scan a smaller input.`)
+                }
+                return raw.toString('utf8')
+              },
+            })
+          } catch (error: unknown) {
+            if (error instanceof ScanInputError) {
+              console.error(`Could not read ${cmd} input: ${error.reason}`)
+              process.exit(2)
+            }
+            throw error
+          }
+        })()
     findings = scanCliCommand(cmd, {
-      input: cmd === 'scan-files' ? '' : stdin(),
+      input,
       workspacePath: cleanArgs[0],
       policy,
     })

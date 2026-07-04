@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { buildDashboardData, loadDashboardData, surfaceBars, verdictForResiduals } from '../../src/tui/dashboard-data.js'
+import { buildDashboardData, loadDashboardData, scopeForPreset, surfaceBars, verdictForResiduals, QUICK_SCOPE, PROJECT_SCOPE } from '../../src/tui/dashboard-data.js'
 import type { ResidualCredential } from '../../src/residual.js'
 
 function residual(surface: string, severity: ResidualCredential['severity'], id: string): ResidualCredential {
@@ -71,4 +71,37 @@ test('loadDashboardData runs the real scan via existing exports (injected npm + 
   assert.ok(surfaces.has('project-file'))
   assert.ok(data.aggregate.findings > 0)
   assert.equal(data.scannedAt, 42)
+})
+// ─── S9: scopeForPreset ──────────────────────────────────────────────────────
+
+test('scopeForPreset quick returns QUICK_SCOPE without projectPath', () => {
+  const opts = scopeForPreset('quick', '/cwd', undefined)
+  assert.deepEqual(opts.scope, QUICK_SCOPE)
+  assert.equal(opts.projectPath, undefined)
+})
+
+test('scopeForPreset project with projectPath includes project-files', () => {
+  const opts = scopeForPreset('project', '/cwd', '/cwd')
+  assert.deepEqual(opts.scope, PROJECT_SCOPE)
+  assert.equal(opts.projectPath, '/cwd')
+  assert.ok((opts.scope ?? []).includes('project-files'))
+})
+
+test('scopeForPreset project without projectPath falls back to QUICK_SCOPE', () => {
+  const opts = scopeForPreset('project', '/cwd', undefined)
+  assert.deepEqual(opts.scope, QUICK_SCOPE)
+  assert.equal(opts.projectPath, undefined)
+})
+
+test('scopeForPreset full unconditionally uses cwd as projectPath', () => {
+  const opts = scopeForPreset('full', '/my/cwd', undefined)
+  assert.equal(opts.projectPath, '/my/cwd')
+  assert.ok((opts.scope ?? []).includes('project-files'))
+})
+
+test('scopeForPreset full includes all scopes (project-files + npm-global)', () => {
+  const opts = scopeForPreset('full', '/cwd', undefined)
+  assert.ok((opts.scope ?? []).includes('project-files'))
+  assert.ok((opts.scope ?? []).includes('npm-global'))
+  assert.ok((opts.scope ?? []).includes('shell-rc'))
 })

@@ -45,3 +45,10 @@ test('CHANGELOG documents the v0.2.0 release', () => {
   assert.match(changelog, /^## \[Unreleased\]/m, 'CHANGELOG should keep an empty Unreleased stub at the top')
   assert.match(changelog, /^## \[0\.2\.0\]/m, 'CHANGELOG should have a heading promoting Unreleased to 0.2.0')
 })
+test('runtime dependencies are exactly the expected set — no new packages added', () => {
+  const pkg = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  ) as { dependencies?: Record<string, string> }
+  const deps = Object.keys(pkg.dependencies ?? {}).sort()
+  assert.deepEqual(deps, ['ink', 'react', 'yaml', 'zod'], `expected exactly {ink, react, yaml, zod} but got {${deps.join(', ')}}`)
+})

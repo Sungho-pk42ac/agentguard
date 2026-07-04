@@ -6,6 +6,8 @@ import type { Finding, Severity } from '../rules.js'
 // normalize to, plus filtering/selection/color helpers. No React here.
 
 export interface ExplorerItem {
+  /** Stable identity for session-hide (S6). Populated from the source id field. */
+  readonly id: string
   readonly severity: Severity
   readonly surface: string
   readonly location: string
@@ -30,6 +32,7 @@ export function severityColor(severity: Severity): string {
 
 export function findingToItem(finding: Finding): ExplorerItem {
   return {
+    id: finding.id,
     severity: finding.severity,
     surface: finding.category,
     location: finding.file ?? finding.id,
@@ -41,6 +44,7 @@ export function findingToItem(finding: Finding): ExplorerItem {
 
 export function residualToItem(residual: ResidualCredential): ExplorerItem {
   return {
+    id: residual.id,
     severity: residual.severity,
     surface: residual.surface,
     location: residual.location,
@@ -51,7 +55,9 @@ export function residualToItem(residual: ResidualCredential): ExplorerItem {
 }
 
 export function postureToItem(finding: PostureFinding): ExplorerItem {
+  // Compose a stable id from surface + file + finding id so it survives tab switches.
   return {
+    id: `${finding.surface}:${finding.file ?? finding.surface}:${finding.id}`,
     severity: finding.severity,
     surface: finding.surface,
     location: finding.file ?? finding.surface,

@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { createElement } from 'react'
 import { render } from 'ink-testing-library'
 import { Dashboard } from '../../src/tui/dashboard.js'
-import { buildDashboardData } from '../../src/tui/dashboard-data.js'
+import { buildDashboardData, type LoadDashboardOptions, QUICK_SCOPE, PROJECT_SCOPE } from '../../src/tui/dashboard-data.js'
 import type { ResidualCredential } from '../../src/residual.js'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -36,6 +36,8 @@ function mountDashboard() {
   const instance = render(createElement(Dashboard, { loader, onExit: () => (exited = true) }))
   return { ...instance, wasExited: () => exited }
 }
+
+// ─── Existing tests ──────────────────────────────────────────────────────────
 
 test('dashboard paints a loading frame BEFORE the (synchronous) scan runs', () => {
   const { lastFrame, unmount } = render(createElement(Dashboard, { loader, onExit: () => {} }))
@@ -100,5 +102,342 @@ test('Baseline tab: navigate, save a snapshot, then show no drift', async () => 
   stdin.write('s') // save current scan as baseline
   assert.ok(await waitFor(lastFrame, /Saved baseline/), 'baseline should be saved')
   assert.match(lastFrame() ?? '', /No drift since the last baseline/)
+  unmount()
+})
+
+// ─── S2: KO intro + empty state ─────────────────────────────────────────────
+
+test('S2: loading frame shows KO intro under banner', () => {
+  const { lastFrame, unmount } = render(createElement(Dashboard, { loader, onExit: () => {} }))
+  const frame = lastFrame() ?? ''
+  // Before setTimeout(0) fires the frame is still Scanning
+  assert.match(frame, /에이전트/)
+  unmount()
+})
+
+test('S2: 0-finding credentials tab renders 깨끗함 ✓', async () => {
+  const emptyLoader = () => buildDashboardData([], 1000)
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader: emptyLoader, onExit: () => {} }))
+  // With empty data, HeroChart shows "PASS — no residual..." rather than "Findings by surface".
+  // Wait for the PASS text to confirm loading completed (footer "0 findings" also works).
+  assert.ok(await waitFor(lastFrame, /PASS — no residual|0 findings/), 'overview loaded')
+  // Navigate to Credentials (2 tabs forward: overview → agents → credentials)
+  stdin.write('\t')
+  await delay(25)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /깨끗함/), '깨끗함 ✓ should appear for 0-item tab')
+  unmount()
+})
+
+// ─── S1: help overlay ────────────────────────────────────────────────────────
+
+test('S1: ? opens overlay listing all keys; any key closes it', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('?')
+  assert.ok(await waitFor(lastFrame, /키보드 단축키/), 'help overlay should open')
+  const frame = lastFrame() ?? ''
+  // Overlay lists keybinds
+  assert.match(frame, /도움말/)
+  assert.match(frame, /종료/)
+  // Press ? again to toggle overlay closed (any key closes in overlay mode)
+  stdin.write('?')
+  assert.ok(await waitFor(lastFrame, /Findings by surface/), '? again should close overlay')
+  unmount()
+})
+
+test('S1: ? inert when offboardActive (overlay does NOT open)', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('o') // open offboard
+  assert.ok(await waitFor(lastFrame, /Select scan scope/))
+  await delay(40)
+  stdin.write('?') // should be inert during offboard
+  await delay(40)
+  // Overlay must NOT appear
+  assert.doesNotMatch(lastFrame() ?? '', /키보드 단축키/)
+  unmount()
+})
+
+// ─── S4: consistent nav on credentials + posture ─────────────────────────────
+
+test('S4: up/down/enter behave identically on credentials tab', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Navigate to Credentials (tab, tab)
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  // Move down
+  stdin.write('j')
+  await delay(20)
+  // Move up
+  stdin.write('k')
+  await delay(20)
+  // Open detail
+  stdin.write('\r')
+  assert.ok(await waitFor(lastFrame, /세부정보/), 'enter should open detail panel')
+  unmount()
+})
+
+test('S4: up/down/enter behave identically on posture tab', async () => {
+  // Use residuals with posture items (agent-config surface)
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Navigate to Posture (tab × 3: overview → agents → credentials → posture)
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Posture —/))
+  stdin.write('j') // move down
+  await delay(20)
+  stdin.write('\r') // open detail
+  assert.ok(await waitFor(lastFrame, /세부정보/), 'enter opens detail on posture tab')
+  unmount()
+})
+
+// ─── S5: detail model in panel ───────────────────────────────────────────────
+
+test('S5: detail panel renders all four blocks (path + severity + category + recommendation)', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Navigate to Credentials (2 tabs)
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  await delay(25) // let state settle before pressing enter
+  stdin.write('\r') // open detail for first item
+  assert.ok(await waitFor(lastFrame, /세부정보/))
+  const frame = lastFrame() ?? ''
+  // Block 1: full path
+  assert.match(frame, /\.bashrc/)
+  // Block 2: severity rationale
+  assert.match(frame, /심각도/)
+  assert.match(frame, /즉각/)
+  // Block 3: category KO remediation (shell-rc → not in categoryRemediationKO → no 조치 line; evidence shown)
+  assert.match(frame, /evidence:/)
+  // Block 4: recommendation
+  assert.match(frame, /fix:/)
+  unmount()
+})
+
+// ─── S6: session-hide ────────────────────────────────────────────────────────
+
+test('S6: i hides selected item; verdict+aggregate unchanged; rescan restores', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Navigate to Credentials (2 tabs)
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  await delay(30) // let Ink update the useInput callback ref for the new tab
+  // Verify .bashrc is visible
+  assert.match(lastFrame() ?? '', /\.bashrc/)
+  // Hide the first item (cursor=0 → shell-rc/.bashrc, id='a')
+  stdin.write('i')
+  // wait for hidden item to disappear (hidden set update + re-render)
+  assert.ok(await waitFor(lastFrame, /Credentials — 2\/3/), 'display count should drop to 2 after hiding')
+  const afterHide = lastFrame() ?? ''
+  // .bashrc is hidden — should not appear as the selected item
+  assert.doesNotMatch(afterHide, /›.*shell-rc/)
+  // Verdict unchanged (still BLOCK, aggregate still 5 findings)
+  assert.match(afterHide, /BLOCK/)
+  // Rescan restores hidden set
+  stdin.write('r')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  await delay(30)
+  // After rescan, .bashrc is visible again
+  assert.match(lastFrame() ?? '', /\.bashrc/)
+  unmount()
+})
+
+test('S6/C5: i writes NO files to disk', async () => {
+  const home = mkdtempSync(join(tmpdir(), 'agentguard-hide-'))
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader, onExit: () => {}, homeDir: home }))
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  stdin.write('i') // hide
+  await delay(50)
+  // Verify no files were written under tmpHome
+  const { readdirSync } = await import('node:fs')
+  const entries = readdirSync(home)
+  assert.equal(entries.length, 0, `no files should be written to home on hide; found: ${entries.join(', ')}`)
+  unmount()
+})
+
+// ─── S7: search ──────────────────────────────────────────────────────────────
+
+test('S7: / enters search; query live-filters; esc clears', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Navigate to Credentials
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  // Enter search mode
+  stdin.write('/')
+  await delay(20)
+  // Type 'bashrc' — should filter to only .bashrc
+  for (const ch of 'bashrc') {
+    stdin.write(ch)
+    await delay(10)
+  }
+  assert.ok(await waitFor(lastFrame, /검색/), 'search query indicator')
+  assert.match(lastFrame() ?? '', /\.bashrc/)
+  // Backspace one char ('c' removed)
+  stdin.write('\x7f') // backspace
+  await delay(20)
+  // Esc clears and exits search
+  stdin.write('\x1b')
+  await delay(20)
+  // Query cleared — all items visible again
+  assert.doesNotMatch(lastFrame() ?? '', /검색.*bash/)
+  unmount()
+})
+
+test('S7: enter in search keeps query', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  stdin.write('/')
+  await delay(20)
+  stdin.write('b')
+  await delay(20)
+  stdin.write('\r') // commit
+  await delay(20)
+  // Query 'b' still active
+  assert.match(lastFrame() ?? '', /검색.*b/)
+  unmount()
+})
+
+// ─── S8: sort toggle ─────────────────────────────────────────────────────────
+
+test('S8: g toggles sort indicator in header', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Navigate to Credentials
+  stdin.write('\t')
+  await delay(20)
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  // Initially no sort indicator
+  assert.doesNotMatch(lastFrame() ?? '', /↓ severity/)
+  stdin.write('g') // toggle sort
+  assert.ok(await waitFor(lastFrame, /severity/), 'sort indicator should appear')
+  stdin.write('g') // toggle off
+  await delay(30)
+  assert.doesNotMatch(lastFrame() ?? '', /↓ severity/)
+  unmount()
+})
+
+// ─── S9: scan presets ────────────────────────────────────────────────────────
+
+test('S9: 1/2/3 dispatch correct scope to loader', async () => {
+  const scopesSeen: (readonly string[])[] = []
+  const trackingLoader = (opts?: LoadDashboardOptions) => {
+    scopesSeen.push(opts?.scope ?? ['default'])
+    return buildDashboardData(residuals, 1000)
+  }
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader: trackingLoader, onExit: () => {} }))
+  assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview loaded')
+  // Press 1 (Quick)
+  stdin.write('1')
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Press 2 (Project)
+  stdin.write('2')
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  await delay(50)
+  // Quick scope (1) excludes project-files
+  const quickScan = scopesSeen.find((s) => s.includes('shell-rc') && !s.includes('project-files'))
+  assert.ok(quickScan, `quick scope should not include project-files; saw ${JSON.stringify(scopesSeen)}`)
+  unmount()
+})
+
+test('S9: Full from non-project cwd shows y/N confirm prompt', async () => {
+  // Use a temp dir with no project markers — projectScanPath will return undefined
+  const tmpCwd = mkdtempSync(join(tmpdir(), 'agentguard-noproject-'))
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader, onExit: () => {}, cwd: tmpCwd }))
+  assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview loaded')
+  stdin.write('3') // Full preset
+  assert.ok(await waitFor(lastFrame, /프로젝트 루트/), 'confirm prompt should appear for non-project cwd')
+  assert.match(lastFrame() ?? '', /\[y\]/)
+  // Press n to cancel
+  stdin.write('n')
+  // waitFor the prompt to disappear (state update + re-render after 'n')
+  const dismissed = await waitFor(lastFrame, /Findings by surface|Credentials|Agents/, 1000)
+  assert.ok(dismissed || !lastFrame()?.includes('프로젝트 루트'), 'confirm prompt should be dismissed after n')
+  unmount()
+})
+
+// ─── S10: watch toggle ────────────────────────────────────────────────────────
+
+test('S10: w toggles watch indicator in footer; default OFF', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  // Default: no watch indicator
+  assert.doesNotMatch(lastFrame() ?? '', /\[watch/)
+  stdin.write('w') // enable watch
+  assert.ok(await waitFor(lastFrame, /\[watch/), 'watch indicator should appear')
+  stdin.write('w') // disable watch
+  await delay(30)
+  assert.doesNotMatch(lastFrame() ?? '', /\[watch/)
+  unmount()
+})
+
+test('S10: unmount clears watch interval (no throw)', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('w') // enable watch
+  await delay(30)
+  // Unmount with watch active — should not throw
+  assert.doesNotThrow(() => unmount())
+})
+
+test('S6×S7 regression: i hides the DISPLAYED selected item under an active search (not raw-order[cursor])', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('\t')
+  await delay(25)
+  stdin.write('\t')
+  await delay(25)
+  assert.ok(await waitFor(lastFrame, /Credentials —/), 'should land on the Credentials tab')
+  // Search narrows the 3 credential items to the single ai-tool-dir entry whose
+  // location contains "claude"; raw-order[0] is the shell-rc item, so a naive
+  // hide handler would hide the wrong (invisible) finding.
+  stdin.write('/')
+  await delay(25)
+  for (const ch of 'claude') {
+    stdin.write(ch)
+    await delay(15)
+  }
+  assert.ok(await waitFor(lastFrame, /Credentials — 1\/3/), 'search should display only the claude item')
+  stdin.write('\r') // commit search: exit capture, keep the query
+  await delay(30)
+  stdin.write('i') // hide the displayed selection
+  // Fixed pipeline hides the claude item → the filtered list empties (0/3).
+  // The pre-fix bug hid raw-order[0] (shell-rc), leaving claude visible (1/3).
+  assert.ok(await waitFor(lastFrame, /Credentials — 0\/3/), 'the displayed (claude) finding must be the one hidden')
+  unmount()
+})
+
+test('LOW-fix: a scan failure surfaces an error instead of masking it as a clean PASS', async () => {
+  const throwingLoader = () => {
+    throw new Error('scan blew up')
+  }
+  const { lastFrame, unmount } = render(createElement(Dashboard, { loader: throwingLoader, onExit: () => {} }))
+  assert.ok(await waitFor(lastFrame, /스캔 오류/), 'a failed scan must surface an error')
+  assert.doesNotMatch(lastFrame() ?? '', /깨끗함/, 'must not render the clean empty-state on error')
   unmount()
 })

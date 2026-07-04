@@ -1,4 +1,4 @@
-import { ALL_SCOPES, collectResiduals, type ResidualScanOptions } from '../residual-scan.js'
+import { ALL_SCOPES, collectResiduals, type ResidualScanOptions, type ScopeKey } from '../residual-scan.js'
 import type { ResidualCredential } from '../residual.js'
 import { verdictForFindings, type ScanVerdict } from '../core.js'
 import type { Finding, Severity } from '../rules.js'
@@ -38,6 +38,40 @@ export interface DashboardData {
 const CREDENTIAL_SURFACES = new Set(['shell-rc', 'ai-tool-dir', 'project-file'])
 const POSTURE_SURFACES = new Set(['agent-config'])
 const AGENT_SURFACES = new Set(['npm-global', 'ai-tool-dir'])
+
+// ── Preset scopes (S9) ──────────────────────────────────────────────────────
+// Quick: fast local surfaces, no filesystem walk.
+export const QUICK_SCOPE: readonly ScopeKey[] = ['shell-rc', 'ai-tool-dir', 'agent-config', 'npm-global']
+// Project: Quick + project-files (only used when a project root is detected).
+export const PROJECT_SCOPE: readonly ScopeKey[] = [...QUICK_SCOPE, 'project-files']
+
+/**
+ * Compute the LoadDashboardOptions for a scan preset.
+ *
+ * @param preset   - 'quick' | 'project' | 'full'
+ * @param cwd      - current working directory (for Full unconditional walk)
+ * @param projectPath - result of projectScanPath(cwd, home); undefined when cwd
+ *                     has no recognised project marker. Project preset skips
+ *                     project-files when this is undefined. Full ignores it and
+ *                     always uses cwd as the project root.
+ */
+export function scopeForPreset(
+  preset: 'quick' | 'project' | 'full',
+  cwd: string,
+  projectPath: string | undefined,
+): LoadDashboardOptions {
+  switch (preset) {
+    case 'quick':
+      return { scope: QUICK_SCOPE }
+    case 'project':
+      return projectPath
+        ? { scope: PROJECT_SCOPE, projectPath }
+        : { scope: QUICK_SCOPE }
+    case 'full':
+      // Unconditionally scan cwd as project root regardless of project markers.
+      return { scope: ALL_SCOPES, projectPath: cwd }
+  }
+}
 
 function maxSeverity(residuals: readonly ResidualCredential[]): Severity {
   let best: Severity = 'low'

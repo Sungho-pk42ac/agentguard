@@ -83,8 +83,10 @@ export function aiCliResiduals(packages: readonly NpmGlobalPackage[]): ResidualC
 
 function defaultRun(platform: NodeJS.Platform, timeoutMs: number): NpmRunResult {
   const command = platform === 'win32' ? 'npm.cmd' : 'npm'
-  const result = spawnSync(command, ['ls', '-g', '--json', '--depth=0'], {
-    // Static args make shell:true injection-safe; npm.cmd on win32 needs a shell.
+  const result = spawnSync(`${command} ls -g --json --depth=0`, {
+    // Full static command string keeps shell:true injection-safe and avoids Node
+    // DEP0190 (passing an args array with shell:true is deprecated); npm.cmd on
+    // win32 needs a shell.
     shell: true,
     timeout: timeoutMs,
     encoding: 'utf8',
@@ -121,8 +123,9 @@ function defaultRunAsync(platform: NodeJS.Platform, timeoutMs: number): Promise<
     }
     let child: ReturnType<typeof spawn>
     try {
-      // Static args make shell:true injection-safe; npm.cmd on win32 needs a shell.
-      child = spawn(command, ['ls', '-g', '--json', '--depth=0'], { shell: true })
+      // Full static command string keeps shell:true injection-safe and avoids Node
+      // DEP0190 (an args array with shell:true is deprecated); npm.cmd needs a shell.
+      child = spawn(`${command} ls -g --json --depth=0`, { shell: true })
     } catch (error) {
       resolve({ stdout: '', status: null, error: error as Error })
       return

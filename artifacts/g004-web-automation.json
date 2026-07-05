@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "browser-automation-transcript",
+  "tool": "browser",
   "surface": "web",
   "driver": "headless-chromium (browser tool)",
   "target": "http://127.0.0.1:4599 (served static export of web/out)",

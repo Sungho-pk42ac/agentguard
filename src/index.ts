@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { scanCliCommand } from './core.js'
 import { runDoctor, type DoctorLanguage } from './doctor.js'
 import { loadPolicy, PolicyLoadError } from './policy.js'
@@ -18,6 +19,7 @@ import { openInEditor } from './open-in-editor.js'
 import { login, logout, enroll, AuthError } from './auth-client.js'
 import { readSession, writeSession, clearSession } from './session.js'
 import { enrollmentPath } from './enrollment.js'
+import { installHook, uninstallHook, type HookIo } from './hook.js'
 import { createInterface } from 'node:readline'
 
 interface CliArgs {
@@ -63,6 +65,7 @@ function usage(exitCode = 2): never {
   agentguard login --endpoint <url> --email <e>
   agentguard logout
   agentguard enroll --endpoint <url> --org <id> --code <c> [--label <l>]
+  agentguard hook install|uninstall
 
 AI 에이전트 보안 감사 — diff, 로그, MCP 설정, 파일을 검사해 위험 행동을 탐지합니다.
 
@@ -454,6 +457,43 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
       process.exit(2)
     }
     throw error
+  }
+} else if (rawArgs[0] === 'hook') {
+  const sub = rawArgs[1]
+  if (sub !== 'install' && sub !== 'uninstall') usage()
+  const gitDirResult = spawnSync('git', ['rev-parse', '--git-dir'], { encoding: 'utf8' })
+  if (gitDirResult.status !== 0) {
+    console.error('agentguard hook: not inside a git repository')
+    process.exit(2)
+  }
+  const gitDir = gitDirResult.stdout.trim()
+  const hooksPathResult = spawnSync('git', ['config', '--get', 'core.hooksPath'], { encoding: 'utf8' })
+  const hooksPath = hooksPathResult.status === 0 && hooksPathResult.stdout.trim() ? hooksPathResult.stdout.trim() : undefined
+  const io: HookIo = {
+    gitDir,
+    hooksPath,
+    existsSync,
+    readFile: (p) => readFileSync(p, 'utf8'),
+    writeFile: (p, contents) => writeFileSync(p, contents),
+    mkdir: (p) => mkdirSync(p, { recursive: true }),
+    chmod: (p, mode) => chmodSync(p, mode),
+    unlink: (p) => unlinkSync(p),
+  }
+  if (sub === 'install') {
+    const result = installHook(io)
+    console.error(
+      `agentguard: pre-commit hook installed at ${result.path}` +
+        (result.backedUp ? ` (previous hook backed up to ${result.backedUp})` : ''),
+    )
+    process.exit(0)
+  } else {
+    const result = uninstallHook(io)
+    console.error(
+      result.removed
+        ? `agentguard: pre-commit hook removed${result.restored ? ' (previous hook restored)' : ''}`
+        : 'agentguard: no agentguard-managed pre-commit hook found',
+    )
+    process.exit(0)
   }
 } else {
   const resolved = resolveCommand(rawArgs)

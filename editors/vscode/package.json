@@ -1,0 +1,39 @@
+{
+  "name": "@pk42ac/agentguard-vscode",
+  "version": "0.1.0",
+  "description": "VS Code extension that runs the AgentGuard CLI scanner and surfaces findings as diagnostics",
+  "private": true,
+  "publisher": "pk42ac",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onCommand:agentguard.scan"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentguard.scan",
+        "title": "AgentGuard: Scan Workspace"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -30,6 +30,7 @@ export const COMMAND_TABLE: readonly CommandSpec[] = [
   { canonical: 'login', aliases: [], preTable: true },
   { canonical: 'logout', aliases: [], preTable: true },
   { canonical: 'enroll', aliases: [], preTable: true },
+  { canonical: 'hook', aliases: [], preTable: true },
 ]
 
 function isFlag(token: string): boolean {

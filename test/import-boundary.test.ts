@@ -75,3 +75,20 @@ test('the web/ package is a separate package with its own name and Next.js dep (
   assert.deepEqual(mainDeps.sort(), ['ink', 'react', 'yaml', 'zod'], 'main runtime deps stay locked; web deps never leak in')
   assert.ok(!('next' in (mainPkg.dependencies ?? {})), 'next must never appear in the main package deps')
 })
+
+test('the editors/vscode package is a separate package with no runtime deps and never leaks into main', () => {
+  const extPkg = JSON.parse(readFileSync(join(repoRoot, 'editors', 'vscode', 'package.json'), 'utf8')) as {
+    name?: string
+    dependencies?: Record<string, string>
+    devDependencies?: Record<string, string>
+  }
+  assert.equal(extPkg.name, '@pk42ac/agentguard-vscode')
+  // The extension shells out to the installed agentguard CLI; it must carry NO
+  // runtime dependencies (only dev types/toolchain).
+  assert.deepEqual(Object.keys(extPkg.dependencies ?? {}), [], 'editors/vscode has zero runtime dependencies')
+  assert.ok(extPkg.devDependencies?.['@types/vscode'], 'editors/vscode dev-depends on @types/vscode')
+  const mainPkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as {
+    dependencies?: Record<string, string>
+  }
+  assert.ok(!('@types/vscode' in (mainPkg.dependencies ?? {})), '@types/vscode must never appear in main deps')
+})

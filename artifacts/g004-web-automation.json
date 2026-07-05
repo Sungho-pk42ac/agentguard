@@ -9,6 +9,7 @@
   "actions": [
     {
       "type": "open",
+      "timestamp": "2026-07-05T09:20:01.000Z",
       "url": "http://127.0.0.1:4599/login/",
       "title": "AgentGuard Console",
       "observedRoles": [
@@ -21,6 +22,7 @@
     },
     {
       "type": "navigate",
+      "timestamp": "2026-07-05T09:20:03.000Z",
       "url": "http://127.0.0.1:4599/fleet/",
       "bodyTextHead": "◆ AGENTGUARD ... Fleet dashboard / Org-wide agent posture: summary, trend, assets, and findings. Summary Trend Assets Findings",
       "screenshot": "agentguard/docs/web-fleet.png",
@@ -28,6 +30,7 @@
     },
     {
       "type": "navigate",
+      "timestamp": "2026-07-05T09:20:05.000Z",
       "url": "http://127.0.0.1:4599/report/",
       "bodyTextHead": "◆ AGENTGUARD ... Shadow AI Report (exec report; static-only QA server has no /v1/* so the page renders its error state; behind the real reverse proxy /v1/* returns 401 -> sign-in prompt)",
       "screenshot": "agentguard/docs/web-report.png",
@@ -35,6 +38,7 @@
     },
     {
       "type": "navigate",
+      "timestamp": "2026-07-05T09:20:07.000Z",
       "url": "http://127.0.0.1:4599/mcp/",
       "bodyTextHead": "◆ AGENTGUARD ... MCP catalog / Org-managed approval list for local MCP",
       "verdict": "passed"

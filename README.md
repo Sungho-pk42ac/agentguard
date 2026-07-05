@@ -314,10 +314,14 @@ agentguard scan-files . --push --endpoint https://cp.example
 
 별도 패키지로 제공되는 하이브리드 SaaS 컨트롤 플레인입니다. redacted findings를 수집하고 조직별 집계 대시보드·리스크 추이·stale 자산·critical 알림(Slack/Teams webhook)을 제공합니다. 저장소는 `node:sqlite`(기본)·in-memory 포트로 로컬 검증 가능하며 Postgres는 프로덕션 어댑터입니다.
 
+<p align="center">
+  <img src="docs/screenshot-fleet.png" alt="AgentGuard 컨트롤 플레인 fleet 대시보드 — 조직 전체 findings 집계, 심각도별 차트, 30일 리스크 추이, stale 자산 경고" width="900" />
+</p>
+
 ```bash
 cd control-plane
 npm install
-npm test        # 36 tests: 서명 인증, 서버 redaction, 멀티테넌트 격리, 알림 dedup, 3-asset E2E
+npm test        # 41 tests: 서명 인증, 서버 redaction, 멀티테넌트 격리, 알림 dedup, enroll 인가, 3-asset E2E
 npm start       # http://127.0.0.1:8787
 ```
 

@@ -251,10 +251,14 @@ agentguard scan-files . --push --endpoint https://cp.example
 
 A separate hybrid-SaaS control-plane package. It ingests redacted findings and serves a per-org aggregation dashboard, risk trend, stale-asset warnings, and critical alerts (Slack/Teams webhook). Storage is a `node:sqlite` (default) / in-memory port for local verification; Postgres is the production adapter.
 
+<p align="center">
+  <img src="docs/screenshot-fleet.png" alt="AgentGuard Control Plane fleet dashboard — org-wide findings, severity chart, 30-day risk trend, stale-asset warning" width="900" />
+</p>
+
 ```bash
 cd control-plane
 npm install
-npm test        # 36 tests: signature auth, server redaction, multi-tenant isolation, alert dedup, 3-asset E2E
+npm test        # 41 tests: signature auth, server redaction, multi-tenant isolation, alert dedup, enroll authz, 3-asset E2E
 npm start       # http://127.0.0.1:8787
 ```
 

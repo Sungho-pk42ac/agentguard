@@ -7,7 +7,7 @@ import { Panel, ErrorLine, Loading, Empty } from '@/components/ui'
 import { useSessionHint } from '@/lib/session'
 
 // Real server shape (auth/routes.ts handleListMembers): {id,email,role,createdAt}.
-// @/lib/types' OrgMember only covers {email,role}; extend locally to match the wire.
+// A local Member interface matches the wire exactly.
 interface Member {
   readonly id: string
   readonly email: string

@@ -13,7 +13,8 @@ import { Panel, Stat, SeverityBadge, VerdictBadge, verdictFor, ErrorLine, Loadin
 // - TrendPoint carries `riskScore` (aggregate.ts trend()), not `total`.
 // - /v1/findings (handleFindings) echoes `advisory`/`cveIds`/`cveSeverity`
 //   additively (present-only). The summary aggregates are already
-//   advisory-excluded server-side; per-row advisory findings are badged here.
+//   advisory-excluded server-side; advisory/CVE rows are surfaced/badged on
+//   the CVE page — the fleet findings list shows them as ordinary rows.
 
 interface AssetSummary {
   readonly assetId: string

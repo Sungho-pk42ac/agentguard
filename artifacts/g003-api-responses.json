@@ -1,0 +1,338 @@
+[
+  {
+    "name": "register admin admin@acme.test",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: initial GET (empty policy)",
+    "method": "GET",
+    "path": "/v1/policy",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: admin PUT rules",
+    "method": "PUT",
+    "path": "/v1/policy",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: GET after rules PUT",
+    "method": "GET",
+    "path": "/v1/policy",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: If-None-Match matches current ETag -> 304",
+    "method": "GET",
+    "path": "/v1/policy",
+    "status": 304,
+    "note": ""
+  },
+  {
+    "name": "policy: create pending exception",
+    "method": "POST",
+    "path": "/v1/policy/exceptions",
+    "status": 200,
+    "note": "id: exc_ae56fa711a946746fe10961a"
+  },
+  {
+    "name": "policy: pending exception must NOT bust ETag -> 304 still",
+    "method": "GET",
+    "path": "/v1/policy",
+    "status": 304,
+    "note": ""
+  },
+  {
+    "name": "policy: admin approves exception",
+    "method": "POST",
+    "path": "/v1/policy/exceptions/exc_ae56fa711a946746fe10961a/approve",
+    "status": 200,
+    "note": "id: exc_ae56fa711a946746fe10961a"
+  },
+  {
+    "name": "policy: stale If-None-Match after approve -> 200 with a NEW ETag",
+    "method": "GET",
+    "path": "/v1/policy",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: create member invite",
+    "method": "POST",
+    "path": "/v1/orgs/invites",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: accept invite",
+    "method": "POST",
+    "path": "/v1/auth/accept-invite",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: ADVERSARIAL non-admin PUT -> 403 expected",
+    "method": "PUT",
+    "path": "/v1/policy",
+    "status": 403,
+    "note": "error: admin role required"
+  },
+  {
+    "name": "policy: ADVERSARIAL non-admin re-approve -> 403 expected",
+    "method": "POST",
+    "path": "/v1/policy/exceptions/exc_ae56fa711a946746fe10961a/approve",
+    "status": 403,
+    "note": "error: admin role required"
+  },
+  {
+    "name": "register admin admin@b.test",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "policy: ADVERSARIAL org B GET -> must be empty, never org A data",
+    "method": "GET",
+    "path": "/v1/policy",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "offboarding: register org A",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "offboarding: valid signed webhook -> 201 expected",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding",
+    "status": 201,
+    "note": "id: offb_ba5474b96a30a7f994e4c6f4"
+  },
+  {
+    "name": "offboarding: ADVERSARIAL flipped byte, same signature -> 401 expected",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding",
+    "status": 401,
+    "note": "error: unauthorized: invalid or stale webhook signature"
+  },
+  {
+    "name": "offboarding: ADVERSARIAL timestamp -400s -> 401 expected",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding",
+    "status": 401,
+    "note": "error: unauthorized: invalid or stale webhook signature"
+  },
+  {
+    "name": "offboarding: register org B (for wrong-secret probe)",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "offboarding: ADVERSARIAL wrong-org secret (claims org A, signed by org B) -> 401 expected",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding",
+    "status": 401,
+    "note": "error: unauthorized: invalid or stale webhook signature"
+  },
+  {
+    "name": "offboarding: exact replay of valid webhook -> 200 idempotent, same id expected",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding",
+    "status": 200,
+    "note": "id: offb_ba5474b96a30a7f994e4c6f4"
+  },
+  {
+    "name": "offboarding: list tasks -> must still be exactly 1 (no dup from replay)",
+    "method": "GET",
+    "path": "/v1/workflows/offboarding",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "offboarding: ADVERSARIAL illegal open->done transition -> 409 expected",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding/offb_ba5474b96a30a7f994e4c6f4/transition",
+    "status": 409,
+    "note": "error: illegal transition to 'done'"
+  },
+  {
+    "name": "offboarding: legal open->sweeping transition -> 200",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding/offb_ba5474b96a30a7f994e4c6f4/transition",
+    "status": 200,
+    "note": "id: offb_ba5474b96a30a7f994e4c6f4"
+  },
+  {
+    "name": "offboarding: ADVERSARIAL illegal backwards sweeping->open -> 409 expected",
+    "method": "POST",
+    "path": "/v1/workflows/offboarding/offb_ba5474b96a30a7f994e4c6f4/transition",
+    "status": 409,
+    "note": "error: illegal transition to 'open'"
+  },
+  {
+    "name": "cve: osv 500 -> POST /v1/reports must still 202",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "cve: osv throw -> POST /v1/reports must still 202",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "cve: osv hang -> POST /v1/reports must still 202",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "register admin a@a.test",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "register admin b@b.test",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "cve: admin refresh org A (primes GLOBAL cache)",
+    "method": "POST",
+    "path": "/v1/cve/refresh",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "cve: admin refresh org B -> must reuse global cache, 0 new fetches",
+    "method": "POST",
+    "path": "/v1/cve/refresh",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "cve: org B lists findings -> must never see org A finding",
+    "method": "GET",
+    "path": "/v1/findings",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "mcp: register admin",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "mcp: GET fresh-org seed catalog",
+    "method": "GET",
+    "path": "/v1/mcp/catalog",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "mcp: create member invite",
+    "method": "POST",
+    "path": "/v1/orgs/invites",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "mcp: accept invite",
+    "method": "POST",
+    "path": "/v1/auth/accept-invite",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "mcp: ADVERSARIAL member PUT -> 403 expected",
+    "method": "PUT",
+    "path": "/v1/mcp/catalog",
+    "status": 403,
+    "note": "error: admin role required"
+  },
+  {
+    "name": "mcp: admin PUT -> 200 expected",
+    "method": "PUT",
+    "path": "/v1/mcp/catalog",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "mcp: ADVERSARIAL PUT missing serverName -> 400 expected",
+    "method": "PUT",
+    "path": "/v1/mcp/catalog",
+    "status": 400,
+    "note": "error: each entry requires a non-empty serverName"
+  },
+  {
+    "name": "mcp: ADVERSARIAL PUT non-boolean approved -> 400 expected",
+    "method": "PUT",
+    "path": "/v1/mcp/catalog",
+    "status": 400,
+    "note": "error: each entry requires approved: boolean"
+  },
+  {
+    "name": "wire: GET /v1/meta -> advertises supported schema versions",
+    "method": "GET",
+    "path": "/v1/meta",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "wire: (a) v1 payload -> 202 expected on v2-capable server",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "wire: (b) v2 payload with advisory finding -> 202 expected",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "wire: (c) client push against forged /v1/meta:[1]",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 202,
+    "note": ""
+  },
+  {
+    "name": "wire-bug: register a REAL org (mints org_<24 hex>)",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "name": "wire-bug: ADVERSARIAL genuine orgId in payload -> observed 422 (production bug, NOT contractually correct)",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 422,
+    "note": "error: server redaction check failed"
+  }
+]

@@ -37,3 +37,30 @@ test('payloadRedactionCheck flags a poisoned evidence field', () => {
   assert.equal(result.leak, true)
   assert.match(result.field ?? '', /evidenceRedacted/)
 })
+
+// Regression (red-team G003): server-minted orgId/assetId are opaque high-entropy
+// tokens by design; the entropy heuristic must NOT flag them, or every real org's
+// first report 422s. Existing fixtures used short ids ('orgA') and hid this.
+test('payloadRedactionCheck accepts a real minted-shaped orgId (entropy heuristic off for structural ids)', () => {
+  const realOrg = 'org_ff90c42435483214c82bdcea' // org_ + 24 hex, entropy ~4.0
+  const assetId = 'pc-a1b2c3d4' // realistic server default (pc- + 8 hex) or a user label
+  // sanity: the opaque orgId WOULD trip the generic entropy heuristic...
+  assert.equal(looksLikeRawSecret(realOrg), true, 'precondition: opaque id trips the full heuristic')
+  // ...but the shape-only variant (used for structural ids) lets it through.
+  assert.equal(looksLikeRawSecret(realOrg, { entropy: false }), false, 'shape-only lets the opaque id through')
+  // Production actor.subject is the (short) assetId, not `assetId@orgId` (that is
+  // only the test helper's default), so override it to the realistic shape.
+  const clean = payload(realOrg, assetId, [finding()], { actor: { type: 'device-token', subject: assetId } })
+  assert.deepEqual(payloadRedactionCheck(clean), { leak: false }, 'a real registered org can push its first report')
+})
+
+test('payloadRedactionCheck still catches a shape-secret smuggled into orgId/assetId', () => {
+  const shapeInOrg = payload('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ012345', 'pc1', [finding()], { actor: { type: 'device-token', subject: 'pc1' } })
+  const r1 = payloadRedactionCheck(shapeInOrg)
+  assert.equal(r1.leak, true)
+  assert.equal(r1.field, 'orgId')
+  const shapeInAsset = payload('orgA', 'sk-ant-ABCDEFGHIJKLMNOPQRSTUVWXYZ012345', [finding()], { actor: { type: 'device-token', subject: 'clean' } })
+  const r2 = payloadRedactionCheck(shapeInAsset)
+  assert.equal(r2.leak, true)
+  assert.equal(r2.field, 'assetId')
+})

@@ -1,0 +1,84 @@
+G003 red-team probe — commit bca618c — run at 2026-07-05T15:19:05.087Z
+
+=== [policy] ETag busts on BOTH rules PUT and exception approve; non-admin PUT 403; cross-org isolation ===
+  [POST /v1/auth/register] -> 200 :: register admin admin@acme.test
+  [GET /v1/policy] -> 200 :: policy: initial GET (empty policy)
+  [PUT /v1/policy] -> 200 :: policy: admin PUT rules
+  [GET /v1/policy] -> 200 :: policy: GET after rules PUT
+  [GET /v1/policy] -> 304 :: policy: If-None-Match matches current ETag -> 304
+  [POST /v1/policy/exceptions] -> 200 (id: exc_ae56fa711a946746fe10961a) :: policy: create pending exception
+  [GET /v1/policy] -> 304 :: policy: pending exception must NOT bust ETag -> 304 still
+  [POST /v1/policy/exceptions/exc_ae56fa711a946746fe10961a/approve] -> 200 (id: exc_ae56fa711a946746fe10961a) :: policy: admin approves exception
+  [GET /v1/policy] -> 200 :: policy: stale If-None-Match after approve -> 200 with a NEW ETag
+  [POST /v1/orgs/invites] -> 200 :: policy: create member invite
+  [POST /v1/auth/accept-invite] -> 200 :: policy: accept invite
+  [PUT /v1/policy] -> 403 (error: admin role required) :: policy: ADVERSARIAL non-admin PUT -> 403 expected
+  [POST /v1/policy/exceptions/exc_ae56fa711a946746fe10961a/approve] -> 403 (error: admin role required) :: policy: ADVERSARIAL non-admin re-approve -> 403 expected
+  [POST /v1/auth/register] -> 200 :: register admin admin@b.test
+  [GET /v1/policy] -> 200 :: policy: ADVERSARIAL org B GET -> must be empty, never org A data
+--- PASS: ETag busts on BOTH rules PUT and exception approve; non-admin PUT 403; cross-org isolation
+
+=== [offboarding] valid signed webhook 201; tampered/stale/wrong-org-secret 401; exact replay idempotent; illegal transition 409 ===
+  [POST /v1/auth/register] -> 200 :: offboarding: register org A
+  [POST /v1/workflows/offboarding] -> 201 (id: offb_ba5474b96a30a7f994e4c6f4) :: offboarding: valid signed webhook -> 201 expected
+  [POST /v1/workflows/offboarding] -> 401 (error: unauthorized: invalid or stale webhook signature) :: offboarding: ADVERSARIAL flipped byte, same signature -> 401 expected
+  [POST /v1/workflows/offboarding] -> 401 (error: unauthorized: invalid or stale webhook signature) :: offboarding: ADVERSARIAL timestamp -400s -> 401 expected
+  [POST /v1/auth/register] -> 200 :: offboarding: register org B (for wrong-secret probe)
+  [POST /v1/workflows/offboarding] -> 401 (error: unauthorized: invalid or stale webhook signature) :: offboarding: ADVERSARIAL wrong-org secret (claims org A, signed by org B) -> 401 expected
+  [POST /v1/workflows/offboarding] -> 200 (id: offb_ba5474b96a30a7f994e4c6f4) :: offboarding: exact replay of valid webhook -> 200 idempotent, same id expected
+  [GET /v1/workflows/offboarding] -> 200 :: offboarding: list tasks -> must still be exactly 1 (no dup from replay)
+  [POST /v1/workflows/offboarding/offb_ba5474b96a30a7f994e4c6f4/transition] -> 409 (error: illegal transition to 'done') :: offboarding: ADVERSARIAL illegal open->done transition -> 409 expected
+  [POST /v1/workflows/offboarding/offb_ba5474b96a30a7f994e4c6f4/transition] -> 200 (id: offb_ba5474b96a30a7f994e4c6f4) :: offboarding: legal open->sweeping transition -> 200
+  [POST /v1/workflows/offboarding/offb_ba5474b96a30a7f994e4c6f4/transition] -> 409 (error: illegal transition to 'open') :: offboarding: ADVERSARIAL illegal backwards sweeping->open -> 409 expected
+--- PASS: valid signed webhook 201; tampered/stale/wrong-org-secret 401; exact replay idempotent; illegal transition 409
+
+=== [cve] ingest returns 202 in ALL of osv-500 / osv-throw / osv-hang (enrichment never awaited) ===
+  [POST /v1/reports] -> 202 :: cve: osv 500 -> POST /v1/reports must still 202
+  (osv 500: ingest returned in 6ms)
+  [POST /v1/reports] -> 202 :: cve: osv throw -> POST /v1/reports must still 202
+  (osv throw: ingest returned in 3ms)
+  [POST /v1/reports] -> 202 :: cve: osv hang -> POST /v1/reports must still 202
+  (osv hang: ingest returned in 2ms)
+--- PASS: ingest returns 202 in ALL of osv-500 / osv-throw / osv-hang (enrichment never awaited)
+
+=== [cve] healthy osv enrichment adds cveIds[]; cve_cache is GLOBAL (org B: 0 new fetches) while findings stay org-scoped ===
+  [POST /v1/auth/register] -> 200 :: register admin a@a.test
+  [POST /v1/auth/register] -> 200 :: register admin b@b.test
+  [POST /v1/cve/refresh] -> 202 :: cve: admin refresh org A (primes GLOBAL cache)
+  [POST /v1/cve/refresh] -> 202 :: cve: admin refresh org B -> must reuse global cache, 0 new fetches
+  [GET /v1/findings] -> 200 :: cve: org B lists findings -> must never see org A finding
+--- PASS: healthy osv enrichment adds cveIds[]; cve_cache is GLOBAL (org B: 0 new fetches) while findings stay org-scoped
+
+=== [mcp-catalog] member PUT 403; admin PUT ok; seed present; unapproved/strict/approved/no-catalog scan; advisory excluded from exit code + aggregates ===
+  [POST /v1/auth/register] -> 200 :: mcp: register admin
+  [GET /v1/mcp/catalog] -> 200 :: mcp: GET fresh-org seed catalog
+  [POST /v1/orgs/invites] -> 200 :: mcp: create member invite
+  [POST /v1/auth/accept-invite] -> 200 :: mcp: accept invite
+  [PUT /v1/mcp/catalog] -> 403 (error: admin role required) :: mcp: ADVERSARIAL member PUT -> 403 expected
+  [PUT /v1/mcp/catalog] -> 200 :: mcp: admin PUT -> 200 expected
+  [PUT /v1/mcp/catalog] -> 400 (error: each entry requires a non-empty serverName) :: mcp: ADVERSARIAL PUT missing serverName -> 400 expected
+  [PUT /v1/mcp/catalog] -> 400 (error: each entry requires approved: boolean) :: mcp: ADVERSARIAL PUT non-boolean approved -> 400 expected
+--- PASS: member PUT 403; admin PUT ok; seed present; unapproved/strict/approved/no-catalog scan; advisory excluded from exit code + aggregates
+
+=== [wire-skew] server /v1/meta advertises [1,2]; v1 payload 202; v2+advisory 202 stored; client vs forged meta:[1] omits advisory + sends v1 ===
+  [GET /v1/meta] -> 200 :: wire: GET /v1/meta -> advertises supported schema versions
+  [POST /v1/reports] -> 202 :: wire: (a) v1 payload -> 202 expected on v2-capable server
+  [POST /v1/reports] -> 202 :: wire: (b) v2 payload with advisory finding -> 202 expected
+  [POST /v1/reports] -> 202 :: wire: (c) client push against forged /v1/meta:[1]
+--- PASS: server /v1/meta advertises [1,2]; v1 payload 202; v2+advisory 202 stored; client vs forged meta:[1] omits advisory + sends v1
+
+=== [wire-skew] BUG: a genuine minted orgId (org_<24 hex>) false-positives the independent redaction check, 422-ing every real report ===
+  [POST /v1/auth/register] -> 200 :: wire-bug: register a REAL org (mints org_<24 hex>)
+  [POST /v1/reports] -> 422 (error: server redaction check failed) :: wire-bug: ADVERSARIAL genuine orgId in payload -> observed 422 (production bug, NOT contractually correct)
+--- PASS: BUG: a genuine minted orgId (org_<24 hex>) false-positives the independent redaction check, 422-ing every real report
+
+=== SUMMARY ===
+[PASS] (policy) ETag busts on BOTH rules PUT and exception approve; non-admin PUT 403; cross-org isolation
+[PASS] (offboarding) valid signed webhook 201; tampered/stale/wrong-org-secret 401; exact replay idempotent; illegal transition 409
+[PASS] (cve) ingest returns 202 in ALL of osv-500 / osv-throw / osv-hang (enrichment never awaited)
+[PASS] (cve) healthy osv enrichment adds cveIds[]; cve_cache is GLOBAL (org B: 0 new fetches) while findings stay org-scoped
+[PASS] (mcp-catalog) member PUT 403; admin PUT ok; seed present; unapproved/strict/approved/no-catalog scan; advisory excluded from exit code + aggregates
+[PASS] (wire-skew) server /v1/meta advertises [1,2]; v1 payload 202; v2+advisory 202 stored; client vs forged meta:[1] omits advisory + sends v1
+[PASS] (wire-skew) BUG: a genuine minted orgId (org_<24 hex>) false-positives the independent redaction check, 422-ing every real report
+
+TOTAL: 7  PASS: 7  FAIL: 0

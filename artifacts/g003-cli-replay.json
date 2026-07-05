@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "cli-replay",
+  "replaySafe": true,
+  "command": [
+    "node",
+    "--version"
+  ],
+  "recordedStdout": "v24.15.0\r\n"
+}

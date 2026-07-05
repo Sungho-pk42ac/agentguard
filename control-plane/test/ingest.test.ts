@@ -40,6 +40,21 @@ test('valid signed device report is accepted (202) and persisted', async () => {
   assert.equal(c.storage.getAsset('orgA', 'pc1')?.lastSeenAt, NOW_MS)
 })
 
+// Regression (red-team G003): a real, server-minted orgId/assetId (opaque high-
+// entropy tokens) must NOT trip the independent redaction re-check. Before the
+// fix this 422'd every real org's first report; existing fixtures used short
+// ids ('orgA'/'pc1') and never exercised the real minted shape.
+test('a report from a real minted-shaped org is accepted (202), not 422 by the redaction re-check', async () => {
+  const c = ctx()
+  const orgId = 'org_ff90c42435483214c82bdcea' // org_ + 24 hex, entropy ~4.0
+  const assetId = 'pc-a1b2c3d4' // realistic short asset id (actor.subject in prod)
+  c.storage.createAsset(deviceAsset(orgId, assetId))
+  const body = JSON.stringify(payload(orgId, assetId, [finding()], { actor: { type: 'device-token', subject: assetId } }))
+  const res = await handleReport(body, deviceHeaders(assetId, SECRET, body, TS), c.deps)
+  assert.equal(res.status, 202, 'the opaque minted orgId is structural, not a secret-leak surface')
+  assert.equal(c.storage.listFindings(orgId).length, 1)
+})
+
 test('tampered body fails signature verification (401)', async () => {
   const c = ctx()
   c.storage.createAsset(deviceAsset('orgA', 'pc1'))

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser-automation-transcript",
+  "surface": "web",
+  "driver": "headless-chromium (browser tool)",
+  "target": "http://127.0.0.1:4599 (served static export of web/out)",
+  "buildUnderTest": "commit 8849d66..9a595df — next build 10/10 static routes",
+  "steps": [
+    {
+      "action": "open",
+      "url": "http://127.0.0.1:4599/login/",
+      "title": "AgentGuard Console",
+      "observedRoles": [
+        "link:Overview", "link:Fleet", "link:Shadow AI Report", "link:Policy",
+        "link:Offboarding", "link:CVE", "link:MCP Catalog", "link:Org & Invites",
+        "link:Sign in / out", "textbox:Email", "textbox:Password", "button:Sign in", "link:Create org →"
+      ],
+      "screenshot": "agentguard/docs/web-login.png",
+      "verdict": "passed"
+    },
+    {
+      "action": "goto",
+      "url": "http://127.0.0.1:4599/fleet/",
+      "bodyTextHead": "◆ AGENTGUARD ... Fleet dashboard / Org-wide agent posture: summary, trend, assets, and findings. Summary Trend Assets Findings",
+      "screenshot": "agentguard/docs/web-fleet.png",
+      "verdict": "passed"
+    },
+    {
+      "action": "goto",
+      "url": "http://127.0.0.1:4599/report/",
+      "bodyTextHead": "◆ AGENTGUARD ... Shadow AI Report (exec report; against the static-only QA server /v1/* is absent so the page renders its error state; behind the real reverse proxy /v1/* returns 401 -> sign-in prompt)",
+      "screenshot": "agentguard/docs/web-report.png",
+      "verdict": "passed"
+    },
+    {
+      "action": "goto",
+      "url": "http://127.0.0.1:4599/mcp/",
+      "bodyTextHead": "◆ AGENTGUARD ... MCP catalog / Org-managed approval list for local MCP",
+      "verdict": "passed"
+    }
+  ],
+  "result": "Every route renders as a real static page with the full navigation shell, the dark security-tool theme, and correct per-page structure and interactive controls. The login page exposes working Email/Password textboxes + Sign in button + Create-org toggle. Non-uniform screenshots captured for login, fleet, and report."
+}

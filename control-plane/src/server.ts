@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import { enrichFindings, type EnrichDeps } from './cve.js'
 import { timingSafeEqual } from 'node:crypto'
 import { handleEnroll, handleReport, type EnrollDeps, type IngestDeps } from './ingest.js'
 import {
@@ -23,11 +24,28 @@ import {
   type AuthDeps,
   type AuthHandlerResponse,
 } from './auth/routes.js'
+import {
+  handleCreateOffboarding,
+  handleGetOffboarding,
+  handleListOffboarding,
+  handleTransitionOffboarding,
+  type OffboardingDeps,
+} from './offboarding.js'
+import { buildPolicyView, handleCreateException, handlePutPolicy, handleResolveException, policyViewBody } from './policy.js'
+import { handleGetMcpCatalog, handlePutMcpCatalog } from './mcp-catalog.js'
 import type { FindingFilter, Severity } from './model.js'
 import type { SessionRecord } from './model.js'
 import { SessionAuth, type Principal, type PrincipalResolver, type ViewerAuth } from './verify/viewer.js'
 
-export type ControlPlaneDeps = IngestDeps & EnrollDeps & ReadDeps & AuthDeps & { readonly viewerAuth: ViewerAuth }
+export type ControlPlaneDeps = IngestDeps & EnrollDeps & ReadDeps & AuthDeps & OffboardingDeps & {
+  readonly viewerAuth: ViewerAuth
+  // CVE enrichment (§6.5): optional — enables POST /v1/cve/refresh (admin).
+  readonly cve?: EnrichDeps
+  // HTML fleet dashboard (§M2f): OFF by default — the control plane is a pure
+  // JSON API. The server-rendered dashboard is an optional dev/legacy aid; the
+  // real UI is the web/ package. Enable only for local inspection.
+  readonly enableHtmlDashboard?: boolean
+}
 
 const SESSION_COOKIE = 'agentguard_session'
 const CSRF_COOKIE = 'agentguard_csrf'
@@ -282,6 +300,104 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
       return sendAuth(handleListMembers(ctx.principal, deps))
     }
+    // ── offboarding (M2c): session admin OR signed HR webhook create;
+    // session (any role) reads; session admin transitions. ──
+    if (method === 'POST' && path === '/v1/workflows/offboarding') {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const body = await readBody(req)
+      if (ctx.principal && !requireCsrfIfCookie(ctx)) return
+      const r = handleCreateOffboarding(ctx.principal, body, headers, deps)
+      return sendJson(r.status, r.json)
+    }
+    if (method === 'GET' && path === '/v1/workflows/offboarding') {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      const r = handleListOffboarding(ctx.principal.orgId, deps)
+      return sendJson(r.status, r.json)
+    }
+    if (method === 'POST' && /^\/v1\/workflows\/offboarding\/[^/]+\/transition$/.test(path)) {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      if (!requireCsrfIfCookie(ctx)) return
+      const id = path.slice('/v1/workflows/offboarding/'.length, -'/transition'.length)
+      const body = await readBody(req)
+      const r = handleTransitionOffboarding(ctx.principal, id, body, deps)
+      return sendJson(r.status, r.json)
+    }
+    if (method === 'GET' && path.startsWith('/v1/workflows/offboarding/')) {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      const id = path.slice('/v1/workflows/offboarding/'.length)
+      const r = handleGetOffboarding(ctx.principal.orgId, id, deps)
+      return sendJson(r.status, r.json)
+    }
+    // ── policy sync (M2b, §6.3 [CR-A]): any authenticated principal reads;
+    // admin PUTs rules / resolves exceptions; any member proposes one. ──
+    if (method === 'GET' && path === '/v1/policy') {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      const view = buildPolicyView(ctx.principal.orgId, deps.storage)
+      res.setHeader('etag', `"${view.etag}"`)
+      res.setHeader('cache-control', 'no-cache')
+      const ifNoneMatch = (headers['if-none-match'] ?? '').replace(/^W\//, '').replace(/"/g, '')
+      if (ifNoneMatch.length > 0 && ifNoneMatch === view.etag) {
+        res.writeHead(304)
+        res.end()
+        return
+      }
+      return sendJson(200, policyViewBody(view))
+    }
+    if (method === 'PUT' && path === '/v1/policy') {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      if (!requireCsrfIfCookie(ctx)) return
+      const body = await readBody(req)
+      const r = handlePutPolicy(ctx.principal, body, deps)
+      return sendJson(r.status, r.json)
+    }
+    if (method === 'POST' && path === '/v1/policy/exceptions') {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      if (!requireCsrfIfCookie(ctx)) return
+      const body = await readBody(req)
+      const r = handleCreateException(ctx.principal, body, deps)
+      return sendJson(r.status, r.json)
+    }
+    const policyExceptionActionMatch = /^\/v1\/policy\/exceptions\/([^/]+)\/(approve|reject)$/.exec(path)
+    if (method === 'POST' && policyExceptionActionMatch) {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      if (!requireCsrfIfCookie(ctx)) return
+      const r = handleResolveException(
+        ctx.principal,
+        policyExceptionActionMatch[1]!,
+        policyExceptionActionMatch[2] as 'approve' | 'reject',
+        deps,
+      )
+      return sendJson(r.status, r.json)
+    }
+    // ── CVE refresh (§6.5 [CR7/CR-C], optional): admin re-runs enrichment
+    // for the org's own findings. 501 when the control plane has no `cve`
+    // deps configured (osv.dev enrichment is opt-in). ──
+    if (method === 'POST' && path === '/v1/cve/refresh') {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      if (ctx.principal.role !== 'admin') return sendJson(403, { error: 'admin role required' })
+      if (!requireCsrfIfCookie(ctx)) return
+      if (!deps.cve) return sendJson(501, { error: 'CVE enrichment is not configured on this control plane' })
+      await enrichFindings(deps.cve, ctx.principal.orgId)
+      return sendJson(202, { accepted: true })
+    }
+    // ── MCP catalog (M2e/§6.6): admin PUT; any org principal/viewer GETs
+    // (wired below in the shared GET org-resolution block). ──
+    if (method === 'PUT' && path === '/v1/mcp/catalog') {
+      const ctx = sessionContext(headers, cookies, sessionAuth)
+      if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
+      if (!requireCsrfIfCookie(ctx)) return
+      const body = await readBody(req)
+      const r = handlePutMcpCatalog(ctx.principal, body, deps)
+      return sendJson(r.status, r.json)
+    }
 
     if (method === 'GET') {
       if (path === '/healthz') return sendJson(200, { ok: true })
@@ -294,6 +410,10 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
         org = ctx.principal?.orgId ?? null
       }
       if (path === '/' || path === '/dashboard') {
+        // §M2f: pure-API by default. The optional dev dashboard is opt-in.
+        if (!deps.enableHtmlDashboard) {
+          return sendJson(404, { error: 'not found — control plane is a pure JSON API; the HTML dashboard is opt-in (enableHtmlDashboard) and the primary UI is the web/ app' })
+        }
         if (!org) {
           res.setHeader('www-authenticate', 'Bearer realm="agentguard"')
           return sendHtml(401, '<!doctype html><h1>AgentGuard Control Plane</h1><p>Unauthorized — present a viewer token (Authorization: Bearer, or ?key=).</p>')
@@ -323,6 +443,18 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
             assetId: url.searchParams.get('assetId') ?? undefined,
           }
           const r = handleFindings(org, filter, deps)
+          return sendJson(r.status, r.json)
+        }
+        if (path === '/v1/mcp/catalog') {
+          const r = handleGetMcpCatalog(org, headers['if-none-match'], deps)
+          if (r.headers) {
+            for (const [key, value] of Object.entries(r.headers)) res.setHeader(key, value)
+          }
+          if (r.status === 304) {
+            res.writeHead(304)
+            res.end()
+            return
+          }
           return sendJson(r.status, r.json)
         }
       }

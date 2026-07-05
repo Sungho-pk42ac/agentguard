@@ -1,6 +1,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { reportPayloadSchema } from './contract.js'
 import { processAlerts } from './alerts.js'
+import { enrichFindings, type EnrichDeps } from './cve.js'
 import { payloadRedactionCheck } from './redaction.js'
 import type { AssetRecord } from './model.js'
 import type { NotifierPort } from './notify/port.js'
@@ -14,6 +15,15 @@ export interface IngestDeps {
   readonly now: () => number
   readonly freshnessWindowSec?: number
   readonly channel?: string
+  // CVE enrichment (§6.5 [CR7/CR-C]): optional — when absent, ingest simply
+  // never enriches. When present, `enrichFindings` runs POST-PERSIST via
+  // `enqueue`, which defaults to `setImmediate`, and its promise is NEVER
+  // awaited on the ingest path: an osv.dev outage (throw/5xx/hang) can only
+  // ever fail to enrich, never fail or delay the 202 response.
+  readonly enrich?: {
+    readonly deps: EnrichDeps
+    readonly enqueue?: (fn: () => void) => void
+  }
 }
 
 export interface HandlerResponse {
@@ -110,6 +120,20 @@ export async function handleReport(rawBody: string, headers: Record<string, stri
     now: deps.now,
     channel: deps.channel,
   })
+
+  // Post-persist CVE enrichment (§6.5 [CR7/CR-C]): fire-and-forget, NEVER
+  // awaited. A throw, a 5xx, or a fetch that never resolves inside
+  // enrichFindings cannot delay or fail this response.
+  if (deps.enrich) {
+    const enqueue = deps.enrich.enqueue ?? ((fn: () => void) => setImmediate(fn))
+    const enrichDeps = deps.enrich.deps
+    enqueue(() => {
+      void enrichFindings(enrichDeps, orgId).catch(() => {
+        // enrichFindings never throws by contract, but a caller-supplied
+        // enqueue() could still surface one; swallow defensively.
+      })
+    })
+  }
 
   return { status: 202, json: { accepted: true, findingCount: payload.findings.length, newCriticalCount } }
 }

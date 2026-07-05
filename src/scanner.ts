@@ -249,7 +249,20 @@ function addedDiffChunks(diff: string): string[] {
   return chunks
 }
 
-export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Finding[] {
+// [R3/NEW-CR-1/§6.6] Injected MCP catalog for the org-managed approval check.
+// The CLI wiring to load a real catalog from the control plane is a later
+// story; today the parameter is purely optional so an absent catalog leaves
+// scanMcpConfig's output byte-identical to before this change.
+export interface McpCatalogCheckEntry {
+  readonly serverName: string
+  readonly approved: boolean
+}
+export interface McpCatalogInput {
+  readonly entries: readonly McpCatalogCheckEntry[]
+  readonly strictMode?: boolean
+}
+
+export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY, catalog?: McpCatalogInput): Finding[] {
   const findings: Finding[] = scanText(text, 'mcp-config', policy)
   const lowered = text.toLowerCase()
   for (const name of policy.mcp.denyServers) {
@@ -302,6 +315,22 @@ export function scanMcpConfig(text: string, policy: Policy = DEFAULT_POLICY): Fi
       evidence: 'full access',
       recommendation: 'Use workspace-scoped access and require approval for destructive operations.',
     })
+  }
+  if (catalog) {
+    for (const entry of catalog.entries) {
+      if (entry.approved) continue
+      if (lowered.includes(entry.serverName.toLowerCase())) {
+        findings.push({
+          id: 'mcp-unapproved',
+          title: `Unapproved MCP server present locally: ${entry.serverName}`,
+          severity: catalog.strictMode ? 'medium' : 'low',
+          category: 'mcp-risk',
+          evidence: entry.serverName,
+          recommendation: 'Get this MCP server approved in the org MCP catalog, or remove it from the local agent configuration.',
+          advisory: true,
+        })
+      }
+    }
   }
   findings.push(...structuredMcpRiskFindings(text, 'mcp-config'))
   return findings

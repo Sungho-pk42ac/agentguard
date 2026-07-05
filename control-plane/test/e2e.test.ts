@@ -97,11 +97,13 @@ test('E2E: 3 assets enroll -> report -> authorized dashboard aggregates -> one a
     assert.equal((await getJson(base, '/v1/findings', 'vk-orgB')).json.findings.length, 0)
     assert.equal((await getJson(base, '/v1/findings', 'vk-orgA')).json.findings.length, 3)
 
-    // ── HTML dashboard requires a viewer token ──
-    assert.equal((await fetch(`${base}/`)).status, 401)
-    const html = await fetch(`${base}/?key=vk-orgA`).then((r) => r.text())
-    assert.match(html, /AgentGuard Control Plane/)
-    assert.match(html, /BLOCK/)
+    // ── §M2f: the control plane is a pure JSON API by default — the root and
+    //    /dashboard HTML routes are demoted to an opt-in dev aid (covered in
+    //    dashboard-demote.test.ts). Here we pin that even an authorized viewer
+    //    token gets a JSON 404, never server-rendered HTML. ──
+    const rootRes = await fetch(`${base}/?key=vk-orgA`)
+    assert.equal(rootRes.status, 404)
+    assert.match(rootRes.headers.get('content-type') ?? '', /application\/json/)
   } finally {
     server.close()
     await once(server, 'close')

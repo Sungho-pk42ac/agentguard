@@ -1,4 +1,6 @@
 import type {
+  CveCacheRecord,
+  CveSeverity,
   AlertRecord,
   AssetRecord,
   DeviceAuthRecord,
@@ -6,7 +8,13 @@ import type {
   FindingRecord,
   IngestEventRecord,
   InviteRecord,
+  McpCatalogEntry,
+  OffboardingStatus,
+  OffboardingTask,
   OrgRecord,
+  PolicyExceptionRecord,
+  PolicyExceptionStatus,
+  PolicyRecord,
   Role,
   SessionRecord,
   UserRecord,
@@ -80,6 +88,52 @@ export interface StoragePort {
   getDeviceAuthByDeviceCode(deviceCode: string): DeviceAuthRecord | undefined
   approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): boolean
   consumeDeviceAuth(deviceCode: string, now: number): DeviceAuthRecord | undefined
+
+  // ── offboarding tasks (org-scoped; idempotent by (orgId, employee.id, effectiveAt)) ──
+  // createOffboardingTask: if a task with the same idempotency key already
+  // exists, the passed-in record is discarded and the EXISTING task is
+  // returned with created:false — the caller never observes a duplicate.
+  createOffboardingTask(task: OffboardingTask): { task: OffboardingTask; created: boolean }
+  getOffboardingTask(orgId: string, id: string): OffboardingTask | undefined
+  listOffboardingTasks(orgId: string): OffboardingTask[]
+  transitionOffboardingTask(
+    orgId: string,
+    id: string,
+    to: OffboardingStatus,
+    actor: string,
+    at: number,
+  ): { ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' }
+
+  // ── policy sync (org-scoped rules doc + exceptions) ──
+  getPolicy(orgId: string): PolicyRecord | undefined
+  /** Upsert the org's rules text and bump rulesVersion (1 on first write). */
+  putPolicyRules(orgId: string, rules: string): PolicyRecord
+  listExceptions(orgId: string): PolicyExceptionRecord[]
+  createException(record: PolicyExceptionRecord): void
+  /** Resolve a pending exception; bumps the org's exceptionsVersion. Returns undefined if unknown or not pending. */
+  resolveException(orgId: string, id: string, status: Exclude<PolicyExceptionStatus, 'pending'>, now: number): PolicyExceptionRecord | undefined
+
+  // ── CVE cache (`cve_cache`, M2d) — the SOLE intentionally-global
+  // (non-org-scoped) StoragePort surface. Keyed by (ecosystem, package,
+  // version); carries
+  // ONLY public osv.dev advisory data (vuln ids, CVSS-derived severity,
+  // summary) — no org, asset, or finding identity. Sharing this cache across
+  // every org that happens to run the same package@version is intentional:
+  // it is public knowledge, not tenant data. tenancy-invariant.test.ts
+  // explicitly whitelists exactly this surface; every other StoragePort
+  // method must stay orgId-scoped.
+  getCveCache(ecosystem: string, pkg: string, version: string): CveCacheRecord | undefined
+  putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): void
+
+  // ── CVE enrichment result projected onto a finding (org-scoped: identifies
+  // WHICH org's finding matched a globally-cached CVE). ──
+  updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): void
+
+  // ── MCP catalog (M2e/§6.6): org-scoped approval list + strict-mode toggle ──
+  getMcpCatalog(orgId: string): McpCatalogEntry[]
+  putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): void
+  getMcpStrictMode(orgId: string): boolean
+  setMcpStrictMode(orgId: string, value: boolean): void
 
   close(): void
 }

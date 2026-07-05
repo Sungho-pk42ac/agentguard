@@ -28,6 +28,10 @@ export interface FindingRecord extends ReportFinding {
   firstSeen: number
   lastSeen: number
   status: 'open' | 'resolved' | 'allowlisted'
+  // CVE enrichment (post-persist, async — see cve.ts). Absent until the
+  // background enrichment pass matches this finding against osv.dev.
+  cveIds?: string[]
+  cveSeverity?: CveSeverity
 }
 
 export interface AlertRecord {
@@ -107,4 +111,111 @@ export interface DeviceAuthRecord {
   role?: Role
   readonly createdAt: number
   readonly expiresAt: number
+}
+// ── policy sync (M2b): per-org rules doc + exceptions ──
+// Org-scoped. rulesVersion bumps on every PUT of rules text (yaml/json, opaque
+// to the server); exceptionsVersion bumps only when an exception is resolved
+// (approve/reject) — creating a pending exception does not change the
+// ETag-visible surface since only approved exceptions are ever returned.
+
+export type PolicyExceptionStatus = 'pending' | 'approved' | 'rejected'
+
+export interface PolicyRecord {
+  readonly orgId: string
+  rulesVersion: number
+  rules: string
+  exceptionsVersion: number
+}
+
+export interface PolicyExceptionRecord {
+  readonly id: string
+  readonly orgId: string
+  readonly ruleId: string
+  readonly reason: string
+  status: PolicyExceptionStatus
+  readonly createdAt: number
+  resolvedAt?: number
+}
+
+// ── offboarding (M2c): HR-driven asset sweep workflow ──
+// Org-scoped, keyed by (orgId, employee.id, effectiveAt) for idempotency —
+// a re-POST of the same webhook/session request must return the existing
+// task rather than creating a duplicate.
+
+export type OffboardingStatus = 'open' | 'sweeping' | 'done'
+
+export interface OffboardingEmployee {
+  readonly id: string
+  readonly email: string
+  readonly name: string
+}
+
+export interface OffboardingAuditEntry {
+  readonly at: number
+  readonly from: OffboardingStatus | ''
+  readonly to: OffboardingStatus
+  readonly actor: string
+}
+
+export interface OffboardingTask {
+  readonly id: string
+  readonly orgId: string
+  readonly employee: OffboardingEmployee
+  assetIds: string[]
+  unmatched: boolean
+  status: OffboardingStatus
+  readonly effectiveAt: string
+  readonly createdAt: number
+  updatedAt: number
+  audit: OffboardingAuditEntry[]
+}
+
+// State machine is strictly linear: open -> sweeping -> done. No skips, no
+// backwards transitions. Shared by both storage adapters so MemoryStorage and
+// SqliteStorage enforce byte-identical semantics.
+const OFFBOARDING_TRANSITIONS: Record<OffboardingStatus, OffboardingStatus | null> = {
+  open: 'sweeping',
+  sweeping: 'done',
+  done: null,
+}
+
+export function isLegalOffboardingTransition(from: OffboardingStatus, to: OffboardingStatus): boolean {
+  return OFFBOARDING_TRANSITIONS[from] === to
+}
+
+// ── CVE enrichment (M2d) ──
+// osv.dev-derived vulnerability data. `CveCacheRecord` is keyed by
+// (ecosystem, package, version) and is the SOLE intentionally-global
+// (non-org-scoped) StoragePort surface — see storage/port.ts for the
+// whitelist rationale. FindingRecord.cveIds/cveSeverity (above) are the
+// org-scoped projection of this data onto a specific org's finding.
+
+export type CveSeverity = 'low' | 'medium' | 'high' | 'critical' | 'unknown'
+
+export interface CveDetail {
+  readonly id: string
+  readonly severity: CveSeverity
+  readonly summary?: string
+}
+
+export interface CveCacheRecord {
+  readonly vulnIds: string[]
+  readonly details: CveDetail[]
+  readonly fetchedAt: number
+  readonly status: 'fresh' | 'stale'
+}
+// ── MCP catalog (M2e/§6.6): org-managed approval list for local MCP servers ──
+// Org-scoped. A seed list ships with approved:false so a fresh org starts
+// deny-by-default; admins flip entries to approved via PUT /v1/mcp/catalog.
+// mcpStrictMode is a per-org boolean setting (default false) that bumps the
+// scanner's mcp-unapproved advisory finding from low to medium severity.
+
+export interface McpCatalogEntry {
+  readonly orgId: string
+  readonly serverName: string
+  approved: boolean
+  riskTags: string[]
+  note?: string
+  updatedBy: string
+  updatedAt: number
 }

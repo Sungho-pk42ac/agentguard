@@ -1,0 +1,139 @@
+AgentGuard G001 (CLI+TUI surface) — adversarial red-team capture
+Repo: C:/tmp/agentguard  |  build: npm run build (tsc) — success
+Node: v24.15.0 (node dist/index.js == the published `agentguard` bin)
+
+==== (a) byte-identity: `scan-diff` vs `scan diff` ====
+Command 1: node dist/index.js scan-diff < examples/risky-pr.diff
+Command 2: node dist/index.js scan diff  < examples/risky-pr.diff
+exit code (scan-diff): 1
+exit code (scan diff):  1
+diff(stdout1, stdout2) exit status: 0 (no differences)
+RESULT: byte-identical (stdout AND exit code match) — PASS
+
+--- captured stdout (scan-diff), 18 lines ---
+# AgentGuard 위험 리포트
+
+**판정:** BLOCK
+**위험 점수:** 14
+**탐지 건수:** 4
+
+| 심각도 | 분류 | 파일 | 탐지 내용 | 증거 |
+|---|---|---|---|---|
+| critical | secret | diff | OpenAI 형식 API 키 | `sk-p…0000` |
+| critical | secret | diff | Anthropic API 키 | `sk-a…0000` |
+| high | dangerous-command | diff | 금지된 command pattern: rm -rf | `rm -rf` |
+| high | mcp-risk | diff | MCP 서버가 credential-like 환경 변수를 전달받음 | `credential env` |
+
+## 권장 조치
+- **OpenAI 형식 API 키:** 비밀 값을 제거하고 회전한 뒤 secret manager나 환경 변수에서 불러오세요.
+- **Anthropic API 키:** 비밀 값을 제거하고 회전한 뒤 secret manager나 환경 변수에서 불러오세요.
+- **금지된 command pattern: rm -rf:** 사람의 승인을 요구하거나 더 안전하게 scope가 제한된 command로 대체하세요.
+- **MCP 서버가 credential-like 환경 변수를 전달받음:** 최소 권한 token을 사용하고 write scope를 피하며 agent session 후 credential을 회전하세요.
+
+==== (b) unknown one-word command: `frobnicate` ====
+Command: node dist/index.js frobnicate
+exit code: 2  (expected 2 — PASS)
+--- stderr/stdout (first lines) ---
+Usage:
+  agentguard scan-files [경로]
+  agentguard scan-diff < diff.patch
+  agentguard scan-log < transcript.log
+  agentguard scan-mcp < config.toml
+  agentguard scan-mcp config.toml
+  ...(full usage text follows)
+
+==== (c) unknown two-word command: `scan everything` ====
+Command: node dist/index.js scan everything
+exit code: 2  (expected 2 — PASS)
+--- stderr/stdout (first lines) ---
+Usage:
+  agentguard scan-files [경로]
+  agentguard scan-diff < diff.patch
+  agentguard scan-log < transcript.log
+  agentguard scan-mcp < config.toml
+  agentguard scan-mcp config.toml
+  ...(full usage text follows)
+NOTE: unit test resolveCommand(['scan','everything']) === undefined confirms the
+dispatch table correctly refuses to match an unregistered two-word verb, falling
+through to the same usage(2) path as an unknown one-word command.
+
+==== (d1) hostile: `open` with no argument ====
+Command: node dist/index.js open
+exit code: 2  (expected 2 — PASS)
+--- stderr/stdout (first lines) ---
+Usage:
+  agentguard scan-files [경로]
+  ...(same usage text — `open` with a missing positional falls through to usage(2))
+
+==== (d2) hostile: `open "a;rm -rf /:99"` with AGENTGUARD_EDITOR=code ====
+Command: AGENTGUARD_EDITOR=code node dist/index.js open "a;rm -rf /:99"
+exit code: 0
+--- full stderr output (the CLI's own diagnostic line) ---
+code --goto a;rm -rf /:99
+
+Analysis: the target regex /^(.+):(\d+)$/ split the hostile string into
+file="a;rm -rf /" and line=99. resolveEditor() honored AGENTGUARD_EDITOR=code,
+so editorArgs('code', 'a;rm -rf /', 99) produced ['--goto', 'a;rm -rf /:99'].
+The CLI printed `${command} ${args.join(' ')}` for a human-readable log line —
+that join is DISPLAY ONLY. The actual spawn call is spawnFn('code', ['--goto',
+'a;rm -rf /:99']) — an argv ARRAY passed straight to node:child_process.spawn
+with no shell:true, so ';' 'rm -rf /' is never re-parsed by any shell; it is
+inert text baked into a single array element. See (d3) for direct proof against
+the shipped dist module.
+VERDICT: PASS — hostile path is inert; no shell interpretation is possible.
+
+==== (d3) editorArgs args-array proof (no shell interpretation possible) ====
+Script: artifacts/_d3.mjs, importing ../dist/open-in-editor.js (the SHIPPED build)
+editorArgs(code, hostile, 99) = ["--goto","a;rm -rf /:99"]
+hostile string+line preserved as ONE array element (no word-splitting): true
+array length: 2
+spawn is invoked as spawn(editor, args, { detached: true, stdio: "ignore" }) -- NO shell:true anywhere (see src/open-in-editor.ts defaultSpawn)
+VERDICT: PASS — editorArgs never splits/quotes on shell metacharacters; the
+hostile string ";rm -rf /" is carried whole inside a single argv slot that
+node:child_process.spawn hands to execve()/CreateProcess() directly.
+
+==== (e) `login` against a CLOSED port -- clean AuthError, exit 2, no stack trace ====
+Command: printf 'irrelevant-password\n' | node dist/index.js login --endpoint http://127.0.0.1:1 --email x@example.com
+(port 1 is a privileged, unlistened port on 127.0.0.1 -- connection is refused/unreachable)
+exit code: 2  (expected 2 — PASS)
+--- full stdout+stderr ---
+로그인 실패: could not reach http://127.0.0.1:1/v1/auth/login: fetch failed
+
+--- stack-trace check (grep for "at Object."/"<file>.js:N:N"/"file://"/node_modules/internal/) ---
+grep found: 0 matches
+RESULT: no stack trace leaked — PASS. The AuthError branch in src/index.ts
+(`if (error instanceof AuthError) { console.error(...); process.exit(2) }`)
+catches the network failure and prints a single clean Korean message; only an
+error NOT an instanceof AuthError would `throw error` and leak a raw stack.
+
+==== (f) legacy regression: `scan-files examples/` vs `scan files examples/` ====
+Command 1: node dist/index.js scan-files examples/
+Command 2: node dist/index.js scan files  examples/
+exit code (scan-files examples/): 1
+exit code (scan files examples/):  1
+diff(stdout1, stdout2) exit status: 0 (no differences, 92 lines each)
+RESULT: unchanged/byte-identical vs pre-declarative-dispatch behavior — PASS
+
+--- first 5 lines (scan-files) ---
+# AgentGuard 위험 리포트
+
+**판정:** BLOCK
+**위험 점수:** 126
+**탐지 건수:** 41
+
+--- first 5 lines (scan files) ---
+# AgentGuard 위험 리포트
+
+**판정:** BLOCK
+**위험 점수:** 126
+**탐지 건수:** 41
+
+==== SUMMARY ====
+(a) PASS  byte-identical scan-diff/scan diff (stdout + exit 1 match)
+(b) PASS  frobnicate -> usage, exit 2
+(c) PASS  scan everything -> usage, exit 2
+(d1) PASS open (no arg) -> usage, exit 2
+(d2) PASS open with hostile ";rm -rf /" path -> inert, args-array only, exit 0
+(d3) PASS editorArgs proof against shipped dist/ build — single argv element, no shell:true
+(e) PASS  login vs closed port -> clean AuthError message, exit 2, zero stack-trace lines
+(f) PASS  scan-files/scan files examples/ byte-identical (92 lines, exit 1)

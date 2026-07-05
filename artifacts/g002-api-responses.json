@@ -1,0 +1,149 @@
+[
+  {
+    "name": "register org",
+    "method": "POST",
+    "path": "/v1/auth/register",
+    "status": 200,
+    "note": "expect 200; got 200"
+  },
+  {
+    "name": "login (admin)",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 200,
+    "note": "expect 200; got 200"
+  },
+  {
+    "name": "login cookie attrs",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 200,
+    "note": "session HttpOnly=true SameSite=Lax=true Path=/=true; csrf NOT-HttpOnly=true"
+  },
+  {
+    "name": "mutation without csrf header",
+    "method": "POST",
+    "path": "/v1/orgs/invites",
+    "status": 403,
+    "note": "expect 403; got 403"
+  },
+  {
+    "name": "mutation with forged csrf",
+    "method": "POST",
+    "path": "/v1/orgs/invites",
+    "status": 403,
+    "note": "expect 403; got 403"
+  },
+  {
+    "name": "mutation with correct csrf",
+    "method": "POST",
+    "path": "/v1/orgs/invites",
+    "status": 200,
+    "note": "expect 2xx; got 200, code=94e9f7d6f1ab101767bce667c32f075abc69d0dc03111417d53656d60bfa9894"
+  },
+  {
+    "name": "login failure attempt 1",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 401,
+    "note": "expect 401"
+  },
+  {
+    "name": "login failure attempt 2",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 401,
+    "note": "expect 401"
+  },
+  {
+    "name": "login failure attempt 3",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 401,
+    "note": "expect 401"
+  },
+  {
+    "name": "login failure attempt 4",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 401,
+    "note": "expect 401"
+  },
+  {
+    "name": "login failure attempt 5",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 401,
+    "note": "expect 429 (5 failures already recorded)"
+  },
+  {
+    "name": "login failure attempt 6",
+    "method": "POST",
+    "path": "/v1/auth/login",
+    "status": 429,
+    "note": "expect 429 (5 failures already recorded)"
+  },
+  {
+    "name": "device start",
+    "method": "POST",
+    "path": "/v1/auth/device/start",
+    "status": 200,
+    "note": "expect 200; deviceCode/userCode issued"
+  },
+  {
+    "name": "device poll (pending)",
+    "method": "POST",
+    "path": "/v1/auth/device/poll",
+    "status": 428,
+    "note": "expect 428; got 428"
+  },
+  {
+    "name": "device approve",
+    "method": "POST",
+    "path": "/v1/auth/device/approve",
+    "status": 204,
+    "note": "expect 204; got 204"
+  },
+  {
+    "name": "device poll (redeemed)",
+    "method": "POST",
+    "path": "/v1/auth/device/poll",
+    "status": 200,
+    "note": "expect 200; sessionToken minted=true"
+  },
+  {
+    "name": "device poll (replay)",
+    "method": "POST",
+    "path": "/v1/auth/device/poll",
+    "status": 410,
+    "note": "expect 410 (single-use); got 410"
+  },
+  {
+    "name": "session token as bearer on /v1/reports",
+    "method": "POST",
+    "path": "/v1/reports",
+    "status": 401,
+    "note": "expect 401 (device-HMAC plane only, session bearer never accepted); got 401"
+  },
+  {
+    "name": "viewer key on /v1/orgs/members",
+    "method": "GET",
+    "path": "/v1/orgs/members",
+    "status": 401,
+    "note": "expect 401/403 (viewer plane carries no role); got 401"
+  },
+  {
+    "name": "viewer key on /v1/dashboard/summary (control)",
+    "method": "GET",
+    "path": "/v1/dashboard/summary",
+    "status": 200,
+    "note": "expect 200 (viewer plane IS authorized here); got 200"
+  },
+  {
+    "name": "GET /v1/meta",
+    "method": "GET",
+    "path": "/v1/meta",
+    "status": 200,
+    "note": "schemaVersions=[1,2] version=0.1.0"
+  }
+]

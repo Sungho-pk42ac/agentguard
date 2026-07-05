@@ -1,0 +1,31 @@
+=== loaded overview hero within timeout: [33mtrue[39m ===
+=== RAW lastFrame() WITH ANSI ESCAPES (PTY-style capture) ===
+"\u001b[1m\u001b[96m◆ AGENTGUARD\u001b[39m\u001b[2m  ·  로컬 AI 에이전트 생애주기 보안 스캐너\u001b[22m\n\u001b[1m\u001b[36magentguard\u001b[22m\u001b[7m ●Overview\u001b[27m\u001b[90m ■Credentials│ ▲Posture│ ◆Agents│ ⊙Baseline│ ✓Offboard│ ⬡Fleet\u001b[39m \u001b[41m\u001b[37mBLOCK · 2 \u001b[39m\u001b[49m\n\u001b[1m\u001b[36m \u001b[39m\u001b[22m         \u001b[7m\u001b[36m \u001b[39m\u001b[27m                                          \u001b[90m \u001b[39m          \u001b[90m \u001b[39m                  \u001b[41m\u001b[37mcritical\u001b[39m\u001b[49m\n\n\u001b[1mFindings by surface\u001b[22m\n\u001b[31mshell-rc     ████████████████████████████████████████ 1\u001b[39m\n\u001b[31mproject-file ████████████████████████████████████████ 1\u001b[39m\n\u001b[33magent-config ████████████████████████████████████████ 1\u001b[39m\n\u001b[33mnpm-global   ████████████████████████████████████████ 1\u001b[39m\n\u001b[33mai-tool-dir  ████████████████████████████████████████ 1\u001b[39m\n\n\u001b[2m[r/1/2/3] scan   [tab/↑↓/jk/enter] explore  [f] filter  [g] sort  [/] search  [i] hide  [w] watch   \u001b[22m\n\u001b[2m[e] open · [o] offboard  [?] help  [q] quit\u001b[22m\n\u001b[36m5 findings · 2 critical · last scan 1783232279s ago\u001b[39m"
+=== RAW frame rendered directly (terminal control codes intact) ===
+[1m[96m◆ AGENTGUARD[39m[2m  ·  로컬 AI 에이전트 생애주기 보안 스캐너[22m
+[1m[36magentguard[22m[7m ●Overview[27m[90m ■Credentials│ ▲Posture│ ◆Agents│ ⊙Baseline│ ✓Offboard│ ⬡Fleet[39m [41m[37mBLOCK · 2 [39m[49m
+[1m[36m [39m[22m         [7m[36m [39m[27m                                          [90m [39m          [90m [39m                  [41m[37mcritical[39m[49m
+
+[1mFindings by surface[22m
+[31mshell-rc     ████████████████████████████████████████ 1[39m
+[31mproject-file ████████████████████████████████████████ 1[39m
+[33magent-config ████████████████████████████████████████ 1[39m
+[33mnpm-global   ████████████████████████████████████████ 1[39m
+[33mai-tool-dir  ████████████████████████████████████████ 1[39m
+
+[2m[r/1/2/3] scan   [tab/↑↓/jk/enter] explore  [f] filter  [g] sort  [/] search  [i] hide  [w] watch   [22m
+[2m[e] open · [o] offboard  [?] help  [q] quit[22m
+[36m5 findings · 2 critical · last scan 1783232279s ago[39m
+=== tab presence check ===
+Overview : [33mtrue[39m
+Credentials : [33mtrue[39m
+Posture : [33mtrue[39m
+Agents : [33mtrue[39m
+Baseline : [33mtrue[39m
+Offboard : [33mtrue[39m
+Fleet : [33mtrue[39m
+=== 7-tab count === [33m7[39m
+=== footer/workflow markers ===
+[tab/ marker present: [33mtrue[39m
+findings marker present: [33mtrue[39m
+BLOCK verdict present: [33mtrue[39m

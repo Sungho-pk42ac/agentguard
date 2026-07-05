@@ -4,18 +4,28 @@ import type {
   AssetRecord,
   AssetKind,
   AuthKind,
+  CveCacheRecord,
+  CveSeverity,
   DeviceAuthRecord,
   DeviceAuthStatus,
   FindingFilter,
   FindingRecord,
   IngestEventRecord,
   InviteRecord,
+  McpCatalogEntry,
+  OffboardingAuditEntry,
+  OffboardingStatus,
+  OffboardingTask,
   OrgRecord,
+  PolicyExceptionRecord,
+  PolicyExceptionStatus,
+  PolicyRecord,
   Role,
   SessionKind,
   SessionRecord,
   UserRecord,
 } from '../model.js'
+import { isLegalOffboardingTransition } from '../model.js'
 import type { ReportFinding, Severity } from '../contract.js'
 import type { StoragePort, UpsertFindingResult } from './port.js'
 
@@ -49,6 +59,9 @@ interface FindingRow {
   first_seen: number
   last_seen: number
   status: string
+  cve_ids: string | null
+  cve_severity: string | null
+  advisory: number
 }
 interface UserRow {
   id: string
@@ -81,6 +94,45 @@ interface DeviceAuthRow {
   created_at: number
   expires_at: number
 }
+interface PolicyRow {
+  org_id: string
+  rules_version: number
+  rules: string
+  exceptions_version: number
+}
+
+interface PolicyExceptionRow {
+  id: string
+  org_id: string
+  rule_id: string
+  reason: string
+  status: string
+  created_at: number
+  resolved_at: number | null
+}
+interface OffboardingRow {
+  id: string
+  org_id: string
+  employee_id: string
+  employee_email: string
+  employee_name: string
+  asset_ids: string
+  unmatched: number
+  status: string
+  effective_at: string
+  created_at: number
+  updated_at: number
+  audit: string
+}
+interface McpCatalogRow {
+  org_id: string
+  server_name: string
+  approved: number
+  risk_tags: string
+  note: string | null
+  updated_by: string
+  updated_at: number
+}
 
 export class SqliteStorage implements StoragePort {
   private readonly db: DatabaseSync
@@ -98,7 +150,7 @@ export class SqliteStorage implements StoragePort {
         org_id TEXT NOT NULL, asset_id TEXT NOT NULL, rule_id TEXT NOT NULL, surface TEXT NOT NULL,
         severity TEXT NOT NULL, location TEXT NOT NULL, evidence_redacted TEXT NOT NULL,
         fingerprint TEXT NOT NULL, first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'open',
+        status TEXT NOT NULL DEFAULT 'open', cve_ids TEXT, cve_severity TEXT, advisory INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY (org_id, asset_id, fingerprint)
       );
       CREATE TABLE IF NOT EXISTS alerts (
@@ -139,6 +191,33 @@ export class SqliteStorage implements StoragePort {
         device_code TEXT PRIMARY KEY, user_code TEXT NOT NULL UNIQUE, status TEXT NOT NULL,
         user_id TEXT, org_id TEXT, role TEXT, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS offboarding_tasks (
+        id TEXT PRIMARY KEY, org_id TEXT NOT NULL, employee_id TEXT NOT NULL, employee_email TEXT NOT NULL,
+        employee_name TEXT NOT NULL, asset_ids TEXT NOT NULL, unmatched INTEGER NOT NULL, status TEXT NOT NULL,
+        effective_at TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, audit TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_offboarding_key ON offboarding_tasks (org_id, employee_id, effective_at);
+
+      CREATE TABLE IF NOT EXISTS policies (
+        org_id TEXT PRIMARY KEY, rules_version INTEGER NOT NULL, rules TEXT NOT NULL, exceptions_version INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS policy_exceptions (
+        id TEXT PRIMARY KEY, org_id TEXT NOT NULL, rule_id TEXT NOT NULL, reason TEXT NOT NULL,
+        status TEXT NOT NULL, created_at INTEGER NOT NULL, resolved_at INTEGER
+      );
+      CREATE TABLE IF NOT EXISTS cve_cache (
+        ecosystem TEXT NOT NULL, package TEXT NOT NULL, version TEXT NOT NULL,
+        vuln_ids TEXT NOT NULL, details TEXT NOT NULL, fetched_at INTEGER NOT NULL, status TEXT NOT NULL,
+        PRIMARY KEY (ecosystem, package, version)
+      );
+      CREATE TABLE IF NOT EXISTS mcp_catalog (
+        org_id TEXT NOT NULL, server_name TEXT NOT NULL, approved INTEGER NOT NULL, risk_tags TEXT NOT NULL,
+        note TEXT, updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL,
+        PRIMARY KEY (org_id, server_name)
+      );
+      CREATE TABLE IF NOT EXISTS org_settings (
+        org_id TEXT PRIMARY KEY, mcp_strict_mode INTEGER NOT NULL DEFAULT 0
+      );
     `)
   }
 
@@ -173,19 +252,42 @@ export class SqliteStorage implements StoragePort {
     if (existing) {
       this.db
         .prepare(
-          `UPDATE findings SET last_seen = ?, severity = ?, location = ?, evidence_redacted = ?, surface = ?, rule_id = ?
+          `UPDATE findings SET last_seen = ?, severity = ?, location = ?, evidence_redacted = ?, surface = ?, rule_id = ?, advisory = ?
            WHERE org_id = ? AND asset_id = ? AND fingerprint = ?`,
         )
-        .run(at, finding.severity, finding.location, finding.evidenceRedacted, finding.surface, finding.ruleId, orgId, assetId, finding.fingerprint)
+        .run(
+          at,
+          finding.severity,
+          finding.location,
+          finding.evidenceRedacted,
+          finding.surface,
+          finding.ruleId,
+          finding.advisory ? 1 : 0,
+          orgId,
+          assetId,
+          finding.fingerprint,
+        )
       return { isNew: false }
     }
     this.db
       .prepare(
         `INSERT INTO findings
-         (org_id, asset_id, rule_id, surface, severity, location, evidence_redacted, fingerprint, first_seen, last_seen, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')`,
+         (org_id, asset_id, rule_id, surface, severity, location, evidence_redacted, fingerprint, first_seen, last_seen, status, cve_ids, cve_severity, advisory)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', NULL, NULL, ?)`,
       )
-      .run(orgId, assetId, finding.ruleId, finding.surface, finding.severity, finding.location, finding.evidenceRedacted, finding.fingerprint, at, at)
+      .run(
+        orgId,
+        assetId,
+        finding.ruleId,
+        finding.surface,
+        finding.severity,
+        finding.location,
+        finding.evidenceRedacted,
+        finding.fingerprint,
+        at,
+        at,
+        finding.advisory ? 1 : 0,
+      )
     return { isNew: true }
   }
 
@@ -379,9 +481,169 @@ export class SqliteStorage implements StoragePort {
     // Memory parity: the returned record reflects the post-update state.
     return { ...this.toDeviceAuth(row), status: 'consumed' }
   }
+  createOffboardingTask(task: OffboardingTask): { task: OffboardingTask; created: boolean } {
+    const info = this.db
+      .prepare(
+        `INSERT OR IGNORE INTO offboarding_tasks
+         (id, org_id, employee_id, employee_email, employee_name, asset_ids, unmatched, status, effective_at, created_at, updated_at, audit)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        task.id,
+        task.orgId,
+        task.employee.id,
+        task.employee.email,
+        task.employee.name,
+        JSON.stringify(task.assetIds),
+        task.unmatched ? 1 : 0,
+        task.status,
+        task.effectiveAt,
+        task.createdAt,
+        task.updatedAt,
+        JSON.stringify(task.audit),
+      )
+    if (info.changes === 0) {
+      // idempotency key collision: the unique (org_id, employee_id, effective_at)
+      // index rejected the insert — return the EXISTING task, never a duplicate.
+      const row = this.db
+        .prepare(`SELECT * FROM offboarding_tasks WHERE org_id = ? AND employee_id = ? AND effective_at = ?`)
+        .get(task.orgId, task.employee.id, task.effectiveAt) as unknown as OffboardingRow
+      return { task: this.toOffboarding(row), created: false }
+    }
+    return {
+      task: { ...task, employee: { ...task.employee }, assetIds: [...task.assetIds], audit: task.audit.map((a) => ({ ...a })) },
+      created: true,
+    }
+  }
+  getOffboardingTask(orgId: string, id: string): OffboardingTask | undefined {
+    const row = this.db.prepare(`SELECT * FROM offboarding_tasks WHERE org_id = ? AND id = ?`).get(orgId, id) as unknown as OffboardingRow | undefined
+    return row ? this.toOffboarding(row) : undefined
+  }
+  listOffboardingTasks(orgId: string): OffboardingTask[] {
+    const rows = this.db.prepare(`SELECT * FROM offboarding_tasks WHERE org_id = ? ORDER BY created_at`).all(orgId) as unknown as OffboardingRow[]
+    return rows.map((r) => this.toOffboarding(r))
+  }
+  transitionOffboardingTask(
+    orgId: string,
+    id: string,
+    to: OffboardingStatus,
+    actor: string,
+    at: number,
+  ): { ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' } {
+    const row = this.db.prepare(`SELECT * FROM offboarding_tasks WHERE org_id = ? AND id = ?`).get(orgId, id) as unknown as OffboardingRow | undefined
+    if (!row) return { ok: false, reason: 'not_found' }
+    const current = this.toOffboarding(row)
+    if (!isLegalOffboardingTransition(current.status, to)) return { ok: false, reason: 'invalid_transition' }
+    const audit = [...current.audit, { at, from: current.status, to, actor }]
+    this.db
+      .prepare(`UPDATE offboarding_tasks SET status = ?, updated_at = ?, audit = ? WHERE org_id = ? AND id = ?`)
+      .run(to, at, JSON.stringify(audit), orgId, id)
+    return { ok: true, task: { ...current, status: to, updatedAt: at, audit } }
+  }
+  getPolicy(orgId: string): PolicyRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM policies WHERE org_id = ?`).get(orgId) as unknown as PolicyRow | undefined
+    return row ? this.toPolicy(row) : undefined
+  }
+  putPolicyRules(orgId: string, rules: string): PolicyRecord {
+    const existing = this.db.prepare(`SELECT rules_version, exceptions_version FROM policies WHERE org_id = ?`).get(orgId) as unknown as
+      | { rules_version: number; exceptions_version: number }
+      | undefined
+    const rulesVersion = (existing?.rules_version ?? 0) + 1
+    const exceptionsVersion = existing?.exceptions_version ?? 0
+    this.db
+      .prepare(`INSERT OR REPLACE INTO policies (org_id, rules_version, rules, exceptions_version) VALUES (?, ?, ?, ?)`)
+      .run(orgId, rulesVersion, rules, exceptionsVersion)
+    return { orgId, rulesVersion, rules, exceptionsVersion }
+  }
+  listExceptions(orgId: string): PolicyExceptionRecord[] {
+    const rows = this.db.prepare(`SELECT * FROM policy_exceptions WHERE org_id = ? ORDER BY created_at`).all(orgId) as unknown as PolicyExceptionRow[]
+    return rows.map((r) => this.toException(r))
+  }
+  createException(record: PolicyExceptionRecord): void {
+    this.db
+      .prepare(`INSERT INTO policy_exceptions (id, org_id, rule_id, reason, status, created_at, resolved_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .run(record.id, record.orgId, record.ruleId, record.reason, record.status, record.createdAt, record.resolvedAt ?? null)
+  }
+  resolveException(orgId: string, id: string, status: Exclude<PolicyExceptionStatus, 'pending'>, now: number): PolicyExceptionRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM policy_exceptions WHERE id = ? AND org_id = ?`).get(id, orgId) as unknown as PolicyExceptionRow | undefined
+    if (!row || row.status !== 'pending') return undefined
+    this.db.prepare(`UPDATE policy_exceptions SET status = ?, resolved_at = ? WHERE id = ?`).run(status, now, id)
+    const existing = this.db.prepare(`SELECT rules_version, rules, exceptions_version FROM policies WHERE org_id = ?`).get(orgId) as unknown as
+      | { rules_version: number; rules: string; exceptions_version: number }
+      | undefined
+    this.db
+      .prepare(`INSERT OR REPLACE INTO policies (org_id, rules_version, rules, exceptions_version) VALUES (?, ?, ?, ?)`)
+      .run(orgId, existing?.rules_version ?? 0, existing?.rules ?? '', (existing?.exceptions_version ?? 0) + 1)
+    return { ...this.toException(row), status, resolvedAt: now }
+  }
 
+  getCveCache(ecosystem: string, pkg: string, version: string): CveCacheRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM cve_cache WHERE ecosystem = ? AND package = ? AND version = ?`).get(ecosystem, pkg, version) as unknown as
+      | { ecosystem: string; package: string; version: string; vuln_ids: string; details: string; fetched_at: number; status: string }
+      | undefined
+    if (!row) return undefined
+    return {
+      vulnIds: JSON.parse(row.vuln_ids) as string[],
+      details: JSON.parse(row.details) as CveCacheRecord['details'],
+      fetchedAt: row.fetched_at,
+      status: row.status as CveCacheRecord['status'],
+    }
+  }
+  putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): void {
+    this.db
+      .prepare(
+        `INSERT OR REPLACE INTO cve_cache (ecosystem, package, version, vuln_ids, details, fetched_at, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(ecosystem, pkg, version, JSON.stringify(record.vulnIds), JSON.stringify(record.details), record.fetchedAt, record.status)
+  }
+  updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): void {
+    this.db
+      .prepare(`UPDATE findings SET cve_ids = ?, cve_severity = ? WHERE org_id = ? AND asset_id = ? AND fingerprint = ?`)
+      .run(JSON.stringify(cveIds), cveSeverity, orgId, assetId, fingerprint)
+  }
   close(): void {
     this.db.close()
+  }
+
+  getMcpCatalog(orgId: string): McpCatalogEntry[] {
+    const rows = this.db.prepare(`SELECT * FROM mcp_catalog WHERE org_id = ? ORDER BY server_name`).all(orgId) as unknown as McpCatalogRow[]
+    return rows.map((r) => this.toMcpCatalogEntry(r))
+  }
+  putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): void {
+    this.db.prepare(`DELETE FROM mcp_catalog WHERE org_id = ?`).run(orgId)
+    for (const e of entries) {
+      this.db
+        .prepare(
+          `INSERT INTO mcp_catalog (org_id, server_name, approved, risk_tags, note, updated_by, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(orgId, e.serverName, e.approved ? 1 : 0, JSON.stringify(e.riskTags), e.note ?? null, e.updatedBy, e.updatedAt)
+    }
+  }
+  getMcpStrictMode(orgId: string): boolean {
+    const row = this.db.prepare(`SELECT mcp_strict_mode FROM org_settings WHERE org_id = ?`).get(orgId) as unknown as
+      | { mcp_strict_mode: number }
+      | undefined
+    return row ? row.mcp_strict_mode === 1 : false
+  }
+  setMcpStrictMode(orgId: string, value: boolean): void {
+    this.db
+      .prepare(
+        `INSERT INTO org_settings (org_id, mcp_strict_mode) VALUES (?, ?)
+         ON CONFLICT(org_id) DO UPDATE SET mcp_strict_mode = excluded.mcp_strict_mode`,
+      )
+      .run(orgId, value ? 1 : 0)
+  }
+  private toMcpCatalogEntry(r: McpCatalogRow): McpCatalogEntry {
+    return {
+      orgId: r.org_id,
+      serverName: r.server_name,
+      approved: r.approved === 1,
+      riskTags: JSON.parse(r.risk_tags) as string[],
+      note: r.note ?? undefined,
+      updatedBy: r.updated_by,
+      updatedAt: r.updated_at,
+    }
   }
 
   private toAsset(r: AssetRow): AssetRecord {
@@ -412,6 +674,9 @@ export class SqliteStorage implements StoragePort {
       firstSeen: r.first_seen,
       lastSeen: r.last_seen,
       status: r.status as FindingRecord['status'],
+      cveIds: r.cve_ids ? (JSON.parse(r.cve_ids) as string[]) : undefined,
+      cveSeverity: (r.cve_severity as CveSeverity | null) ?? undefined,
+      advisory: r.advisory === 1,
     }
   }
 
@@ -443,6 +708,34 @@ export class SqliteStorage implements StoragePort {
       role: (r.role as Role | null) ?? undefined,
       createdAt: r.created_at,
       expiresAt: r.expires_at,
+    }
+  }
+  private toOffboarding(r: OffboardingRow): OffboardingTask {
+    return {
+      id: r.id,
+      orgId: r.org_id,
+      employee: { id: r.employee_id, email: r.employee_email, name: r.employee_name },
+      assetIds: JSON.parse(r.asset_ids) as string[],
+      unmatched: r.unmatched === 1,
+      status: r.status as OffboardingStatus,
+      effectiveAt: r.effective_at,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      audit: JSON.parse(r.audit) as OffboardingAuditEntry[],
+    }
+  }
+  private toPolicy(r: PolicyRow): PolicyRecord {
+    return { orgId: r.org_id, rulesVersion: r.rules_version, rules: r.rules, exceptionsVersion: r.exceptions_version }
+  }
+  private toException(r: PolicyExceptionRow): PolicyExceptionRecord {
+    return {
+      id: r.id,
+      orgId: r.org_id,
+      ruleId: r.rule_id,
+      reason: r.reason,
+      status: r.status as PolicyExceptionStatus,
+      createdAt: r.created_at,
+      resolvedAt: r.resolved_at ?? undefined,
     }
   }
 }

@@ -64,8 +64,10 @@ type SarifLog = {
   ]
 }
 
+// [R3/NEW-CR-1] Advisory findings (REVIEW tier) never gate the risk score /
+// vuln-count-driven verdict — they still print in the report body.
 export function riskScore(findings: Finding[]): number {
-  return findings.reduce((sum, f) => sum + severityScore(f.severity), 0)
+  return findings.filter((f) => !f.advisory).reduce((sum, f) => sum + severityScore(f.severity), 0)
 }
 
 export type MarkdownLanguage = 'ko' | 'en'

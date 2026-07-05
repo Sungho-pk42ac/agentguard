@@ -27,6 +27,10 @@ export const findingSchema = z.strictObject({
   evidenceRedacted: z.string().max(512),
   // 128-bit hex fingerprint (see buildFingerprint). Always present.
   fingerprint: z.string().regex(/^[0-9a-f]{32}$/),
+  // [R3/NEW-CR-1] Optional advisory marker: REVIEW-tier findings (e.g.
+  // mcp-unapproved) that must never gate exit codes, vuln counts, or
+  // severity aggregates. Absent is treated as false (v1 payloads never set it).
+  advisory: z.boolean().optional(),
 })
 export type ReportFinding = z.infer<typeof findingSchema>
 
@@ -44,7 +48,10 @@ export const baselineSummarySchema = z.strictObject({
 })
 
 export const reportPayloadSchema = z.strictObject({
-  schemaVersion: z.literal(SCHEMA_VERSION),
+  // [R3/NEW-CR-1] ONE schema validates both v1 (no advisory findings) and v2
+  // (may carry advisory findings) payloads. No new literal is ever added here;
+  // servers negotiate via GET /v1/meta -> {schemaVersions}.
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   orgId: z.string().min(1).max(128),
   assetId: z.string().min(1).max(128),
   actor: actorSchema,

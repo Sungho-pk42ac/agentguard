@@ -1,0 +1,25 @@
+Server: http://127.0.0.1:55601 (MemoryStorage, fresh per-run)
+register: status=200 orgId=org_5b84a1c3c4b6d6a40860ae6b role=admin
+login: status=200
+  Set-Cookie session: agentguard_session=77cdd18206a0fdbf63d78a06b252b507f0f26ee78b62e96f4178d24f71991c62; Path=/; SameSite=Lax; Max-Age=2592000; HttpOnly
+  Set-Cookie csrf:    agentguard_csrf=4bad1b812ac27eb88817365d7898cebf7c726c085b3d80c01570845b7c541539; Path=/; SameSite=Lax; Max-Age=2592000
+  session cookie HttpOnly: true
+  session cookie SameSite: true
+  session cookie Path=/:   true
+  csrf cookie NOT HttpOnly: true
+mutation w/o csrf: status=403 (expect 403)
+mutation w/ forged csrf: status=403 (expect 403)
+mutation w/ correct csrf: status=200 code=94e9f7d6f1ab101767bce667c32f075abc69d0dc03111417d53656d60bfa9894 (expect 200)
+rate-limit probe: 6 rapid failed logins against a throwaway account
+  attempt 1: status=401
+  attempt 2: status=401
+  attempt 3: status=401
+  attempt 4: status=401
+  attempt 5: status=401
+  attempt 6: status=429
+rate limit first triggered at attempt: 6
+device flow: start=200 pendingPoll=428 approve=204 poll=200 rePoll(replay)=410
+session token as bearer on /v1/reports: status=401 (expect 401)
+viewer key on /v1/orgs/members: status=401 (expect 401/403)
+viewer key on /v1/dashboard/summary (control, should succeed): status=200
+/v1/meta: status=200 schemaVersions=[1,2] version=0.1.0

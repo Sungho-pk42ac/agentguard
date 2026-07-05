@@ -599,7 +599,8 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
       throw error
     }
   }
-  process.exit(findings.some((f) => f.severity === 'critical') ? 1 : 0)
+  // [R3/NEW-CR-1] Advisory findings (e.g. mcp-unapproved) never gate the exit code.
+  process.exit(findings.some((f) => f.severity === 'critical' && !f.advisory) ? 1 : 0)
 }
 
 function readPackageVersion(): string {

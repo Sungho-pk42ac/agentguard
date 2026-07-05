@@ -8,8 +8,10 @@ export function severityScore(severity: Severity): number {
   return { low: 1, medium: 2, high: 3, critical: 4 }[severity]
 }
 
-export function riskScore(findings: readonly { severity: Severity }[]): number {
-  return findings.reduce((sum, f) => sum + severityScore(f.severity), 0)
+// [R3/NEW-CR-1] Advisory findings (REVIEW tier, e.g. mcp-unapproved) never
+// gate the risk score.
+export function riskScore(findings: readonly { severity: Severity; advisory?: boolean }[]): number {
+  return findings.filter((f) => !f.advisory).reduce((sum, f) => sum + severityScore(f.severity), 0)
 }
 
 export interface AssetSummary {
@@ -27,11 +29,14 @@ export interface FleetSummary {
   readonly byAsset: AssetSummary[]
 }
 
+// [R3/NEW-CR-1] Advisory findings are skipped entirely: they never contribute
+// to totalFindings, bySurface/bySeverity buckets, or riskScore.
 export function summarize(findings: readonly FindingRecord[], assets: readonly AssetRecord[]): FleetSummary {
+  const scored = findings.filter((f) => !f.advisory)
   const bySurface: Record<string, number> = {}
   const bySeverity: Record<Severity, number> = { low: 0, medium: 0, high: 0, critical: 0 }
   const perAsset = new Map<string, FindingRecord[]>()
-  for (const f of findings) {
+  for (const f of scored) {
     bySurface[f.surface] = (bySurface[f.surface] ?? 0) + 1
     bySeverity[f.severity] += 1
     const list = perAsset.get(f.assetId) ?? []
@@ -43,8 +48,8 @@ export function summarize(findings: readonly FindingRecord[], assets: readonly A
     return { assetId: a.assetId, label: a.label, count: list.length, riskScore: riskScore(list) }
   })
   return {
-    totalFindings: findings.length,
-    riskScore: riskScore(findings),
+    totalFindings: scored.length,
+    riskScore: riskScore(scored),
     bySurface,
     bySeverity,
     byAsset,

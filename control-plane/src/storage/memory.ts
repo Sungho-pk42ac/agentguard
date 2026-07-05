@@ -1,4 +1,6 @@
 import type {
+  CveCacheRecord,
+  CveSeverity,
   AlertRecord,
   AssetRecord,
   DeviceAuthRecord,
@@ -6,12 +8,18 @@ import type {
   FindingRecord,
   IngestEventRecord,
   InviteRecord,
+  McpCatalogEntry,
+  OffboardingStatus,
+  OffboardingTask,
   OrgRecord,
+  PolicyExceptionRecord,
+  PolicyRecord,
   Role,
   SessionRecord,
   UserRecord,
 } from '../model.js'
 import type { ReportFinding } from '../contract.js'
+import { isLegalOffboardingTransition } from '../model.js'
 import type { StoragePort, UpsertFindingResult } from './port.js'
 
 // In-memory storage. The default for tests and ephemeral/dev control planes.
@@ -31,7 +39,14 @@ export class MemoryStorage implements StoragePort {
   private readonly sessions = new Map<string, SessionRecord>()
   private readonly loginFailures = new Map<string, number[]>()
   private readonly deviceAuths = new Map<string, DeviceAuthRecord>()
+  private readonly offboardingTasks = new Map<string, OffboardingTask>()
+  private readonly offboardingTasksByKey = new Map<string, string>()
   private readonly deviceAuthsByUserCode = new Map<string, string>()
+  private readonly policies = new Map<string, PolicyRecord>()
+  private readonly exceptions = new Map<string, PolicyExceptionRecord>()
+  private readonly cveCache = new Map<string, CveCacheRecord>()
+  private readonly mcpCatalog = new Map<string, McpCatalogEntry[]>()
+  private readonly mcpStrictMode = new Map<string, boolean>()
 
   private assetKey(orgId: string, assetId: string): string {
     return `${orgId}\u0000${assetId}`
@@ -68,6 +83,7 @@ export class MemoryStorage implements StoragePort {
       existing.evidenceRedacted = finding.evidenceRedacted
       existing.surface = finding.surface
       existing.ruleId = finding.ruleId
+      existing.advisory = finding.advisory
       return { isNew: false }
     }
     this.findings.set(key, { ...finding, orgId, assetId, firstSeen: at, lastSeen: at, status: 'open' })
@@ -200,8 +216,115 @@ export class MemoryStorage implements StoragePort {
     record.status = 'consumed'
     return { ...record }
   }
+  createOffboardingTask(task: OffboardingTask): { task: OffboardingTask; created: boolean } {
+    const key = this.offboardingKey(task.orgId, task.employee.id, task.effectiveAt)
+    const existingId = this.offboardingTasksByKey.get(key)
+    const existing = existingId ? this.offboardingTasks.get(existingId) : undefined
+    if (existing) return { task: this.cloneOffboarding(existing), created: false }
+    this.offboardingTasks.set(task.id, this.cloneOffboarding(task))
+    this.offboardingTasksByKey.set(key, task.id)
+    return { task: this.cloneOffboarding(task), created: true }
+  }
+  getOffboardingTask(orgId: string, id: string): OffboardingTask | undefined {
+    const t = this.offboardingTasks.get(id)
+    return t && t.orgId === orgId ? this.cloneOffboarding(t) : undefined
+  }
+  listOffboardingTasks(orgId: string): OffboardingTask[] {
+    return [...this.offboardingTasks.values()].filter((t) => t.orgId === orgId).map((t) => this.cloneOffboarding(t))
+  }
+  transitionOffboardingTask(
+    orgId: string,
+    id: string,
+    to: OffboardingStatus,
+    actor: string,
+    at: number,
+  ): { ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' } {
+    const t = this.offboardingTasks.get(id)
+    if (!t || t.orgId !== orgId) return { ok: false, reason: 'not_found' }
+    if (!isLegalOffboardingTransition(t.status, to)) return { ok: false, reason: 'invalid_transition' }
+    t.audit.push({ at, from: t.status, to, actor })
+    t.status = to
+    t.updatedAt = at
+    return { ok: true, task: this.cloneOffboarding(t) }
+  }
+  private offboardingKey(orgId: string, employeeId: string, effectiveAt: string): string {
+    return `${orgId}\u0000${employeeId}\u0000${effectiveAt}`
+  }
+  private cloneOffboarding(t: OffboardingTask): OffboardingTask {
+    return { ...t, employee: { ...t.employee }, assetIds: [...t.assetIds], audit: t.audit.map((a) => ({ ...a })) }
+  }
 
   close(): void {
     // nothing to release
+  }
+  getPolicy(orgId: string): PolicyRecord | undefined {
+    const p = this.policies.get(orgId)
+    return p ? { ...p } : undefined
+  }
+  putPolicyRules(orgId: string, rules: string): PolicyRecord {
+    const existing = this.policies.get(orgId)
+    const record: PolicyRecord = {
+      orgId,
+      rulesVersion: (existing?.rulesVersion ?? 0) + 1,
+      rules,
+      exceptionsVersion: existing?.exceptionsVersion ?? 0,
+    }
+    this.policies.set(orgId, record)
+    return { ...record }
+  }
+  listExceptions(orgId: string): PolicyExceptionRecord[] {
+    return [...this.exceptions.values()].filter((e) => e.orgId === orgId).map((e) => ({ ...e }))
+  }
+  createException(record: PolicyExceptionRecord): void {
+    this.exceptions.set(record.id, { ...record })
+  }
+  resolveException(orgId: string, id: string, status: 'approved' | 'rejected', now: number): PolicyExceptionRecord | undefined {
+    const e = this.exceptions.get(id)
+    if (!e || e.orgId !== orgId || e.status !== 'pending') return undefined
+    e.status = status
+    e.resolvedAt = now
+    const existing = this.policies.get(orgId)
+    this.policies.set(orgId, {
+      orgId,
+      rulesVersion: existing?.rulesVersion ?? 0,
+      rules: existing?.rules ?? '',
+      exceptionsVersion: (existing?.exceptionsVersion ?? 0) + 1,
+    })
+    return { ...e }
+  }
+  private cveCacheKey(ecosystem: string, pkg: string, version: string): string {
+    return `${ecosystem}\u0000${pkg}\u0000${version}`
+  }
+  getCveCache(ecosystem: string, pkg: string, version: string): CveCacheRecord | undefined {
+    const r = this.cveCache.get(this.cveCacheKey(ecosystem, pkg, version))
+    return r ? { ...r, vulnIds: [...r.vulnIds], details: r.details.map((d) => ({ ...d })) } : undefined
+  }
+  putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): void {
+    this.cveCache.set(this.cveCacheKey(ecosystem, pkg, version), {
+      ...record,
+      vulnIds: [...record.vulnIds],
+      details: record.details.map((d) => ({ ...d })),
+    })
+  }
+  updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): void {
+    const f = this.findings.get(this.findingKey(orgId, assetId, fingerprint))
+    if (!f) return
+    f.cveIds = [...cveIds]
+    f.cveSeverity = cveSeverity
+  }
+  getMcpCatalog(orgId: string): McpCatalogEntry[] {
+    return (this.mcpCatalog.get(orgId) ?? []).map((e) => ({ ...e, riskTags: [...e.riskTags] }))
+  }
+  putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): void {
+    this.mcpCatalog.set(
+      orgId,
+      entries.map((e) => ({ ...e, riskTags: [...e.riskTags] })),
+    )
+  }
+  getMcpStrictMode(orgId: string): boolean {
+    return this.mcpStrictMode.get(orgId) ?? false
+  }
+  setMcpStrictMode(orgId: string, value: boolean): void {
+    this.mcpStrictMode.set(orgId, value)
   }
 }

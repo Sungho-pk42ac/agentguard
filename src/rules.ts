@@ -9,6 +9,9 @@ export interface Finding {
   line?: number
   evidence: string
   recommendation: string
+  // [R3/NEW-CR-1] REVIEW-tier marker: excluded from severity-gated exit codes,
+  // vuln counts, and executive/severity aggregates. Absent/false = normal finding.
+  advisory?: boolean
 }
 
 export interface McpPolicy {

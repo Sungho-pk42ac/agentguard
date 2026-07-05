@@ -306,6 +306,27 @@ The control plane stays **opt-in**: without `--push`, every CLI command behaves 
 
 A Next.js console served from the **same origin** as the control plane. Once logged in, it surfaces a fleet dashboard, a Shadow-AI executive report, and policy, offboarding, CVE, and MCP-catalog pages. Self-hosted deployments build it as a static export (`output: 'export'`) — no Next.js server runtime, no session store, no API pass-through — and because it shares an origin with the API, session/CSRF cookies stay first-party (no cross-site cookies, no CORS).
 
+Below are real screenshots captured from the console after login (demo-org data).
+
+**Login — create org / sign in (same-origin session + CSRF cookies)**
+
+<p align="center">
+  <img src="docs/web-login.png" alt="AgentGuard web console login — dark theme, email/password + create org" width="900" />
+</p>
+
+**Fleet dashboard — fleet-wide posture (summary / trend / assets / findings)**
+
+<p align="center">
+  <img src="docs/web-fleet-live.jpg" alt="AgentGuard web console fleet dashboard — TOTAL/CRITICAL/RISK stats, BLOCK verdict, findings-by-surface and by-asset bars" width="900" />
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/web-report-live.jpg" alt="Shadow-AI executive report — print/PDF friendly" /><br/><sub><b>Shadow-AI executive report</b> — executive summary (verdict, severity breakdown, top findings), print/PDF friendly</sub></td>
+    <td width="50%"><img src="docs/web-mcp-live.jpg" alt="MCP catalog management — approval list, risk tags, strict mode" /><br/><sub><b>MCP catalog</b> — deny-by-default approval list, risk tags, strict-mode toggle</sub></td>
+  </tr>
+</table>
+
 ### Dev-workflow integration — pre-commit hook + VS Code extension
 
 - **`agentguard hook install|uninstall`** installs a git pre-commit hook that scans the staged diff and blocks the commit on a critical finding (honors `core.hooksPath`, backs up any existing hook, and uses an agentguard-managed marker for safe reinstall/removal).

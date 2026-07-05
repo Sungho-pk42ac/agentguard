@@ -369,6 +369,27 @@ agentguard hook install|uninstall
 
 컨트롤 플레인과 **같은 origin**에서 서빙되는 Next.js 콘솔입니다. 로그인 후 fleet 대시보드, Shadow-AI 실행 리포트(경영진용 요약), 정책, 오프보딩, CVE, MCP 카탈로그 페이지를 확인·조작할 수 있습니다. 셀프 호스팅 배포는 static export(`output: 'export'`)로 빌드되어 자체 서버 런타임·세션 저장소·API pass-through가 없고, 같은 origin이라 세션/CSRF 쿠키가 항상 first-party입니다(크로스사이트 쿠키·CORS 없음).
 
+아래는 실제 웹 콘솔을 로그인 후 캡처한 화면입니다 (데모 조직 데이터 기준).
+
+**로그인 — 조직 생성 / 로그인 (same-origin 세션 · CSRF 쿠키)**
+
+<p align="center">
+  <img src="docs/web-login.png" alt="AgentGuard 웹 콘솔 로그인 화면 — 다크 테마, 이메일/비밀번호 + 조직 생성" width="900" />
+</p>
+
+**Fleet 대시보드 — 조직 전체 posture (요약/추이/자산/findings)**
+
+<p align="center">
+  <img src="docs/web-fleet-live.jpg" alt="AgentGuard 웹 콘솔 Fleet 대시보드 — TOTAL/CRITICAL/RISK 통계, BLOCK verdict, 서피스별·자산별 findings 바" width="900" />
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/web-report-live.jpg" alt="Shadow-AI 실행 리포트 — 경영진용, 인쇄/PDF" /><br/><sub><b>Shadow-AI 실행 리포트</b> — 경영진 요약(verdict·심각도 분포·상위 findings), 인쇄/PDF 친화</sub></td>
+    <td width="50%"><img src="docs/web-mcp-live.jpg" alt="MCP 카탈로그 관리 — 승인 목록, 리스크 태그, strict 모드" /><br/><sub><b>MCP 카탈로그</b> — deny-by-default 승인 목록, 리스크 태그, strict 모드 토글</sub></td>
+  </tr>
+</table>
+
 ### 개발 워크플로 통합 — pre-commit hook + VS Code extension
 
 - **`agentguard hook install|uninstall`**은 staged diff를 스캔해 critical finding이 있으면 커밋을 막는 git pre-commit hook을 설치합니다(`core.hooksPath` 인식, 기존 hook 백업, agentguard-managed 마커로 안전한 재설치/제거).

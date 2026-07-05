@@ -6,7 +6,7 @@
   "driver": "headless-chromium (browser tool)",
   "target": "http://127.0.0.1:4599 (served static export of web/out)",
   "buildUnderTest": "commit 8849d66..9a595df — next build 10/10 static routes",
-  "steps": [
+  "actions": [
     {
       "action": "open",
       "url": "http://127.0.0.1:4599/login/",

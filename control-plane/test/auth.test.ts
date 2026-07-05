@@ -210,7 +210,7 @@ test('GET /v1/meta advertises supported schema versions and version (public, no 
   })
 })
 
-test('x-agentguard-client: cli returns sessionToken in the login body (CLI contract)', async () => {
+test('x-agentguard-client: cli returns sessionToken in the login body and mints a kind=cli session (CLI contract)', async () => {
   const deps = baseDeps()
   await withServer(deps, async (base) => {
     await post(base, '/v1/auth/register', { orgName: 'Acme', email: 'cli@acme.test', password: 'clipassword' })
@@ -220,6 +220,45 @@ test('x-agentguard-client: cli returns sessionToken in the login body (CLI contr
 
     assert.equal(typeof login.json.orgId, 'string')
     assert.equal(login.json.role, 'admin')
+
+    // The header selects the long-lived CLI session kind — this is the
+    // branch the shipped auth-client actually exercises.
+    const session = deps.storage.getSession(login.json.sessionToken as string)
+    assert.equal(session?.kind, 'cli')
+    const days = Math.round((session!.expiresAt - session!.createdAt) / (24 * 60 * 60 * 1000))
+    assert.equal(days, 90, 'CLI sessions live 90 days, not the 30-day cookie default')
+  })
+})
+
+test('HARDENING: a malformed Cookie header (bad percent-encoding) must not crash the server', async () => {
+  const deps = baseDeps()
+  await withServer(deps, async (base) => {
+    // decodeURIComponent('%') throws URIError; before the parseCookies guard
+    // this single unauthenticated request killed the whole process via an
+    // unhandled route() rejection.
+    const malformed = await fetch(`${base}/v1/meta`, { headers: { cookie: 'a=%; agentguard_session=%zz' } })
+    assert.equal(malformed.status, 200, 'request with a malformed cookie is still served')
+
+    // The server is still alive and answering afterwards.
+    const followUp = await get(base, '/v1/meta')
+    assert.equal(followUp.status, 200)
+    assert.deepEqual(followUp.json.schemaVersions, [1, 2])
+
+    // A malformed csrf cookie on a cookie-authed mutation degrades to 403
+    // (csrf mismatch), never a crash.
+    const reg = await post(base, '/v1/auth/register', { orgName: 'Acme', email: 'hard@acme.test', password: 'hardpass123' })
+    const invite = await fetch(`${base}/v1/orgs/invites`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: `agentguard_session=${reg.json.sessionToken}; agentguard_csrf=%`,
+        'x-agentguard-csrf': '%',
+      },
+      body: JSON.stringify({ role: 'member' }),
+    })
+    assert.notEqual(invite.status, 500)
+    const alive = await get(base, '/v1/meta')
+    assert.equal(alive.status, 200, 'server survives malformed csrf cookie on a mutation')
   })
 })
 

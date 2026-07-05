@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import { timingSafeEqual } from 'node:crypto'
 import { handleEnroll, handleReport, type EnrollDeps, type IngestDeps } from './ingest.js'
 import {
   handleAssets,
@@ -76,6 +77,9 @@ function bearerToken(headers: Record<string, string>): string | undefined {
 }
 
 // Tiny manual cookie parser (no dependency): "a=1; b=2" -> {a:'1', b:'2'}.
+// decodeURIComponent throws URIError on malformed percent-encoding (e.g.
+// "a=%"); a hostile Cookie header must never crash the server, so a value
+// that fails to decode is kept verbatim instead.
 function parseCookies(header: string | undefined): Record<string, string> {
   const out: Record<string, string> = {}
   if (!header) return out
@@ -84,7 +88,12 @@ function parseCookies(header: string | undefined): Record<string, string> {
     if (idx === -1) continue
     const key = part.slice(0, idx).trim()
     const value = part.slice(idx + 1).trim()
-    if (key) out[key] = decodeURIComponent(value)
+    if (!key) continue
+    try {
+      out[key] = decodeURIComponent(value)
+    } catch {
+      out[key] = value
+    }
   }
   return out
 }
@@ -129,10 +138,18 @@ function sessionContext(
 // CSRF double-submit: cookie-authenticated state-changing requests must present
 // x-agentguard-csrf equal to BOTH the (non-HttpOnly) csrf cookie AND the
 // session's server-side csrfToken. Bearer-authenticated requests are exempt.
+// Comparisons are constant-time to avoid token-oracle timing leaks.
+function tokenEquals(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB)
+}
+
 function csrfOk(headers: Record<string, string>, cookies: Record<string, string>, session: SessionRecord): boolean {
   const header = headers['x-agentguard-csrf']
   const cookieCsrf = cookies[CSRF_COOKIE]
-  return header !== undefined && header.length > 0 && header === cookieCsrf && header === session.csrfToken
+  if (header === undefined || header.length === 0 || cookieCsrf === undefined) return false
+  return tokenEquals(header, cookieCsrf) && tokenEquals(header, session.csrfToken)
 }
 
 function clampWindowDays(raw: string | null): number {
@@ -146,7 +163,17 @@ const SEVERITIES = new Set<Severity>(['low', 'medium', 'high', 'critical'])
 export function createControlPlane(deps: ControlPlaneDeps): Server {
   const sessionAuth = new SessionAuth(deps.storage, deps.now)
   return createServer((req, res) => {
-    void route(req, res, deps, sessionAuth)
+    // Defense in depth: a rejected route() promise must never become an
+    // unhandled rejection (Node's default kills the process). Any throw that
+    // escapes route()'s own try block answers 500 and keeps the server alive.
+    route(req, res, deps, sessionAuth).catch(() => {
+      if (!res.headersSent) {
+        res.writeHead(500, { 'content-type': 'application/json' })
+      }
+      if (!res.writableEnded) {
+        res.end(JSON.stringify({ error: 'internal error' }))
+      }
+    })
   })
 }
 

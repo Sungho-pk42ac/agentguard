@@ -376,7 +376,8 @@ export class SqliteStorage implements StoragePort {
     const row = this.db.prepare(`SELECT * FROM device_auths WHERE device_code = ?`).get(deviceCode) as unknown as DeviceAuthRow | undefined
     if (!row || row.status !== 'approved' || row.expires_at < now) return undefined
     this.db.prepare(`UPDATE device_auths SET status = 'consumed' WHERE device_code = ?`).run(deviceCode)
-    return this.toDeviceAuth(row)
+    // Memory parity: the returned record reflects the post-update state.
+    return { ...this.toDeviceAuth(row), status: 'consumed' }
   }
 
   close(): void {

@@ -64,7 +64,7 @@ export async function login(options: LoginOptions): Promise<LoginResult> {
   try {
     response = await fetchImpl(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'x-agentguard-client': 'cli' },
       body: JSON.stringify({ email: options.email, password: options.password }),
     })
   } catch (error) {
@@ -111,7 +111,7 @@ export async function logout(options: LogoutOptions): Promise<void> {
   try {
     response = await fetchImpl(url, {
       method: 'POST',
-      headers: { authorization: `Bearer ${options.token}` },
+      headers: { authorization: `Bearer ${options.token}`, 'x-agentguard-client': 'cli' },
     })
   } catch (error) {
     throw new AuthError(`could not reach ${url}: ${error instanceof Error ? error.message : String(error)}`)

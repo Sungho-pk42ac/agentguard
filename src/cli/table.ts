@@ -6,10 +6,11 @@
 // canonical form before the existing `parseArgs` flow runs, so all existing
 // flag/positional parsing behavior stays byte-identical.
 //
-// `doctor` and `posture` are listed here with `preTable: true` purely for
-// documentation of the full command surface. Their precedence branches live
-// in `src/index.ts` BEFORE this table is consulted, so `resolveCommand`
-// deliberately excludes them from matching.
+// `doctor`, `posture`, `open`, `login`, `logout`, and `enroll` are listed
+// here with `preTable: true` purely for documentation of the full command
+// surface. Their precedence branches live in `src/index.ts` BEFORE this
+// table is consulted, so `resolveCommand` deliberately excludes them from
+// matching and can never shadow that precedence.
 
 export interface CommandSpec {
   readonly canonical: string
@@ -25,10 +26,10 @@ export const COMMAND_TABLE: readonly CommandSpec[] = [
   { canonical: 'report', aliases: [] },
   { canonical: 'doctor', aliases: [], preTable: true },
   { canonical: 'posture', aliases: [], preTable: true },
-  { canonical: 'open', aliases: [] },
-  { canonical: 'login', aliases: [] },
-  { canonical: 'logout', aliases: [] },
-  { canonical: 'enroll', aliases: [] },
+  { canonical: 'open', aliases: [], preTable: true },
+  { canonical: 'login', aliases: [], preTable: true },
+  { canonical: 'logout', aliases: [], preTable: true },
+  { canonical: 'enroll', aliases: [], preTable: true },
 ]
 
 function isFlag(token: string): boolean {

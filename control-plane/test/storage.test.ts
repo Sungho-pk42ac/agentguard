@@ -150,6 +150,7 @@ for (const [name, make] of impls) {
     const consumed = s.consumeDeviceAuth('dc1', 200)
     assert.equal(consumed?.userId, 'u1')
     assert.equal(consumed?.orgId, 'orgA')
+    assert.equal(consumed?.status, 'consumed', 'parity: returned record reflects the post-update state in both adapters')
     assert.equal(s.consumeDeviceAuth('dc1', 200), undefined, 'single-use: already consumed')
     s.close()
   })

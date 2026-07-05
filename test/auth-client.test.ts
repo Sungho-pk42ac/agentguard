@@ -29,6 +29,7 @@ test('login: happy path posts credentials and returns the parsed session', async
   assert.equal(seen.url, 'https://cp.example/v1/auth/login')
   assert.equal(seen.init.method, 'POST')
   assert.deepEqual(JSON.parse(seen.init.body ?? '{}'), { email: 'a@b.com', password: 'hunter2' })
+  assert.equal(seen.init.headers['x-agentguard-client'], 'cli', 'CLI identifies itself so the server mints a kind=cli session (90d), not a cookie session')
 })
 
 test('login: 401 response throws AuthError("invalid credentials")', async () => {

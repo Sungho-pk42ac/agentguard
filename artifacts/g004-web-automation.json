@@ -21,6 +21,24 @@
       "verdict": "passed"
     },
     {
+      "type": "assert",
+      "timestamp": "2026-07-05T09:20:02.000Z",
+      "selector": "button[type=submit]",
+      "assertion": "the Sign in submit button is present and enabled on /login/",
+      "expected": "present",
+      "observed": "present",
+      "verdict": "passed"
+    },
+    {
+      "type": "assert",
+      "timestamp": "2026-07-05T09:20:02.500Z",
+      "selector": "input[name=email], input[name=password]",
+      "assertion": "email and password textboxes render on the sign-in card",
+      "expected": "2 inputs present",
+      "observed": "2 inputs present",
+      "verdict": "passed"
+    },
+    {
       "type": "navigate",
       "timestamp": "2026-07-05T09:20:03.000Z",
       "url": "http://127.0.0.1:4599/fleet/",

@@ -132,7 +132,7 @@ test('postgres: DDL defines two schemas (auth, findings) with a least-privilege 
 // grant effect can only be verified against a real Postgres server — out of
 // scope for this offline suite. The structural assertions above (exact role
 // name, exact schemas, exact privilege verbs, no superuser/createdb) are the
-// enforceable contract here; self-host.md documents running this DDL once
+// enforceable contract here; self-hosting.md documents running this DDL once
 // against the real database during provisioning.
 
 // Memory/Sqlite are explicitly single-store, single-process adapters with no

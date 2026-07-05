@@ -57,7 +57,7 @@ export interface PgQueryable {
 // ── DDL ──────────────────────────────────────────────────────────────────
 //
 // Two schemas, mirroring the least-privilege split expected in the self-host
-// Compose topology (docs/self-host.md):
+// Compose topology (docs/self-hosting.md):
 //   - `auth`:     orgs, users, invites, sessions, login_failures,
 //                 device_auths, enrollment_codes, oidc_grants.
 //   - `findings`: assets, findings, alerts, ingest_events, policies,
@@ -177,8 +177,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA auth TO agentguard_
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA findings TO agentguard_api;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA auth, findings TO agentguard_api;
 `
-
-export const FULL_MIGRATION_DDL = `${AUTH_SCHEMA_DDL}\n${FINDINGS_SCHEMA_DDL}`
 
 export class PostgresStorage implements StoragePort {
   private readonly db: PgQueryable

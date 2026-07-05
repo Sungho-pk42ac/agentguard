@@ -39,6 +39,12 @@ export function handleFindings(orgId: string, filter: FindingFilter, deps: ReadD
     firstSeen: f.firstSeen,
     lastSeen: f.lastSeen,
     status: f.status,
+    // CVE enrichment (§6.5) + advisory flag (§6.1): public, redaction-safe,
+    // additive. Exposed so the CVE view and advisory badges have real data;
+    // absent on findings that were never enriched / are not advisory.
+    ...(f.cveIds && f.cveIds.length > 0 ? { cveIds: f.cveIds } : {}),
+    ...(f.cveSeverity ? { cveSeverity: f.cveSeverity } : {}),
+    ...(f.advisory ? { advisory: true } : {}),
   }))
   return { status: 200, json: { findings } }
 }

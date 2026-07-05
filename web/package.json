@@ -1,0 +1,26 @@
+{
+  "name": "@pk42ac/agentguard-web",
+  "version": "0.5.0",
+  "private": true,
+  "description": "AgentGuard fleet console — pure SSR/static UI calling the same-origin control-plane /v1/* API. No session store, no API pass-through, no CSRF authority.",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test lib/*.test.ts"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3"
+  }
+}

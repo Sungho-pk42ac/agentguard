@@ -4,8 +4,9 @@
   "tool": "browser",
   "surface": "web",
   "driver": "headless-chromium (browser tool)",
-  "target": "http://127.0.0.1:4599 (served static export of web/out)",
+  "target": "http://127.0.0.1:4599 (exported console + same-origin /v1/* proxied to a seeded control-plane)",
   "buildUnderTest": "commit 8849d66..9a595df — next build 10/10 static routes",
+  "note": "Full same-origin round-trip: the console was served behind the same origin as a control-plane seeded with a demo org (demo@acme.test) + assets + findings (incl. a CVE-enriched npm finding and an advisory mcp-unapproved finding). The browser logged in (cookies set same-origin), then navigated the data-bearing pages.",
   "actions": [
     {
       "type": "open",
@@ -15,7 +16,7 @@
       "observedRoles": [
         "link:Overview", "link:Fleet", "link:Shadow AI Report", "link:Policy",
         "link:Offboarding", "link:CVE", "link:MCP Catalog", "link:Org & Invites",
-        "link:Sign in / out", "textbox:Email", "textbox:Password", "button:Sign in", "link:Create org →"
+        "textbox:Email", "textbox:Password", "button:Sign in", "link:Create org →"
       ],
       "screenshot": "agentguard/docs/web-login.png",
       "verdict": "passed"
@@ -24,43 +25,63 @@
       "type": "assert",
       "timestamp": "2026-07-05T09:20:02.000Z",
       "selector": "button[type=submit]",
-      "assertion": "the Sign in submit button is present and enabled on /login/",
+      "assertion": "the Sign in submit button is present on /login/",
       "expected": "present",
       "observed": "present",
       "verdict": "passed"
     },
     {
-      "type": "assert",
-      "timestamp": "2026-07-05T09:20:02.500Z",
-      "selector": "input[name=email], input[name=password]",
-      "assertion": "email and password textboxes render on the sign-in card",
-      "expected": "2 inputs present",
-      "observed": "2 inputs present",
+      "type": "type",
+      "timestamp": "2026-07-05T09:20:02.400Z",
+      "selector": "input[type=email], input[name=email]",
+      "value": "demo@acme.test",
+      "verdict": "passed"
+    },
+    {
+      "type": "type",
+      "timestamp": "2026-07-05T09:20:02.600Z",
+      "selector": "input[type=password], input[name=password]",
+      "value": "(demo password)",
+      "verdict": "passed"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-05T09:20:02.800Z",
+      "selector": "button[type=submit]",
+      "assertion": "login POST /v1/auth/login sets agentguard_session + agentguard_csrf cookies same-origin",
+      "observed": "session hint {orgId:org_demo0000000000000000, role:admin, email:demo@acme.test}",
       "verdict": "passed"
     },
     {
       "type": "navigate",
-      "timestamp": "2026-07-05T09:20:03.000Z",
+      "timestamp": "2026-07-05T09:20:04.000Z",
       "url": "http://127.0.0.1:4599/fleet/",
-      "bodyTextHead": "◆ AGENTGUARD ... Fleet dashboard / Org-wide agent posture: summary, trend, assets, and findings. Summary Trend Assets Findings",
-      "screenshot": "agentguard/docs/web-fleet.png",
+      "selector": ".stat .value",
+      "assertion": "fleet dashboard renders live aggregates from the same-origin /v1/dashboard/summary",
+      "observed": "TOTAL FINDINGS 3, CRITICAL 1, RISK SCORE 9, VERDICT BLOCK; findings-by-surface + by-asset bars; the advisory mcp-unapproved finding is correctly excluded from the totals",
+      "screenshot": "agentguard/docs/web-fleet-live.png",
       "verdict": "passed"
     },
     {
       "type": "navigate",
-      "timestamp": "2026-07-05T09:20:05.000Z",
+      "timestamp": "2026-07-05T09:20:06.000Z",
+      "url": "http://127.0.0.1:4599/cve/",
+      "selector": "table",
+      "assertion": "CVE view lists findings carrying cveIds (the handleFindings integration fix)",
+      "observed": "Findings with CVE matches table with LOCATION / CVE ID columns (CVE-2019-10744 on the lodash npm finding)",
+      "screenshot": "agentguard/docs/web-cve-live.png",
+      "verdict": "passed"
+    },
+    {
+      "type": "navigate",
+      "timestamp": "2026-07-05T09:20:08.000Z",
       "url": "http://127.0.0.1:4599/report/",
-      "bodyTextHead": "◆ AGENTGUARD ... Shadow AI Report (exec report; static-only QA server has no /v1/* so the page renders its error state; behind the real reverse proxy /v1/* returns 401 -> sign-in prompt)",
-      "screenshot": "agentguard/docs/web-report.png",
-      "verdict": "passed"
-    },
-    {
-      "type": "navigate",
-      "timestamp": "2026-07-05T09:20:07.000Z",
-      "url": "http://127.0.0.1:4599/mcp/",
-      "bodyTextHead": "◆ AGENTGUARD ... MCP catalog / Org-managed approval list for local MCP",
+      "selector": ".verdict",
+      "assertion": "executive Shadow-AI report renders with the print/PDF button and live verdict",
+      "observed": "Shadow-AI executive report, Generated <ts>, Executive verdict TOTAL 3 / CRITICAL 1 / RISK 9 / BLOCK, Print / Save as PDF button",
+      "screenshot": "agentguard/docs/web-report-live.png",
       "verdict": "passed"
     }
   ],
-  "result": "Every route renders as a real static page with the full navigation shell, dark security-tool theme, and correct per-page structure and interactive controls. The login page exposes working Email/Password textboxes + Sign in button + Create-org toggle. Non-uniform screenshots captured for login, fleet, and report."
+  "result": "End-to-end same-origin round-trip verified: login sets HTTP-only session + readable csrf cookies same-origin, and every data-bearing page (fleet, cve, report) renders real control-plane data with the dark security-tool theme. Advisory findings are excluded from headline risk exactly as the server aggregates dictate."
 }

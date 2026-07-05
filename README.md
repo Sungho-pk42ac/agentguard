@@ -9,7 +9,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-668%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-999%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -19,7 +19,7 @@ Licensed under the [Apache License 2.0](LICENSE).
 
 AgentGuard는 한국 팀이 에이전트 기반 개발을 운영할 때 노출될 수 있는 비밀 값, 위험한 MCP 권한, 에이전트 셸 동작, PR diff 리스크를 배포 전에 확인하도록 돕습니다. 지금의 한국어 우선 범위는 문서, 정책 설명, 팀 협업 가이드, 기본 터미널/Markdown 리포트입니다. CLI commands, rule IDs, JSON/SARIF/API/machine fields는 CI/CD와 글로벌 보안 도구 연동을 위해 English-compatible, global-standard 계약으로 유지합니다.
 
-v0.3.0부터는 **AI 코딩 에이전트 생애주기 보안**을 로컬 워크플로로 제공합니다 — 신입 입사자 PC의 설치된 AI 도구·권한을 점검하는 **온보딩 인스펙션**, 퇴사자 PC의 잔여 자격증명을 훑어 **승인 후에만 삭제하고 감사 리포트를 남기는 오프보딩 스윕**, 그리고 이를 운영하는 **관리자 전용 로컬 터미널 대시보드**(`agentguard`). 웹·중앙 서버 없이 대상 PC에서 오프라인으로 동작합니다.
+v0.3.0부터는 **AI 코딩 에이전트 생애주기 보안**을 로컬 워크플로로 제공합니다 — 신입 입사자 PC의 설치된 AI 도구·권한을 점검하는 **온보딩 인스펙션**, 퇴사자 PC의 잔여 자격증명을 훑어 **승인 후에만 삭제하고 감사 리포트를 남기는 오프보딩 스윕**, 그리고 이를 운영하는 **관리자 전용 로컬 터미널 대시보드**(`agentguard`). 이 로컬 워크플로는 대상 PC에서 웹·중앙 서버 없이 오프라인으로 동작하며, 아래 v0.5의 컨트롤 플레인·웹 콘솔은 선택적(opt-in) 하이브리드 SaaS 레이어입니다.
 
 <p align="center">
   <img src="docs/screenshot-overview.png" alt="AgentGuard 대시보드 터미널 스크린샷 — Overview 탭: 서피스별 findings 바 차트와 PASS/REVIEW/BLOCK verdict 배지" width="900" />
@@ -321,7 +321,7 @@ agentguard scan-files . --push --endpoint https://cp.example
 ```bash
 cd control-plane
 npm install
-npm test        # 41 tests: 서명 인증, 서버 redaction, 멀티테넌트 격리, 알림 dedup, enroll 인가, 3-asset E2E
+npm test        # 178 tests: 세션 인증, 정책 동기화, 오프보딩 웹훅, CVE, MCP 카탈로그, wire-skew, 서명 인증, 서버 redaction, 멀티테넌트 격리, Postgres 계약, acceptance E2E
 npm start       # http://127.0.0.1:8787
 ```
 
@@ -333,7 +333,7 @@ npm start       # http://127.0.0.1:8787
 | `GET /v1/dashboard/trend` | 30일 누적 리스크 추이 |
 | `GET /v1/assets` | 자산 목록 + stale 경고 |
 | `GET /v1/findings` | 필터 가능한 findings 목록 |
-| `GET /?org=<id>` | 관리자 HTML 대시보드 |
+| `GET /?org=<id>` | 관리자 HTML 대시보드 (선택적: `enableHtmlDashboard`, 기본값은 404 — 순수 JSON API) |
 
 모든 read 엔드포인트는 세션/토큰의 orgId로 엄격히 범위가 제한되어 cross-tenant 경로가 없습니다. 서버는 클라이언트 sweep과 **독립적인** shape+entropy 휴리스틱으로 redaction을 재검사하고, 위반 시 아무것도 저장하지 않고 422로 거부합니다.
 ## v0.5 — CLI 진화와 하이브리드 SaaS 컨트롤 플레인
@@ -420,4 +420,4 @@ Dry run에는 `dist/`, `README.md`, `package.json`, examples가 포함되어야 
 ## Roadmap
 
 - MCP permission graph
-- dashboard for agent audit trails
+- runtime guardrails / MCP proxy (detect → prevent; currently observe-only, v0.6+)

@@ -9,7 +9,7 @@
 [![npm](https://img.shields.io/npm/v/%40pk42ac%2Fagentguard)](https://www.npmjs.com/package/@pk42ac/agentguard)
 ![CI](https://github.com/Sungho-pk42ac/agentguard/actions/workflows/ci.yml/badge.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
-![Tests](https://img.shields.io/badge/tests-668%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-999%20passing-brightgreen)
 ![SARIF](https://img.shields.io/badge/SARIF-supported-purple)
 ![License](https://img.shields.io/github/license/Sungho-pk42ac/agentguard)
 
@@ -19,7 +19,7 @@ Licensed under the [Apache License 2.0](LICENSE).
 
 AgentGuard helps teams catch leaked secrets, dangerous MCP permissions, unsafe agent shell behavior, and risky PR diffs before they reach production.
 
-As of v0.3.0, AgentGuard delivers **AI coding agent lifecycle security** as a local workflow — an **onboarding inspection** of the AI tools and permissions installed on a new hire's machine, an **offboarding sweep** that finds residual credentials on a departing employee's machine and deletes them only after explicit approval (with an audit report), and an **admin-only local terminal dashboard** (`agentguard`) to run it all. It works offline on the target machine, with no web or central server.
+As of v0.3.0, AgentGuard delivers **AI coding agent lifecycle security** as a local workflow — an **onboarding inspection** of the AI tools and permissions installed on a new hire's machine, an **offboarding sweep** that finds residual credentials on a departing employee's machine and deletes them only after explicit approval (with an audit report), and an **admin-only local terminal dashboard** (`agentguard`) to run it all. This local workflow runs offline on the target machine with no required web or central server; the v0.5 control plane and web console below are an opt-in hybrid-SaaS layer.
 
 <p align="center">
   <img src="docs/screenshot-overview.png" alt="AgentGuard dashboard terminal screenshot — Overview tab: findings-by-surface bar chart with a PASS/REVIEW/BLOCK verdict badge" width="900" />
@@ -258,7 +258,7 @@ A separate hybrid-SaaS control-plane package. It ingests redacted findings and s
 ```bash
 cd control-plane
 npm install
-npm test        # 41 tests: signature auth, server redaction, multi-tenant isolation, alert dedup, enroll authz, 3-asset E2E
+npm test        # 178 tests: session auth, policy sync, offboarding webhook, CVE, MCP catalog, wire-skew, signature auth, server redaction, multi-tenant isolation, Postgres contract, acceptance E2E
 npm start       # http://127.0.0.1:8787
 ```
 
@@ -270,7 +270,7 @@ npm start       # http://127.0.0.1:8787
 | `GET /v1/dashboard/trend` | 30-day cumulative risk trend |
 | `GET /v1/assets` | Asset list + stale warning |
 | `GET /v1/findings` | Filterable findings list |
-| `GET /?org=<id>` | Admin HTML dashboard |
+| `GET /?org=<id>` | Admin HTML dashboard (opt-in: `enableHtmlDashboard`; default 404 — pure JSON API) |
 
 Every read endpoint is strictly scoped to the session/token orgId, so there is no cross-tenant path. The server re-checks redaction with a shape+entropy heuristic that is **independent** of the client sweep, and rejects violations with 422 while persisting nothing.
 ## v0.5 — CLI evolution and the hybrid-SaaS control plane
@@ -359,4 +359,4 @@ This first version is intentionally small:
 ## Roadmap
 
 - MCP permission graph
-- dashboard for agent audit trails
+- runtime guardrails / MCP proxy (detect → prevent; currently observe-only, v0.6+)

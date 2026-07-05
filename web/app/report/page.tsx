@@ -8,8 +8,9 @@ import { Panel, Stat, SeverityBadge, VerdictBadge, verdictFor, ErrorLine, Loadin
 
 // Field shapes verified against control-plane/src/dashboard.ts + aggregate.ts
 // (the actual JSON producers). See web/app/fleet/page.tsx for the same note:
-// byAsset carries riskScore, and /v1/findings does not echo `advisory` —
-// summary aggregates are already advisory-excluded server-side ([R3/NEW-CR-1]).
+// byAsset carries riskScore, and /v1/findings echoes `advisory` additively —
+// advisory findings are excluded from the headline risk here to match the
+// server aggregates, which are already advisory-excluded ([R3/NEW-CR-1]).
 
 interface AssetSummary {
   readonly assetId: string
@@ -45,6 +46,7 @@ interface FindingReal {
   readonly firstSeen: number
   readonly lastSeen: number
   readonly status: 'open' | 'resolved' | 'allowlisted'
+  readonly advisory?: boolean
 }
 
 const SEVERITY_ORDER: Severity[] = ['critical', 'high', 'medium', 'low']
@@ -100,14 +102,12 @@ export default function ReportPage() {
 
   const verdict = verdictFor(summary.riskScore, summary.bySeverity.critical)
 
-  // Server /v1/findings does not return the `advisory` flag on rows (see field
-  // note above), so we cannot exclude advisory rows from this raw list. The
-  // headline risk figures below (riskScore, bySeverity, totalFindings) come
-  // straight from /v1/dashboard/summary, which IS already advisory-excluded
-  // server-side. Top critical/high table uses those same server-provided
-  // severities/rows sorted by rank.
+  // Headline risk figures (riskScore, bySeverity, totalFindings) come straight
+  // from /v1/dashboard/summary, which is already advisory-excluded server-side.
+  // For the top-findings table we exclude advisory rows too so the exec report
+  // never surfaces a finding that does not count toward the risk score.
   const topFindings = [...findings]
-    .filter((f) => f.severity === 'critical' || f.severity === 'high')
+    .filter((f) => !f.advisory && (f.severity === 'critical' || f.severity === 'high'))
     .sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
     .slice(0, 15)
 

@@ -86,6 +86,11 @@ export async function apiRequest<T = unknown>(path: string, opts: RequestOptions
   if (!path.startsWith('/')) {
     throw new Error(`api path must be root-relative same-origin (got: ${path})`)
   }
+  // Reject protocol-relative (`//host`) and absolute URLs: both would resolve
+  // cross-origin and defeat the same-origin cookie/CSRF model.
+  if (path.startsWith('//')) {
+    throw new Error('api path must not be protocol-relative (same-origin only)')
+  }
   if (/^https?:\/\//i.test(path)) {
     throw new Error('api path must not be an absolute URL (same-origin only)')
   }

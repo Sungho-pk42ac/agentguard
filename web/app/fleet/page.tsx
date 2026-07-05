@@ -11,10 +11,9 @@ import { Panel, Stat, SeverityBadge, VerdictBadge, verdictFor, ErrorLine, Loadin
 // but not exact):
 // - FleetSummary.byAsset entries carry `riskScore` (not just count/label).
 // - TrendPoint carries `riskScore` (aggregate.ts trend()), not `total`.
-// - /v1/findings (handleFindings) does NOT echo `advisory`/`cveIds` — the
-//   handler maps a fixed field allowlist that excludes them. So per-row
-//   advisory badges are not derivable from this endpoint; only the summary's
-//   aggregates are already advisory-excluded server-side.
+// - /v1/findings (handleFindings) echoes `advisory`/`cveIds`/`cveSeverity`
+//   additively (present-only). The summary aggregates are already
+//   advisory-excluded server-side; per-row advisory findings are badged here.
 
 interface AssetSummary {
   readonly assetId: string

@@ -82,6 +82,7 @@ test('apiRequest POST: sends the CSRF header from the cookie and a JSON body', a
 
 test('apiRequest rejects absolute URLs and non-root paths (same-origin invariant)', async () => {
   await assert.rejects(() => apiRequest('https://evil.example/v1/x'), /absolute URL|same-origin/)
+  await assert.rejects(() => apiRequest('//evil.example/v1/x'), /protocol-relative|same-origin/)
   await assert.rejects(() => apiRequest('v1/x'), /root-relative/)
 })
 

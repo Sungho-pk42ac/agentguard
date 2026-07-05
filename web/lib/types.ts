@@ -3,7 +3,6 @@
 // they are UI-side view types, not the server's source of truth.
 
 export type Severity = 'low' | 'medium' | 'high' | 'critical'
-export type CveStatus = 'fresh' | 'stale'
 
 export interface Meta {
   readonly schemaVersions: number[]
@@ -22,23 +21,6 @@ export interface FleetSummary {
   readonly bySeverity: Record<Severity, number>
   readonly byAsset: Array<{ assetId: string; label: string; count: number }>
   readonly bySurface?: Record<string, number>
-}
-
-export interface TrendPoint {
-  readonly date: string
-  readonly total: number
-}
-
-export interface TrendResponse {
-  readonly points: TrendPoint[]
-}
-
-export interface AssetStatus {
-  readonly assetId: string
-  readonly label: string
-  readonly kind: string
-  readonly lastSeenAt: number | null
-  readonly stale: boolean
 }
 
 export interface Finding {
@@ -87,9 +69,4 @@ export interface McpCatalogEntry {
 export interface McpCatalog {
   readonly entries: McpCatalogEntry[]
   readonly mcpStrictMode: boolean
-}
-
-export interface OrgMember {
-  readonly email: string
-  readonly role: 'admin' | 'member'
 }

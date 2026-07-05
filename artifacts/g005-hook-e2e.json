@@ -1,0 +1,107 @@
+[
+  {
+    "case": "build-cli",
+    "contractRef": "npm run build produces dist/index.js",
+    "expected": "exit 0 + dist/index.js present",
+    "observed": "exit 0, C:\\tmp\\agentguard\\dist\\index.js present",
+    "verdict": "PASS"
+  },
+  {
+    "case": "temp-repo-init",
+    "contractRef": "throwaway repo is a real git repo (git rev-parse --git-dir succeeds)",
+    "expected": "exit 0",
+    "observed": "exit 0, git-dir=.git",
+    "verdict": "PASS"
+  },
+  {
+    "case": "path-shim-resolves",
+    "contractRef": "`command -v agentguard` resolves to the built CLI via PATH shim under sh",
+    "expected": "exit 0 with version output",
+    "observed": "exit 0, stdout=\"/tmp/agentguard-g005-shim-7rUqUp/agentguard\\n0.3.0\"",
+    "verdict": "PASS"
+  },
+  {
+    "case": "hook-install-exit-code",
+    "contractRef": "CLI exits 0 on successful install",
+    "expected": "exit 0",
+    "observed": "exit 0",
+    "verdict": "PASS"
+  },
+  {
+    "case": "hook-install-writes-sentinel",
+    "contractRef": ".git/hooks/pre-commit written containing HOOK_SENTINEL \"# agentguard:managed-hook\"",
+    "expected": "file exists and contains sentinel",
+    "observed": "file exists, sentinel present",
+    "verdict": "PASS"
+  },
+  {
+    "case": "hook-install-executable",
+    "contractRef": "installed hook is executable by git (chmod 0o755 applied; git can run it as a script)",
+    "expected": "git executes chmod(0o755)-marked hook scripts and honors their exit code",
+    "observed": "mode=666 (NTFS: chmodSync cannot set a real x-bit); functional probe: git actually executed a chmod(0o755) hook script and honored a non-zero exit to abort the commit (commit exit=1, saw PROBE_HOOK_EXECUTED=true)",
+    "verdict": "PASS"
+  },
+  {
+    "case": "scanner-flags-critical-secret",
+    "contractRef": "agentguard scan-files --json <dir> reports >=1 non-advisory critical finding for the staged secret",
+    "expected": ">= 1 critical finding",
+    "observed": "criticalCount=1, raw=[\n  {\n    \"id\": \"openai-key\",\n    \"title\": \"OpenAI-style API key\",\n    \"severity\": \"critical\",\n    \"category\": \"secret\",\n    \"file\": \"secret.env\",\n    \"line\": 1,\n    \"evidence\": \"sk-a…u1V2\",\n    \"recommendation\": \"Remove the secret, rotate it, and load it from a secret manager or environment variabl",
+    "verdict": "PASS"
+  },
+  {
+    "case": "hook-internal-scan-diff-exits-1-on-critical",
+    "contractRef": "the installed hook pipes the staged diff into `agentguard scan-diff` and blocks on its exit code (1 = non-advisory critical present)",
+    "expected": "scan-diff exits 1 for the staged critical secret",
+    "observed": "CONFIRMED — scan-diff exited 1 on the staged diff",
+    "verdict": "PASS"
+  },
+  {
+    "case": "commit-with-critical-secret-is-blocked",
+    "contractRef": "git commit exits non-zero when staged file contains a critical (non-advisory) secret finding",
+    "expected": "non-zero exit (commit rejected)",
+    "observed": "exit 1",
+    "verdict": "PASS"
+  },
+  {
+    "case": "no-commit-created-for-blocked-secret",
+    "contractRef": "no commit object is created in git history when the hook blocks",
+    "expected": "git log is empty (no commits yet)",
+    "observed": "git log --oneline => \"\"",
+    "verdict": "PASS"
+  },
+  {
+    "case": "scanner-clears-clean-file",
+    "contractRef": "agentguard scan-files --json <dir> reports 0 critical findings for a clean repo state",
+    "expected": "0 critical findings",
+    "observed": "criticalCount=0, raw=[]",
+    "verdict": "PASS"
+  },
+  {
+    "case": "commit-with-clean-file-is-allowed",
+    "contractRef": "git commit exits 0 when staged files contain no critical findings",
+    "expected": "exit 0 (commit accepted)",
+    "observed": "exit 0",
+    "verdict": "PASS"
+  },
+  {
+    "case": "exactly-one-new-commit-after-clean-allowed",
+    "contractRef": "exactly one additional commit exists in history after the clean commit is allowed",
+    "expected": "1 total commit(s)",
+    "observed": "git log --oneline => \"082488e add clean readme (should be allowed)\"",
+    "verdict": "PASS"
+  },
+  {
+    "case": "hook-uninstall-exit-code",
+    "contractRef": "CLI exits 0 on successful uninstall",
+    "expected": "exit 0",
+    "observed": "exit 0",
+    "verdict": "PASS"
+  },
+  {
+    "case": "hook-uninstall-removes-managed-hook",
+    "contractRef": ".git/hooks/pre-commit is removed after uninstall (no backup existed)",
+    "expected": "file no longer exists",
+    "observed": "file removed",
+    "verdict": "PASS"
+  }
+]

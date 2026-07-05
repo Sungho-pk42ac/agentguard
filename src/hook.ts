@@ -1,7 +1,5 @@
-import type { Finding } from './rules.js'
-
 // `agentguard hook install|uninstall` manages a git pre-commit hook that
-// scans staged files and blocks the commit when a critical (non-advisory)
+// scans the staged diff and blocks the commit when a critical (non-advisory)
 // finding is present. Kept pure + injectable (no direct `node:fs`/git
 // coupling) so it is testable without a real git repository.
 
@@ -12,14 +10,17 @@ const BACKUP_SUFFIX = '.agentguard.bak'
 
 /**
  * The POSIX-sh body written to `.git/hooks/pre-commit` (or `core.hooksPath`).
- * Scans staged files with `agentguard scan-files --json` and blocks the
- * commit (non-zero exit) on any critical, non-advisory finding.
+ * Pipes the staged diff into `agentguard scan-diff` and defers ENTIRELY to that
+ * command's exit code (1 = a non-advisory critical finding is present, 0 = clean
+ * or only lower/advisory findings). This keeps the blocking decision in a single
+ * place — the CLI — rather than re-deriving it in brittle shell, and it is
+ * advisory-aware for free.
  */
 export function hookScriptContents(): string {
   return `#!/bin/sh
 ${HOOK_SENTINEL} (do not edit by hand — managed by \`agentguard hook install\`)
 #
-# Scans staged files for secrets, PII, dangerous commands, and other risky
+# Scans the STAGED diff for secrets, PII, dangerous commands, and other risky
 # agent behavior, and blocks the commit when a critical finding is present.
 #
 # Windows note: Git for Windows runs hooks through its bundled sh (MSYS/Git
@@ -28,29 +29,35 @@ ${HOOK_SENTINEL} (do not edit by hand — managed by \`agentguard hook install\`
 # \`agentguard hook install\` after changing it so the hook lands in the
 # right place.
 
-set -eu
+set -u
 
 if ! command -v agentguard >/dev/null 2>&1; then
   echo "agentguard: 'agentguard' CLI not found on PATH, skipping pre-commit scan" >&2
   exit 0
 fi
 
-staged_files=$(git diff --cached --name-only --diff-filter=ACM)
-if [ -z "\${staged_files}" ]; then
+staged_diff=$(git diff --cached --no-color --diff-filter=ACM)
+if [ -z "\${staged_diff}" ]; then
   exit 0
 fi
 
-findings_json=$(printf '%s\\n' "\${staged_files}" | xargs agentguard scan-files --json 2>/dev/null || echo '[]')
+# scan-diff reads a unified diff on stdin and exits 1 iff a non-advisory
+# critical finding is present (advisory findings never gate the exit code).
+printf '%s\\n' "\${staged_diff}" | agentguard scan-diff >/dev/null 2>&1
+status=$?
 
-critical_count=$(printf '%s' "\${findings_json}" | grep -o '"severity":"critical"' | wc -l | tr -d ' ')
-
-if [ "\${critical_count}" != "0" ]; then
-  echo "agentguard: blocking commit — \${critical_count} critical finding(s) in staged files" >&2
-  echo "\${findings_json}" >&2
+if [ "\${status}" -eq 0 ]; then
+  exit 0
+elif [ "\${status}" -eq 1 ]; then
+  echo "agentguard: blocking commit — a critical finding was detected in the staged changes." >&2
+  echo "agentguard: review with:  git diff --cached | agentguard scan-diff" >&2
   exit 1
+else
+  # scan-diff could not complete (e.g. malformed input). Surface it, but do not
+  # hard-block the commit on a scanner error.
+  echo "agentguard: pre-commit scan could not complete (exit \${status}); allowing commit" >&2
+  exit 0
 fi
-
-exit 0
 `
 }
 
@@ -126,13 +133,4 @@ export function uninstallHook(io: HookIo): UninstallHookResult {
     io.writeFile(path, '')
   }
   return { removed: true }
-}
-
-/**
- * Decides whether a set of scan findings should block a commit: any
- * non-advisory 'critical' finding blocks; advisory findings never count.
- */
-export function classifyStagedScan(findings: readonly Finding[]): { block: boolean; criticalCount: number } {
-  const criticalCount = findings.filter((f) => f.severity === 'critical' && !f.advisory).length
-  return { block: criticalCount > 0, criticalCount }
 }

@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { test } from 'node:test'
 import {
-  classifyStagedScan,
   HOOK_SENTINEL,
   hookScriptContents,
   installHook,
@@ -10,7 +9,6 @@ import {
   uninstallHook,
   type HookIo,
 } from '../src/hook.js'
-import type { Finding } from '../src/rules.js'
 
 function runCli(args: string[], input?: string) {
   return spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', ...args], {
@@ -18,18 +16,6 @@ function runCli(args: string[], input?: string) {
     input,
     encoding: 'utf8',
   })
-}
-
-function fakeFinding(overrides: Partial<Finding> = {}): Finding {
-  return {
-    id: 'F1',
-    title: 'test finding',
-    severity: 'low',
-    category: 'secret',
-    evidence: 'redacted',
-    recommendation: 'fix it',
-    ...overrides,
-  }
 }
 
 function fakeFs(initial: Record<string, string> = {}) {
@@ -66,11 +52,18 @@ test('hookScriptContents includes the sentinel marker', () => {
   assert.ok(hookScriptContents().includes(HOOK_SENTINEL))
 })
 
-test('hookScriptContents is a POSIX-sh script that blocks on a critical finding', () => {
+test('hookScriptContents pipes the staged diff into scan-diff and blocks on its exit code', () => {
   const script = hookScriptContents()
   assert.match(script, /^#!\/bin\/sh/)
-  assert.match(script, /scan-files --json/)
-  assert.match(script, /critical/)
+  // Uses the staged diff + scan-diff (the CLI owns the advisory-aware gate) —
+  // NOT the broken scan-files-on-filenames / grep-JSON approach.
+  assert.match(script, /git diff --cached/)
+  assert.match(script, /agentguard scan-diff/)
+  assert.doesNotMatch(script, /scan-files --json/, 'must not use the directory-root scan-files with file names')
+  assert.doesNotMatch(script, /grep -o/, 'must not re-derive criticality via brittle JSON grep')
+  assert.doesNotMatch(script, /\|\| echo '\[\]'/, 'must not fallback-mask findings to []')
+  // Blocks on exit 1 (a non-advisory critical), allows otherwise.
+  assert.match(script, /status=\$\?/)
   assert.match(script, /exit 1/)
   assert.match(script, /core\.hooksPath/)
 })
@@ -167,34 +160,38 @@ test('uninstallHook is a no-op when no hook file exists', () => {
   assert.deepEqual(uninstallHook(io), { removed: false })
 })
 
-// ── classifyStagedScan ──────────────────────────────────────────────────────
+// ── E2E: the exit-code contract the hook relies on ────────────────────────────
+// The hook defers entirely to `agentguard scan-diff`'s exit code. These tests
+// execute the REAL CLI against unified diffs so the block/allow behavior of the
+// installed hook is actually exercised (the earlier suite never ran the script,
+// which is how a non-functional hook shipped green).
 
-test('classifyStagedScan blocks when a non-advisory critical finding is present', () => {
-  const findings = [fakeFinding({ severity: 'low' }), fakeFinding({ severity: 'critical' })]
-  assert.deepEqual(classifyStagedScan(findings), { block: true, criticalCount: 1 })
+function diff(addedLine: string): string {
+  return [
+    'diff --git a/secret.env b/secret.env',
+    'new file mode 100644',
+    '--- /dev/null',
+    '+++ b/secret.env',
+    '@@ -0,0 +1 @@',
+    `+${addedLine}`,
+    '',
+  ].join('\n')
+}
+
+test('E2E: scan-diff exits 1 on a staged critical secret (the hook blocks the commit)', () => {
+  const result = runCli(['scan-diff'], diff('OPENAI_KEY=sk-proj-ABCDEFGHIJKLMNOPQRSTUVWX0123456789abcd'))
+  assert.equal(result.status, 1, `expected block (exit 1); stdout=${result.stdout}`)
 })
 
-test('classifyStagedScan ignores advisory-tagged critical findings', () => {
-  const findings = [fakeFinding({ severity: 'critical', advisory: true })]
-  assert.deepEqual(classifyStagedScan(findings), { block: false, criticalCount: 0 })
+test('E2E: scan-diff exits 0 on a clean staged change (the hook allows the commit)', () => {
+  const result = runCli(['scan-diff'], diff('const answer = 42'))
+  assert.equal(result.status, 0, `expected allow (exit 0); stdout=${result.stdout}`)
 })
 
-test('classifyStagedScan does not block on non-critical severities', () => {
-  const findings = [fakeFinding({ severity: 'high' }), fakeFinding({ severity: 'medium' })]
-  assert.deepEqual(classifyStagedScan(findings), { block: false, criticalCount: 0 })
-})
-
-test('classifyStagedScan counts multiple non-advisory critical findings', () => {
-  const findings = [
-    fakeFinding({ severity: 'critical' }),
-    fakeFinding({ severity: 'critical' }),
-    fakeFinding({ severity: 'critical', advisory: true }),
-  ]
-  assert.deepEqual(classifyStagedScan(findings), { block: true, criticalCount: 2 })
-})
-
-test('classifyStagedScan returns block:false for an empty findings list', () => {
-  assert.deepEqual(classifyStagedScan([]), { block: false, criticalCount: 0 })
+test('E2E: a non-critical (high) staged finding does NOT block — only critical blocks', () => {
+  // `rm -rf /` is a high-severity dangerous-command finding, not critical.
+  const result = runCli(['scan-diff'], diff('run: rm -rf /'))
+  assert.equal(result.status, 0, `high-severity findings must not block a commit; stdout=${result.stdout}`)
 })
 
 // ── CLI wiring ────────────────────────────────────────────────────────────────

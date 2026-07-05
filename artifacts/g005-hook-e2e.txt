@@ -1,0 +1,114 @@
+
+==============================================================================
+STEP 1: npm run build (real shipped bin)
+==============================================================================
+$ npm run build
+status=0
+
+> @pk42ac/agentguard@0.3.0 build
+> tsc
+
+
+> @pk42ac/agentguard@0.3.0 postbuild
+> node -e "require('fs').chmodSync('dist/index.js', 0o755)"
+
+
+
+[PASS] build-cli — expected: exit 0 + dist/index.js present | observed: exit 0, C:\tmp\agentguard\dist\index.js present
+
+==============================================================================
+STEP 2: create temp git repo
+==============================================================================
+temp repo: C:\Users\psh24\AppData\Local\Temp\agentguard-g005-e2e-f3bJxq
+[PASS] temp-repo-init — expected: exit 0 | observed: exit 0, git-dir=.git
+
+==============================================================================
+STEP 3: install a PATH shim so the hook can find `agentguard`
+==============================================================================
+shim: C:\Users\psh24\AppData\Local\Temp\agentguard-g005-shim-7rUqUp\agentguard
+PATH prefix added: C:\Users\psh24\AppData\Local\Temp\agentguard-g005-shim-7rUqUp
+[PASS] path-shim-resolves — expected: exit 0 with version output | observed: exit 0, stdout="/tmp/agentguard-g005-shim-7rUqUp/agentguard\n0.3.0"
+
+==============================================================================
+STEP 4: agentguard hook install
+==============================================================================
+$ node dist/index.js hook install
+status=0
+stdout=
+stderr=agentguard: pre-commit hook installed at .git/hooks/pre-commit
+
+[PASS] hook-install-exit-code — expected: exit 0 | observed: exit 0
+[PASS] hook-install-writes-sentinel — expected: file exists and contains sentinel | observed: file exists, sentinel present
+[PASS] hook-install-executable — expected: git executes chmod(0o755)-marked hook scripts and honors their exit code | observed: mode=666 (NTFS: chmodSync cannot set a real x-bit); functional probe: git actually executed a chmod(0o755) hook script and honored a non-zero exit to abort the commit (commit exit=1, saw PROBE_HOOK_EXECUTED=true)
+
+==============================================================================
+STEP 5: stage a CRITICAL secret (OpenAI-style key) and run `git commit`
+==============================================================================
+[PASS] scanner-flags-critical-secret — expected: >= 1 critical finding | observed: criticalCount=1, raw=[
+  {
+    "id": "openai-key",
+    "title": "OpenAI-style API key",
+    "severity": "critical",
+    "category": "secret",
+    "file": "secret.env",
+    "line": 1,
+    "evidence": "sk-a…u1V2",
+    "recommendation": "Remove the secret, rotate it, and load it from a secret manager or environment variabl
+$ git diff --cached | agentguard scan-diff
+exit=1
+[PASS] hook-internal-scan-diff-exits-1-on-critical — expected: scan-diff exits 1 for the staged critical secret | observed: CONFIRMED — scan-diff exited 1 on the staged diff
+$ git commit -m "add secret (should be blocked)"
+status=1
+stdout=
+stderr=agentguard: blocking commit — a critical finding was detected in the staged changes.
+agentguard: review with:  git diff --cached | agentguard scan-diff
+
+[PASS] commit-with-critical-secret-is-blocked — expected: non-zero exit (commit rejected) | observed: exit 1
+[PASS] no-commit-created-for-blocked-secret — expected: git log is empty (no commits yet) | observed: git log --oneline => ""
+
+==============================================================================
+STEP 6: unstage the secret, stage a clean file, run `git commit`
+==============================================================================
+[PASS] scanner-clears-clean-file — expected: 0 critical findings | observed: criticalCount=0, raw=[]
+$ git commit -m "add clean readme (should be allowed)"
+status=0
+stdout=[master (root-commit) 082488e] add clean readme (should be allowed)
+ 1 file changed, 3 insertions(+)
+ create mode 100644 README.md
+
+stderr=
+[PASS] commit-with-clean-file-is-allowed — expected: exit 0 (commit accepted) | observed: exit 0
+[PASS] exactly-one-new-commit-after-clean-allowed — expected: 1 total commit(s) | observed: git log --oneline => "082488e add clean readme (should be allowed)"
+
+==============================================================================
+STEP 7: agentguard hook uninstall
+==============================================================================
+$ node dist/index.js hook uninstall
+status=0
+stdout=
+stderr=agentguard: pre-commit hook removed
+
+[PASS] hook-uninstall-exit-code — expected: exit 0 | observed: exit 0
+[PASS] hook-uninstall-removes-managed-hook — expected: file no longer exists | observed: file removed
+
+==============================================================================
+SUMMARY
+==============================================================================
+PASS                     build-cli
+PASS                     temp-repo-init
+PASS                     path-shim-resolves
+PASS                     hook-install-exit-code
+PASS                     hook-install-writes-sentinel
+PASS                     hook-install-executable
+PASS                     scanner-flags-critical-secret
+PASS                     hook-internal-scan-diff-exits-1-on-critical
+PASS                     commit-with-critical-secret-is-blocked
+PASS                     no-commit-created-for-blocked-secret
+PASS                     scanner-clears-clean-file
+PASS                     commit-with-clean-file-is-allowed
+PASS                     exactly-one-new-commit-after-clean-allowed
+PASS                     hook-uninstall-exit-code
+PASS                     hook-uninstall-removes-managed-hook
+
+OVERALL: PASS
+temp repo left at: C:\Users\psh24\AppData\Local\Temp\agentguard-g005-e2e-f3bJxq (for inspection; not part of agentguard repo)

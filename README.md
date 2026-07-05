@@ -295,7 +295,7 @@ jobs:
 
 ## 컨트롤 플레인 (Fleet · Observe)
 
-조직 규모에서는 각 개발자 PC·CI가 로컬 스캔 결과를 중앙 **컨트롤 플레인**에 report하고, 보안팀이 조직 전체 리스크를 한 화면에서 봅니다. 핵심 원칙: **원문·비밀값은 대상 PC를 절대 벗어나지 않고, redacted 메타데이터·집계만 전송됩니다(하이브리드).** v0.4 범위는 **관측(Observe)** — 수집·집계·알림 — 이며, 정책 콘솔·트리아지·SSO/RBAC(거버넌스)와 컴플라이언스 리포트·티켓/SIEM 연동은 다음 단계입니다.
+조직 규모에서는 각 개발자 PC·CI가 로컬 스캔 결과를 중앙 **컨트롤 플레인**에 report하고, 보안팀이 조직 전체 리스크를 한 화면에서 봅니다. 핵심 원칙: **원문·비밀값은 대상 PC를 절대 벗어나지 않고, redacted 메타데이터·집계만 전송됩니다(하이브리드).** v0.5부터는 관측(수집·집계·알림)에 더해 네이티브 세션 인증, 조직/초대, 정책 동기화, 오프보딩 웹훅, CVE 강화, MCP 카탈로그, same-origin 웹 콘솔까지 컨트롤 플레인 범위에 포함됩니다 — 자세한 내용은 아래 [v0.5 — CLI 진화와 하이브리드 SaaS 컨트롤 플레인](#v05--cli-진화와-하이브리드-saas-컨트롤-플레인) 섹션을 참고하세요.
 
 ### report agent — `agentguard report --push`
 
@@ -336,6 +336,47 @@ npm start       # http://127.0.0.1:8787
 | `GET /?org=<id>` | 관리자 HTML 대시보드 |
 
 모든 read 엔드포인트는 세션/토큰의 orgId로 엄격히 범위가 제한되어 cross-tenant 경로가 없습니다. 서버는 클라이언트 sweep과 **독립적인** shape+entropy 휴리스틱으로 redaction을 재검사하고, 위반 시 아무것도 저장하지 않고 422로 거부합니다.
+## v0.5 — CLI 진화와 하이브리드 SaaS 컨트롤 플레인
+
+v0.5는 세 갈래로 확장됩니다: **(1) 터미널 우선 CLI 검증 시스템**, **(2) 옵트인 하이브리드 SaaS 컨트롤 플레인**, **(3) 그 위의 same-origin 웹 콘솔** — 그리고 이를 개발 워크플로에 끼워 넣는 **pre-commit hook**과 **VS Code extension**입니다.
+
+### CLI 동사 체계
+
+```text
+agentguard scan files|diff|log|mcp   (레거시: scan-files, scan-diff, scan-log, scan-mcp)
+agentguard report [--push …]
+agentguard doctor
+agentguard posture
+agentguard              # 또는 agentguard repl — 풀스크린 대시보드
+agentguard open <path[:line]>
+agentguard login|logout|enroll
+agentguard hook install|uninstall
+```
+
+`scan files`/`scan diff`/`scan log`/`scan mcp` 두 단어 형태는 기존 하이픈 형태(`scan-files`/`scan-diff`/`scan-log`/`scan-mcp`)와 나란히 존재하는 **선언적 별칭 테이블**이며, 레거시 하이픈 형태는 flag/positional 파싱까지 포함해 **byte-identical**하게 계속 동작합니다 — 기존 스크립트·CI 워크플로는 그대로 사용할 수 있습니다. 풀스크린 대시보드(`agentguard`/`agentguard repl`)의 Fleet 탭·Offboard 탭은 각각 아래 컨트롤 플레인 fleet 집계와 오프보딩 웹훅 워크플로를 로컬 터미널에서 확인하는 뷰입니다.
+
+### 컨트롤 플레인 확장 — 네이티브 인증, 정책, CVE, MCP 카탈로그
+
+컨트롤 플레인은 여전히 **옵트인**이며, `--push` 없이는 모든 CLI 명령이 기존과 100% 동일하게 동작합니다. v0.5는 기존 device-token/OIDC 리포팅 위에 다음을 더합니다.
+
+- **네이티브 세션 인증 + 조직/초대.** `POST /v1/auth/register|login|logout`, 관리자 전용 `POST /v1/orgs/invites` + `POST /v1/auth/accept-invite`, 그리고 CLI 전용 **device-authorization flow**(`/v1/auth/device/start|approve|poll`)로 `agentguard login`/`enroll`이 브라우저 없이도 세션을 발급받습니다. 쿠키 기반 세션은 CSRF 토큰(`x-agentguard-csrf` 헤더)으로 보호되며, 비밀번호는 해시로만 저장됩니다.
+- **정책 동기화.** 조직 단위 정책 문서(YAML/JSON)와 예외(exception) 레코드를 ETag/`If-None-Match`로 동기화합니다. 조회는 모든 org 신원(세션 또는 viewer 토큰)에 열려 있고, 쓰기는 관리자 세션 + CSRF로 제한됩니다.
+- **오프보딩 웹훅.** HR 시스템이 서명된 웹훅(`x-agentguard-webhook-signature` + timestamp freshness)으로 오프보딩 워크플로(`open → sweeping → done`)를 트리거하거나, 관리자가 세션으로 직접 생성할 수 있습니다. 자산은 직원 라벨/이메일로 매칭됩니다.
+- **CVE 강화.** npm 전역 AI CLI 같은 package-shaped finding을 [osv.dev](https://osv.dev)에 배치 조회해 CVE/GHSA 심각도를 붙입니다. 캐시는 조직에 종속되지 않는(global) `cve_cache`에 TTL로 저장되고, ingest 경로는 **절대 CVE 조회를 기다리지 않으며**(fire-and-forget) 조회 실패는 "캐시된 값 재사용, stale 표시"로 조용히 무너집니다 — CVE 강화가 리포트 수집을 막을 수 없습니다.
+- **MCP 카탈로그.** 조직이 로컬에서 관찰된 MCP 서버를 승인 목록으로 관리합니다(`GET/PUT /v1/mcp/catalog`). 새 서버는 기본적으로 `approved:false`(deny-by-default)로 시딩되며, 관리자만 승인 상태를 바꿀 수 있습니다.
+
+### 웹 콘솔 — `web/`
+
+컨트롤 플레인과 **같은 origin**에서 서빙되는 Next.js 콘솔입니다. 로그인 후 fleet 대시보드, Shadow-AI 실행 리포트(경영진용 요약), 정책, 오프보딩, CVE, MCP 카탈로그 페이지를 확인·조작할 수 있습니다. 셀프 호스팅 배포는 static export(`output: 'export'`)로 빌드되어 자체 서버 런타임·세션 저장소·API pass-through가 없고, 같은 origin이라 세션/CSRF 쿠키가 항상 first-party입니다(크로스사이트 쿠키·CORS 없음).
+
+### 개발 워크플로 통합 — pre-commit hook + VS Code extension
+
+- **`agentguard hook install|uninstall`**은 staged diff를 스캔해 critical finding이 있으면 커밋을 막는 git pre-commit hook을 설치합니다(`core.hooksPath` 인식, 기존 hook 백업, agentguard-managed 마커로 안전한 재설치/제거).
+- **VS Code extension**(`editors/vscode/`)은 `agentguard scan-files --json`을 실행해 findings를 네이티브 진단(Problems 패널의 빨강/노랑 물결선)으로 표시합니다. CLI를 번들하지 않고 `PATH`의 `agentguard`를 그대로 호출합니다.
+
+### 셀프 호스팅
+
+컨트롤 플레인 + 웹 콘솔을 직접 운영하려면 [셀프 호스팅 가이드](docs/self-hosting.md)를 참고하세요 — Docker Compose로 Caddy(리버스 프록시/TLS) + web(static export) + api(control-plane) + Postgres를 한 origin으로 묶어 배포하는 템플릿(`deploy/`)을 제공합니다.
 
 ## 로컬 개발
 

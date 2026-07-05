@@ -232,7 +232,7 @@ jobs:
 
 ## Control Plane (Fleet · Observe)
 
-At org scale, each developer PC and CI reports its local scan results to a central **control plane**, so a security team sees fleet-wide risk on one screen. Core principle: **raw values and secrets never leave the target machine — only redacted metadata and aggregates are transmitted (hybrid).** The v0.4 scope is **Observe** (ingest, aggregate, alert); a policy console, triage, and SSO/RBAC (governance), plus compliance reports and ticketing/SIEM integrations, are the next phases.
+At org scale, each developer PC and CI reports its local scan results to a central **control plane**, so a security team sees fleet-wide risk on one screen. Core principle: **raw values and secrets never leave the target machine — only redacted metadata and aggregates are transmitted (hybrid).** As of v0.5, Observe (ingest, aggregate, alert) is joined by native session auth, orgs/invites, policy sync, an offboarding webhook, CVE enrichment, and a same-origin management console — see [v0.5 — CLI evolution and the hybrid-SaaS control plane](#v05--cli-evolution-and-the-hybrid-saas-control-plane) below for the full surface.
 
 ### report agent — `agentguard report --push`
 
@@ -273,7 +273,47 @@ npm start       # http://127.0.0.1:8787
 | `GET /?org=<id>` | Admin HTML dashboard |
 
 Every read endpoint is strictly scoped to the session/token orgId, so there is no cross-tenant path. The server re-checks redaction with a shape+entropy heuristic that is **independent** of the client sweep, and rejects violations with 422 while persisting nothing.
+## v0.5 — CLI evolution and the hybrid-SaaS control plane
 
+v0.5 grows along three fronts: **(1) a terminal-first CLI verb system**, **(2) an opt-in hybrid-SaaS control plane**, and **(3) a same-origin web console** on top of it — plus a **pre-commit hook** and a **VS Code extension** that wire it into the dev workflow.
+
+### CLI verb system
+
+```text
+agentguard scan files|diff|log|mcp   (legacy: scan-files, scan-diff, scan-log, scan-mcp)
+agentguard report [--push …]
+agentguard doctor
+agentguard posture
+agentguard              # or agentguard repl — full-screen dashboard
+agentguard open <path[:line]>
+agentguard login|logout|enroll
+agentguard hook install|uninstall
+```
+
+The two-word `scan files`/`scan diff`/`scan log`/`scan mcp` forms are a **declarative alias table** (`src/cli/table.ts`) that sits alongside the existing hyphenated forms (`scan-files`/`scan-diff`/`scan-log`/`scan-mcp`); the legacy hyphenated forms keep working **byte-identically**, including flag/positional parsing — existing scripts and CI workflows need no changes. In the full-screen dashboard (`agentguard`/`agentguard repl`), the Fleet and Offboard tabs surface the control-plane fleet aggregate and the offboarding-webhook workflow, respectively, from the local terminal.
+
+### Control plane growth — native auth, policy, CVE, MCP catalog
+
+The control plane stays **opt-in**: without `--push`, every CLI command behaves exactly as before. v0.5 adds the following on top of the existing device-token/OIDC reporting:
+
+- **Native session auth + orgs/invites.** `POST /v1/auth/register|login|logout`, admin-only `POST /v1/orgs/invites` + `POST /v1/auth/accept-invite`, and a CLI-only **device-authorization flow** (`/v1/auth/device/start|approve|poll`) let `agentguard login`/`enroll` mint a session without a browser. Cookie-based sessions are protected by a CSRF token (`x-agentguard-csrf` header); passwords are stored only as hashes.
+- **Policy sync.** Org-scoped policy documents (YAML/JSON) and exception records sync via ETag/`If-None-Match`. Reads are open to any org identity (session or viewer token); writes require an admin session + CSRF.
+- **Offboarding webhook.** HR systems can trigger the offboarding workflow (`open → sweeping → done`) via a signed webhook (`x-agentguard-webhook-signature` + timestamp freshness), or an admin can create one directly from a session. Assets are matched by employee label/email.
+- **CVE enrichment.** Package-shaped findings (e.g. globally installed npm AI CLIs) are batch-queried against [osv.dev](https://osv.dev) for CVE/GHSA severity. Results are cached with a TTL in a deliberately non-org-scoped (global) `cve_cache`; the ingest path **never awaits** the CVE lookup (fire-and-forget), and a lookup failure degrades quietly to "serve the cached value, mark it stale" — CVE enrichment can never block report ingestion.
+- **MCP catalog.** Orgs manage an approval list for locally observed MCP servers (`GET/PUT /v1/mcp/catalog`). New servers seed as `approved:false` (deny-by-default); only an admin can change approval state.
+
+### Web console — `web/`
+
+A Next.js console served from the **same origin** as the control plane. Once logged in, it surfaces a fleet dashboard, a Shadow-AI executive report, and policy, offboarding, CVE, and MCP-catalog pages. Self-hosted deployments build it as a static export (`output: 'export'`) — no Next.js server runtime, no session store, no API pass-through — and because it shares an origin with the API, session/CSRF cookies stay first-party (no cross-site cookies, no CORS).
+
+### Dev-workflow integration — pre-commit hook + VS Code extension
+
+- **`agentguard hook install|uninstall`** installs a git pre-commit hook that scans the staged diff and blocks the commit on a critical finding (honors `core.hooksPath`, backs up any existing hook, and uses an agentguard-managed marker for safe reinstall/removal).
+- **The VS Code extension** (`editors/vscode/`) runs `agentguard scan-files --json` and publishes findings as native diagnostics (red/yellow squiggles in the Problems panel). It shells out to the `agentguard` CLI on `PATH` rather than bundling it.
+
+### Self-hosting
+
+To run the control plane + web console yourself, see the [self-hosting guide](docs/self-hosting.md) — a Docker Compose template (`deploy/`) that puts Caddy (reverse proxy/TLS), web (static export), api (control-plane), and Postgres behind one origin.
 ## Local development
 
 ```bash

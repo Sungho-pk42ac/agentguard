@@ -14,6 +14,9 @@ import { Footer } from './footer.js'
 import { HelpOverlay } from './help-overlay.js'
 import { HeroChart, VerdictBadge } from './hero-chart.js'
 import { Offboard } from './offboard.js'
+import { openInEditor as defaultOpenInEditor, type OpenInEditorOptions, type OpenInEditorResult } from '../open-in-editor.js'
+import { readSession, type SessionFile } from '../session.js'
+import { FleetView, type FleetFetchLike } from './fleet-view.js'
 import { classifyKey } from './classify-key.js'
 import { clampIndex, filterItems, nextSeverityFilter, sortItemsBySeverity } from './view-model.js'
 import { disableMouseSGR, enableMouseSGR, parseSGR } from './mouse.js'
@@ -32,15 +35,19 @@ function projectScanPath(cwd: string, home: string): string | undefined {
   return PROJECT_MARKERS.some((marker) => existsSync(join(cwd, marker))) ? cwd : undefined
 }
 
-export type TabId = 'overview' | 'agents' | 'credentials' | 'posture' | 'baseline' | 'offboard'
+export type TabId = 'overview' | 'agents' | 'credentials' | 'posture' | 'baseline' | 'offboard' | 'fleet'
 
+// Workflow-centric IA: scan → fix → verify. Credentials/Posture (actionable
+// findings) sit right after Overview; Fleet (org-wide, control-plane-backed)
+// is the terminal "verify" tab.
 const TABS: readonly { readonly id: TabId; readonly label: string }[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'agents', label: 'Agents' },
   { id: 'credentials', label: 'Credentials' },
   { id: 'posture', label: 'Posture' },
+  { id: 'agents', label: 'Agents' },
   { id: 'baseline', label: 'Baseline' },
   { id: 'offboard', label: 'Offboard' },
+  { id: 'fleet', label: 'Fleet' },
 ]
 
 // List tabs that support ↑↓/j/k/enter/f/i navigation (A4: credentials + posture ONLY).
@@ -80,6 +87,8 @@ interface State {
   readonly watchOn: boolean
   // Scan error surface (LOW-fix): a failed scan shows an error, not a false clean PASS.
   readonly scanError: boolean
+  // M1b: editor-open status message shown in the footer area.
+  readonly editorMessage: string | null
 }
 
 type Action =
@@ -105,6 +114,7 @@ type Action =
   | { type: 'setConfirmFull'; value: boolean }
   | { type: 'watchToggle' }
   | { type: 'scanError' }
+  | { type: 'editorMessage'; message: string | null }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -118,10 +128,10 @@ function reducer(state: State, action: Action): State {
     case 'tab': {
       const index = TABS.findIndex((t) => t.id === state.activeTab)
       const next = TABS[(index + action.dir + TABS.length) % TABS.length]
-      return { ...state, activeTab: next.id, cursor: 0, filter: undefined, detailOpen: false }
+      return { ...state, activeTab: next.id, cursor: 0, filter: undefined, detailOpen: false, editorMessage: null }
     }
     case 'setTab':
-      return { ...state, activeTab: action.tabId, cursor: 0, filter: undefined, detailOpen: false }
+      return { ...state, activeTab: action.tabId, cursor: 0, filter: undefined, detailOpen: false, editorMessage: null }
     case 'move':
       return { ...state, cursor: Math.max(0, state.cursor + action.delta) }
     case 'filter':
@@ -166,6 +176,9 @@ function reducer(state: State, action: Action): State {
     // S10: watch toggle
     case 'watchToggle':
       return { ...state, watchOn: !state.watchOn }
+    // M1b: editor-open status message
+    case 'editorMessage':
+      return { ...state, editorMessage: action.message }
   }
 }
 
@@ -178,6 +191,12 @@ export interface DashboardProps {
   readonly homeDir?: string
   /** Current working directory override for tests (defaults to process.cwd()). */
   readonly cwd?: string
+  /** Injectable "open in editor" (defaults to the real spawn-based opener); tests inject a fake. */
+  readonly openInEditor?: (file: string, line: number | undefined, opts?: OpenInEditorOptions) => OpenInEditorResult
+  /** Injectable session reader for the Fleet tab (defaults to src/session.ts readSession). */
+  readonly readSessionFn?: (home?: string) => SessionFile | undefined
+  /** Injectable fetch for the Fleet tab's control-plane summary call. */
+  readonly fetchImpl?: FleetFetchLike
 }
 
 const BASELINE_SCAN_ID = 'dashboard'
@@ -297,6 +316,7 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
     confirmFull: false,
     watchOn: false,
     scanError: false,
+    editorMessage: null,
   })
   const alive = useRef(true)
   const offboardActiveRef = useRef(false)
@@ -412,12 +432,38 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
     }
   }
 
-  // Resolve the currently visible items for list tabs (for hide action).
+  // Resolve the currently visible items for list tabs (for hide/open-editor actions).
   function currentListItems() {
     if (!state.data) return []
     if (state.activeTab === 'credentials') return state.data.credentialItems
     if (state.activeTab === 'posture') return state.data.postureItems
     return []
+  }
+
+  // Resolve the currently selected item through the SAME pipeline FindingsView
+  // uses (hidden → sort → severity/query filter) so a shared cursor never
+  // targets the wrong finding when sort/filter/search is active.
+  function resolveSelectedItem() {
+    const items = currentListItems()
+    const visible = items.filter((item) => !state.hidden.has(item.id))
+    const sorted = state.sortActive ? sortItemsBySeverity(visible) : [...visible]
+    const filtered = filterItems(sorted, { severity: state.filter, query: state.searchQuery })
+    const idx = clampIndex(state.cursor, filtered.length)
+    return filtered[idx]
+  }
+
+  // M1b: 'e' opens the selected finding's location in an editor. Expands a
+  // leading ~ to homeDir before spawning (view-model items carry raw '~/...'
+  // paths); injectable via props.openInEditor for tests.
+  function openEditorForItem(item: ReturnType<typeof resolveSelectedItem>): void {
+    if (!item) return
+    const target = item.location.startsWith('~') ? join(home, item.location.slice(1).replace(/^[/\\]/, '')) : item.location
+    const opener = props.openInEditor ?? defaultOpenInEditor
+    const result = opener(target, item.line)
+    const message = result.editor
+      ? `에디터로 열었음: ${result.editor} ${target}${item.line !== undefined ? `:${item.line}` : ''}`
+      : (result.message ?? `열림: ${result.command}`)
+    dispatch({ type: 'editorMessage', message })
   }
 
   // Single useInput owner — {isActive: !offboardActive} (invariant preserved).
@@ -431,6 +477,7 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
           overlayOpen: state.overlayOpen,
           confirmFull: state.confirmFull,
           activeTab: state.activeTab,
+          hasSelection: resolveSelectedItem() !== undefined,
         },
         char,
         key,
@@ -492,18 +539,13 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
           dispatch({ type: 'watchToggle' })
           break
         case 'hide': {
-          const items = currentListItems()
-          // Resolve the hide target through the SAME pipeline FindingsView uses
-          // (hidden → sort → severity/query filter) so a shared cursor never hides
-          // the wrong finding when sort/filter/search is active.
-          const visible = items.filter((item) => !state.hidden.has(item.id))
-          const sorted = state.sortActive ? sortItemsBySeverity(visible) : [...visible]
-          const filtered = filterItems(sorted, { severity: state.filter, query: state.searchQuery })
-          const idx = clampIndex(state.cursor, filtered.length)
-          const item = filtered[idx]
+          const item = resolveSelectedItem()
           if (item) dispatch({ type: 'hideItem', id: item.id })
           break
         }
+        case 'openEditor':
+          openEditorForItem(resolveSelectedItem())
+          break
         case 'move':
           dispatch({ type: 'move', delta: intent.delta })
           break
@@ -626,6 +668,8 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
         return <BaselineView has={state.baseline.has} diff={state.baseline.diff} message={state.baseline.message} />
       case 'offboard':
         return <Text dimColor>Press [o] or [enter] to start the guided offboarding sweep (scope → scan → review → approve → audit report).</Text>
+      case 'fleet':
+        return <FleetView homeDir={home} readSessionFn={props.readSessionFn ?? readSession} fetchImpl={props.fetchImpl} />
     }
   }
 
@@ -640,9 +684,9 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
       watchOn={state.watchOn}
       sortActive={state.sortActive}
       searchQuery={state.searchQuery}
+      editorMessage={state.editorMessage}
     />
   )
-
   if (state.offboardActive) {
     return (
       <Box flexDirection="column" minHeight={rows ?? 0}>

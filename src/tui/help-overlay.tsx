@@ -11,6 +11,7 @@ const GROUPS: readonly KeyGroup[] = [
     keys: [
       { key: 'tab / →',         label: '다음 탭' },
       { key: 'shift+tab / ←',   label: '이전 탭' },
+      { key: '탭 순서',         label: 'Overview → Credentials → Posture → Agents → Baseline → Offboard → Fleet' },
       { key: '↑/k  ↓/j',       label: '목록 이동 (자격증명·포스처)' },
       { key: 'enter',            label: '세부정보 토글 (목록 탭)' },
     ],
@@ -38,6 +39,7 @@ const GROUPS: readonly KeyGroup[] = [
   {
     header: '액션',
     keys: [
+      { key: 'e',                label: '선택한 항목을 에디터로 열기 (목록 탭)' },
       { key: 'i',                label: '현재 항목 숨기기 / 표시' },
       { key: 's',                label: '기준선 저장 (기준선 탭)' },
       { key: 'o',                label: '오프보딩 시작' },

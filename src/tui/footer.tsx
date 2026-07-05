@@ -13,6 +13,8 @@ export interface FooterProps {
   readonly sortActive?: boolean
   /** S7: current search query (shown when non-empty). */
   readonly searchQuery?: string
+  /** M1b: status line from the last [e] open-in-editor action. */
+  readonly editorMessage?: string | null
 }
 
 // Bottom keybind chip bar + status line.  Key tokens are rendered as [chip]
@@ -27,6 +29,7 @@ export function Footer({
   watchOn = false,
   sortActive = false,
   searchQuery = '',
+  editorMessage = null,
 }: FooterProps): React.ReactElement {
   const ago = scannedAt === null ? '—' : `${Math.max(0, Math.round((now - scannedAt) / 1000))}s ago`
 
@@ -46,17 +49,17 @@ export function Footer({
     )
   }
 
-  // Navigation chips grouped by intent
-  const navChips  = '[tab] view  [↑↓/jk] scroll  [enter] detail'
-  const filterChips = '[f] filter  [g] sort  [/] search  [i] hide'
-  const scanChips = '[1/2/3] preset  [r] rescan  [w] watch'
-  const actionChips = '[o] offboard  [?] help  [q] quit'
-  const keybindLine = `${navChips}   ${filterChips}   ${scanChips}   ${actionChips}`
+  // Workflow-ordered chip groups: scan → explore → act (M1b IA).
+  const scanChips = '[r/1/2/3] scan'
+  const exploreChips = '[tab/↑↓/jk/enter] explore  [f] filter  [g] sort  [/] search  [i] hide  [w] watch'
+  const actionChips = '[e] open · [o] offboard  [?] help  [q] quit'
+  const keybindLine = `${scanChips}   ${exploreChips}   ${actionChips}`
 
   return (
     <Box flexDirection="column" marginTop={1}>
       <Text dimColor>{keybindLine}</Text>
       <Text color="cyan">{statusParts.join('  ')}</Text>
+      {editorMessage ? <Text color="green">{editorMessage}</Text> : null}
     </Box>
   )
 }

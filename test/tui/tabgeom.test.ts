@@ -9,16 +9,16 @@ import { tabIndexFromX, tabIndexFromClick, TAB_BAR_ROW } from '../../src/tui/das
 //   Each tab: " {icon}{label} " = label.length + 3 chars
 //   Separator: "│" = 1 char between tabs (NOT before first tab)
 //
-// TABS (from dashboard.tsx):
+// TABS (workflow order — scan → fix → verify — from dashboard.tsx):
 //   0: Overview    (8)  → width 11, cols 12–22
-//   1: Agents      (6)  → width  9, cols 24–32   (│ at 23)
-//   2: Credentials (11) → width 14, cols 34–47   (│ at 33)
-//   3: Posture     (7)  → width 10, cols 49–58   (│ at 48)
+//   1: Credentials (11) → width 14, cols 24–37   (│ at 23)
+//   2: Posture     (7)  → width 10, cols 39–48   (│ at 38)
+//   3: Agents      (6)  → width  9, cols 50–58   (│ at 49)
 //   4: Baseline    (8)  → width 11, cols 60–70   (│ at 59)
 //   5: Offboard    (8)  → width 11, cols 72–82   (│ at 71)
+//   6: Fleet       (5)  → width  8, cols 84–91   (│ at 83)
 //
-// Total tab bar: 11 + 11 + 1 + 9 + 1 + 14 + 1 + 10 + 1 + 11 + 1 + 11 = 82
-// Badge after: 1(space) + 18(BLOCK text) = 19, grand total 82+19 = 101 → clips at 100
+// Total tab bar: 11 + 11 + 1 + 14 + 1 + 10 + 1 + 9 + 1 + 11 + 1 + 11 + 1 + 8 = 91
 
 const columns = 100
 
@@ -30,32 +30,32 @@ test('tabIndexFromX: last col of Overview (x=22) → 0', () => {
   assert.equal(tabIndexFromX(22, columns), 0)
 })
 
-test('tabIndexFromX: │ separator between Overview and Agents (x=23) → -1', () => {
+test('tabIndexFromX: │ separator between Overview and Credentials (x=23) → -1', () => {
   assert.equal(tabIndexFromX(23, columns), -1)
 })
 
-test('tabIndexFromX: first col of Agents (x=24) → 1', () => {
+test('tabIndexFromX: first col of Credentials (x=24) → 1', () => {
   assert.equal(tabIndexFromX(24, columns), 1)
 })
 
-test('tabIndexFromX: last col of Agents (x=32) → 1', () => {
-  assert.equal(tabIndexFromX(32, columns), 1)
+test('tabIndexFromX: last col of Credentials (x=37) → 1', () => {
+  assert.equal(tabIndexFromX(37, columns), 1)
 })
 
-test('tabIndexFromX: │ separator between Agents and Credentials (x=33) → -1', () => {
-  assert.equal(tabIndexFromX(33, columns), -1)
+test('tabIndexFromX: │ separator between Credentials and Posture (x=38) → -1', () => {
+  assert.equal(tabIndexFromX(38, columns), -1)
 })
 
-test('tabIndexFromX: first col of Credentials (x=34) → 2', () => {
-  assert.equal(tabIndexFromX(34, columns), 2)
+test('tabIndexFromX: first col of Posture (x=39) → 2', () => {
+  assert.equal(tabIndexFromX(39, columns), 2)
 })
 
-test('tabIndexFromX: last col of Credentials (x=47) → 2', () => {
-  assert.equal(tabIndexFromX(47, columns), 2)
+test('tabIndexFromX: last col of Posture (x=48) → 2', () => {
+  assert.equal(tabIndexFromX(48, columns), 2)
 })
 
-test('tabIndexFromX: first col of Posture (x=49) → 3', () => {
-  assert.equal(tabIndexFromX(49, columns), 3)
+test('tabIndexFromX: first col of Agents (x=50) → 3', () => {
+  assert.equal(tabIndexFromX(50, columns), 3)
 })
 
 test('tabIndexFromX: first col of Baseline (x=60) → 4', () => {
@@ -64,6 +64,14 @@ test('tabIndexFromX: first col of Baseline (x=60) → 4', () => {
 
 test('tabIndexFromX: first col of Offboard (x=72) → 5', () => {
   assert.equal(tabIndexFromX(72, columns), 5)
+})
+
+test('tabIndexFromX: first col of Fleet (x=84) → 6', () => {
+  assert.equal(tabIndexFromX(84, columns), 6)
+})
+
+test('tabIndexFromX: last col of Fleet (x=91) → 6', () => {
+  assert.equal(tabIndexFromX(91, columns), 6)
 })
 
 test('tabIndexFromX: x before any tab (x=1) → -1', () => {
@@ -83,8 +91,12 @@ test('tabIndexFromClick: x=12 on the tab-bar row resolves to Overview', () => {
   assert.equal(tabIndexFromClick(12, TAB_BAR_ROW), 0, 'x=12 on tab row → Overview (0)')
 })
 
-test('tabIndexFromClick: x=24 on the tab-bar row resolves to Agents', () => {
-  assert.equal(tabIndexFromClick(24, TAB_BAR_ROW), 1, 'x=24 on tab row → Agents (1)')
+test('tabIndexFromClick: x=24 on the tab-bar row resolves to Credentials', () => {
+  assert.equal(tabIndexFromClick(24, TAB_BAR_ROW), 1, 'x=24 on tab row → Credentials (1)')
+})
+
+test('tabIndexFromClick: x=84 on the tab-bar row resolves to Fleet', () => {
+  assert.equal(tabIndexFromClick(84, TAB_BAR_ROW), 6, 'x=84 on tab row → Fleet (6)')
 })
 
 test('tabIndexFromClick: a valid tab x on the WRONG row is ignored', () => {

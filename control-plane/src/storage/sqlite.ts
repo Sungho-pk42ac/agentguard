@@ -1,5 +1,21 @@
 import { DatabaseSync } from 'node:sqlite'
-import type { AlertRecord, AssetRecord, AssetKind, AuthKind, FindingFilter, FindingRecord, IngestEventRecord } from '../model.js'
+import type {
+  AlertRecord,
+  AssetRecord,
+  AssetKind,
+  AuthKind,
+  DeviceAuthRecord,
+  DeviceAuthStatus,
+  FindingFilter,
+  FindingRecord,
+  IngestEventRecord,
+  InviteRecord,
+  OrgRecord,
+  Role,
+  SessionKind,
+  SessionRecord,
+  UserRecord,
+} from '../model.js'
 import type { ReportFinding, Severity } from '../contract.js'
 import type { StoragePort, UpsertFindingResult } from './port.js'
 
@@ -33,6 +49,37 @@ interface FindingRow {
   first_seen: number
   last_seen: number
   status: string
+}
+interface UserRow {
+  id: string
+  org_id: string
+  email: string
+  password_hash: string
+  role: string
+  created_at: number
+}
+
+interface SessionRow {
+  token: string
+  user_id: string
+  org_id: string
+  role: string
+  kind: string
+  csrf_token: string
+  created_at: number
+  expires_at: number
+  last_seen_at: number
+}
+
+interface DeviceAuthRow {
+  device_code: string
+  user_code: string
+  status: string
+  user_id: string | null
+  org_id: string | null
+  role: string | null
+  created_at: number
+  expires_at: number
 }
 
 export class SqliteStorage implements StoragePort {
@@ -70,6 +117,27 @@ export class SqliteStorage implements StoragePort {
       CREATE TABLE IF NOT EXISTS oidc_grants (
         org_id TEXT NOT NULL, provider TEXT NOT NULL, subject TEXT NOT NULL,
         PRIMARY KEY (org_id, provider, subject)
+      );
+      CREATE TABLE IF NOT EXISTS orgs (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, webhook_secret TEXT NOT NULL, created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY, org_id TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL,
+        role TEXT NOT NULL, created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS invites (
+        code TEXT PRIMARY KEY, org_id TEXT NOT NULL, role TEXT NOT NULL, expires_at INTEGER NOT NULL, used_by TEXT
+      );
+      CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY, user_id TEXT NOT NULL, org_id TEXT NOT NULL, role TEXT NOT NULL, kind TEXT NOT NULL,
+        csrf_token TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, last_seen_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS login_failures (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS device_auths (
+        device_code TEXT PRIMARY KEY, user_code TEXT NOT NULL UNIQUE, status TEXT NOT NULL,
+        user_id TEXT, org_id TEXT, role TEXT, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
       );
     `)
   }
@@ -190,6 +258,127 @@ export class SqliteStorage implements StoragePort {
     return this.db.prepare(`SELECT 1 FROM oidc_grants WHERE org_id = ? AND provider = ? AND subject = ?`).get(orgId, provider, subject) !== undefined
   }
 
+
+  createOrg(org: OrgRecord): void {
+    this.db
+      .prepare(`INSERT OR REPLACE INTO orgs (id, name, webhook_secret, created_at) VALUES (?, ?, ?, ?)`)
+      .run(org.id, org.name, org.webhookSecret, org.createdAt)
+  }
+  getOrg(orgId: string): OrgRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM orgs WHERE id = ?`).get(orgId) as unknown as
+      | { id: string; name: string; webhook_secret: string; created_at: number }
+      | undefined
+    return row ? { id: row.id, name: row.name, webhookSecret: row.webhook_secret, createdAt: row.created_at } : undefined
+  }
+
+  createUser(user: UserRecord): void {
+    this.db
+      .prepare(`INSERT INTO users (id, org_id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
+      .run(user.id, user.orgId, user.email, user.passwordHash, user.role, user.createdAt)
+  }
+  getUserByEmail(email: string): UserRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM users WHERE email = ?`).get(email) as unknown as UserRow | undefined
+    return row ? this.toUser(row) : undefined
+  }
+  getUser(orgId: string, userId: string): UserRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM users WHERE org_id = ? AND id = ?`).get(orgId, userId) as unknown as UserRow | undefined
+    return row ? this.toUser(row) : undefined
+  }
+  listUsers(orgId: string): UserRecord[] {
+    const rows = this.db.prepare(`SELECT * FROM users WHERE org_id = ? ORDER BY created_at`).all(orgId) as unknown as UserRow[]
+    return rows.map((r) => this.toUser(r))
+  }
+
+  createInvite(invite: InviteRecord): void {
+    this.db
+      .prepare(`INSERT OR REPLACE INTO invites (code, org_id, role, expires_at, used_by) VALUES (?, ?, ?, ?, ?)`)
+      .run(invite.code, invite.orgId, invite.role, invite.expiresAt, invite.usedBy ?? null)
+  }
+  consumeInvite(code: string, now: number): InviteRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM invites WHERE code = ?`).get(code) as unknown as
+      | { code: string; org_id: string; role: string; expires_at: number; used_by: string | null }
+      | undefined
+    if (!row) return undefined
+    this.db.prepare(`DELETE FROM invites WHERE code = ?`).run(code) // single-use regardless of expiry outcome
+    if (row.expires_at < now) return undefined
+    return { code: row.code, orgId: row.org_id, role: row.role as Role, expiresAt: row.expires_at, usedBy: row.used_by ?? undefined }
+  }
+
+  createSession(session: SessionRecord): void {
+    this.db
+      .prepare(
+        `INSERT INTO sessions (token, user_id, org_id, role, kind, csrf_token, created_at, expires_at, last_seen_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        session.token,
+        session.userId,
+        session.orgId,
+        session.role,
+        session.kind,
+        session.csrfToken,
+        session.createdAt,
+        session.expiresAt,
+        session.lastSeenAt,
+      )
+  }
+  getSession(token: string): SessionRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM sessions WHERE token = ?`).get(token) as unknown as SessionRow | undefined
+    return row ? this.toSession(row) : undefined
+  }
+  deleteSession(token: string): void {
+    this.db.prepare(`DELETE FROM sessions WHERE token = ?`).run(token)
+  }
+  touchSession(token: string, at: number): void {
+    this.db.prepare(`UPDATE sessions SET last_seen_at = ? WHERE token = ?`).run(at, token)
+  }
+
+  recordLoginFailure(email: string, at: number): void {
+    this.db.prepare(`INSERT INTO login_failures (email, at) VALUES (?, ?)`).run(email, at)
+  }
+  countRecentLoginFailures(email: string, sinceInclusive: number): number {
+    const row = this.db.prepare(`SELECT COUNT(*) AS n FROM login_failures WHERE email = ? AND at >= ?`).get(email, sinceInclusive) as unknown as {
+      n: number
+    }
+    return row.n
+  }
+
+  createDeviceAuth(record: DeviceAuthRecord): void {
+    this.db
+      .prepare(
+        `INSERT INTO device_auths (device_code, user_code, status, user_id, org_id, role, created_at, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        record.deviceCode,
+        record.userCode,
+        record.status,
+        record.userId ?? null,
+        record.orgId ?? null,
+        record.role ?? null,
+        record.createdAt,
+        record.expiresAt,
+      )
+  }
+  getDeviceAuthByDeviceCode(deviceCode: string): DeviceAuthRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM device_auths WHERE device_code = ?`).get(deviceCode) as unknown as DeviceAuthRow | undefined
+    return row ? this.toDeviceAuth(row) : undefined
+  }
+  approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): boolean {
+    const row = this.db.prepare(`SELECT * FROM device_auths WHERE user_code = ?`).get(userCode) as unknown as DeviceAuthRow | undefined
+    if (!row || row.status !== 'pending' || row.expires_at < now) return false
+    this.db
+      .prepare(`UPDATE device_auths SET status = 'approved', user_id = ?, org_id = ?, role = ? WHERE user_code = ?`)
+      .run(grant.userId, grant.orgId, grant.role, userCode)
+    return true
+  }
+  consumeDeviceAuth(deviceCode: string, now: number): DeviceAuthRecord | undefined {
+    const row = this.db.prepare(`SELECT * FROM device_auths WHERE device_code = ?`).get(deviceCode) as unknown as DeviceAuthRow | undefined
+    if (!row || row.status !== 'approved' || row.expires_at < now) return undefined
+    this.db.prepare(`UPDATE device_auths SET status = 'consumed' WHERE device_code = ?`).run(deviceCode)
+    return this.toDeviceAuth(row)
+  }
+
   close(): void {
     this.db.close()
   }
@@ -222,6 +411,37 @@ export class SqliteStorage implements StoragePort {
       firstSeen: r.first_seen,
       lastSeen: r.last_seen,
       status: r.status as FindingRecord['status'],
+    }
+  }
+
+  private toUser(r: UserRow): UserRecord {
+    return { id: r.id, orgId: r.org_id, email: r.email, passwordHash: r.password_hash, role: r.role as Role, createdAt: r.created_at }
+  }
+
+  private toSession(r: SessionRow): SessionRecord {
+    return {
+      token: r.token,
+      userId: r.user_id,
+      orgId: r.org_id,
+      role: r.role as Role,
+      kind: r.kind as SessionKind,
+      csrfToken: r.csrf_token,
+      createdAt: r.created_at,
+      expiresAt: r.expires_at,
+      lastSeenAt: r.last_seen_at,
+    }
+  }
+
+  private toDeviceAuth(r: DeviceAuthRow): DeviceAuthRecord {
+    return {
+      deviceCode: r.device_code,
+      userCode: r.user_code,
+      status: r.status as DeviceAuthStatus,
+      userId: r.user_id ?? undefined,
+      orgId: r.org_id ?? undefined,
+      role: (r.role as Role | null) ?? undefined,
+      createdAt: r.created_at,
+      expiresAt: r.expires_at,
     }
   }
 }

@@ -195,6 +195,34 @@ test('credentials tab: i → hide', () => {
   assert.deepEqual(intent({ activeTab: 'credentials' }, 'i'), { kind: 'hide' })
 })
 
+test('credentials tab: e (selection present, default) → openEditor', () => {
+  assert.deepEqual(intent({ activeTab: 'credentials' }, 'e'), { kind: 'openEditor' })
+})
+
+test('credentials tab: e with no selection (hasSelection=false) → none', () => {
+  assert.deepEqual(intent({ activeTab: 'credentials', hasSelection: false }, 'e'), { kind: 'none' })
+})
+
+test('posture tab: e (selection present) → openEditor', () => {
+  assert.deepEqual(intent({ activeTab: 'posture' }, 'e'), { kind: 'openEditor' })
+})
+
+test('overview tab: e → none (not a list tab, even with a selection)', () => {
+  assert.deepEqual(intent({ activeTab: 'overview', hasSelection: true }, 'e'), { kind: 'none' })
+})
+
+test('offboard active: e → none (offboard owns all input, not openEditor)', () => {
+  assert.deepEqual(intent({ offboardActive: true, activeTab: 'credentials' }, 'e'), { kind: 'none' })
+})
+
+test('overlay open: e → help (close), not openEditor', () => {
+  assert.deepEqual(intent({ overlayOpen: true, activeTab: 'credentials' }, 'e'), { kind: 'help' })
+})
+
+test('search capture: e → searchChar (not openEditor — search owns printable chars)', () => {
+  assert.deepEqual(intent({ searchCapture: true, activeTab: 'credentials' }, 'e'), { kind: 'searchChar', char: 'e' })
+})
+
 test('posture tab: j → move 1', () => {
   assert.deepEqual(intent({ activeTab: 'posture' }, 'j'), { kind: 'move', delta: 1 })
 })

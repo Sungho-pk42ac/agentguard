@@ -24,3 +24,46 @@ export class StaticViewerAuth implements ViewerAuth {
     return this.tokens.get(token) ?? null
   }
 }
+
+// ── native session auth (M2a, additive) ──
+// Read endpoints accept EITHER a legacy viewer token (ViewerAuth.resolveOrg,
+// above — untouched) OR an authenticated session (PrincipalResolver, below).
+// A viewer token carries no role and MUST NOT be accepted by admin/member
+// endpoints — those require a resolved Principal.
+
+import type { Role } from '../model.js'
+import type { StoragePort } from '../storage/port.js'
+
+export interface Principal {
+  readonly orgId: string
+  readonly userId: string
+  readonly role: Role
+}
+
+export interface PrincipalInput {
+  readonly bearer?: string
+  readonly cookie?: string
+}
+
+export interface PrincipalResolver {
+  /** Return the authenticated principal for a Bearer token or session cookie, or null. */
+  resolvePrincipal(input: PrincipalInput): Principal | null
+}
+
+/** Session-backed principal resolver. Bearer takes precedence over cookie. */
+export class SessionAuth implements PrincipalResolver {
+  constructor(
+    private readonly storage: StoragePort,
+    private readonly now: () => number,
+  ) {}
+
+  resolvePrincipal(input: PrincipalInput): Principal | null {
+    const token = input.bearer ?? input.cookie
+    if (!token) return null
+    const session = this.storage.getSession(token)
+    if (!session) return null
+    if (session.expiresAt < this.now()) return null
+    this.storage.touchSession(token, this.now())
+    return { orgId: session.orgId, userId: session.userId, role: session.role }
+  }
+}

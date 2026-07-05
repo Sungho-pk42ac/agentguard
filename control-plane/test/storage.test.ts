@@ -85,4 +85,79 @@ for (const [name, make] of impls) {
     assert.equal(s.consumeEnrollmentCode('orgA', expired, 500), false, 'expired code rejected')
     s.close()
   })
+  test(`${name}: org/user creation, email lookup, and org-scoped listing`, () => {
+    const s = make()
+    s.createOrg({ id: 'orgA', name: 'Acme', webhookSecret: 'whs', createdAt: 0 })
+    assert.equal(s.getOrg('orgA')?.name, 'Acme')
+    assert.equal(s.getOrg('missing'), undefined)
+
+    s.createUser({ id: 'u1', orgId: 'orgA', email: 'a@acme.test', passwordHash: 'ph1', role: 'admin', createdAt: 1 })
+    s.createUser({ id: 'u2', orgId: 'orgA', email: 'b@acme.test', passwordHash: 'ph2', role: 'member', createdAt: 2 })
+    assert.equal(s.getUserByEmail('a@acme.test')?.id, 'u1')
+    assert.equal(s.getUserByEmail('nope@acme.test'), undefined)
+    assert.equal(s.getUser('orgA', 'u1')?.email, 'a@acme.test')
+    assert.equal(s.getUser('orgB', 'u1'), undefined, 'cross-tenant user lookup must miss')
+    assert.deepEqual(
+      s.listUsers('orgA').map((u) => u.id),
+      ['u1', 'u2'],
+    )
+    s.close()
+  })
+
+  test(`${name}: invite is single-use and expiry-checked (like enrollment codes)`, () => {
+    const s = make()
+    s.createInvite({ code: 'INVITE1', orgId: 'orgA', role: 'member', expiresAt: 1000 })
+    const first = s.consumeInvite('INVITE1', 500)
+    assert.equal(first?.orgId, 'orgA')
+    assert.equal(first?.role, 'member')
+    assert.equal(s.consumeInvite('INVITE1', 500), undefined, 'single-use: already consumed')
+
+    s.createInvite({ code: 'OLD', orgId: 'orgA', role: 'admin', expiresAt: 100 })
+    assert.equal(s.consumeInvite('OLD', 500), undefined, 'expired invite rejected')
+    s.close()
+  })
+
+  test(`${name}: session create/get/touch/delete`, () => {
+    const s = make()
+    s.createSession({ token: 'tok1', userId: 'u1', orgId: 'orgA', role: 'admin', kind: 'cookie', csrfToken: 'csrf1', createdAt: 0, expiresAt: 1000, lastSeenAt: 0 })
+    assert.equal(s.getSession('tok1')?.userId, 'u1')
+    s.touchSession('tok1', 42)
+    assert.equal(s.getSession('tok1')?.lastSeenAt, 42)
+    s.deleteSession('tok1')
+    assert.equal(s.getSession('tok1'), undefined)
+    s.close()
+  })
+
+  test(`${name}: login-failure counter is windowed per email`, () => {
+    const s = make()
+    s.recordLoginFailure('a@acme.test', 100)
+    s.recordLoginFailure('a@acme.test', 200)
+    s.recordLoginFailure('b@acme.test', 200)
+    assert.equal(s.countRecentLoginFailures('a@acme.test', 150), 1, 'only failures at/after the window start count')
+    assert.equal(s.countRecentLoginFailures('a@acme.test', 0), 2)
+    assert.equal(s.countRecentLoginFailures('b@acme.test', 0), 1)
+    s.close()
+  })
+
+  test(`${name}: device-authorization flow: start -> approve -> single-use consume`, () => {
+    const s = make()
+    s.createDeviceAuth({ deviceCode: 'dc1', userCode: 'UC1', status: 'pending', createdAt: 0, expiresAt: 1000 })
+    assert.equal(s.getDeviceAuthByDeviceCode('dc1')?.status, 'pending')
+    assert.equal(s.approveDeviceAuthByUserCode('nope', { userId: 'u1', orgId: 'orgA', role: 'admin' }, 100), false)
+    assert.equal(s.approveDeviceAuthByUserCode('UC1', { userId: 'u1', orgId: 'orgA', role: 'admin' }, 100), true)
+    assert.equal(s.approveDeviceAuthByUserCode('UC1', { userId: 'u1', orgId: 'orgA', role: 'admin' }, 100), false, 'already approved: not pending')
+
+    const consumed = s.consumeDeviceAuth('dc1', 200)
+    assert.equal(consumed?.userId, 'u1')
+    assert.equal(consumed?.orgId, 'orgA')
+    assert.equal(s.consumeDeviceAuth('dc1', 200), undefined, 'single-use: already consumed')
+    s.close()
+  })
+
+  test(`${name}: device code expiry is enforced on approve and consume`, () => {
+    const s = make()
+    s.createDeviceAuth({ deviceCode: 'dc2', userCode: 'UC2', status: 'pending', createdAt: 0, expiresAt: 100 })
+    assert.equal(s.approveDeviceAuthByUserCode('UC2', { userId: 'u1', orgId: 'orgA', role: 'member' }, 200), false, 'expired: approve must fail')
+    s.close()
+  })
 }

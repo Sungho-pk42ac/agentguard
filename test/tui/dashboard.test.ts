@@ -45,24 +45,42 @@ test('dashboard paints a loading frame BEFORE the (synchronous) scan runs', () =
   unmount()
 })
 
-test('dashboard renders 6 tabs + verdict badge + footer status after load', async () => {
+test('dashboard renders 7 tabs (workflow order) + verdict badge + footer status after load', async () => {
   const { lastFrame, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview hero should load')
   const frame = lastFrame() ?? ''
-  for (const label of ['Overview', 'Agents', 'Credentials', 'Posture', 'Baseline', 'Offboard']) {
+  for (const label of ['Overview', 'Credentials', 'Posture', 'Agents', 'Baseline', 'Offboard', 'Fleet']) {
     assert.match(frame, new RegExp(label), `tab ${label} missing`)
   }
-  assert.match(frame, /\[tab\]/)
+  assert.match(frame, /\[tab\//)
   assert.match(frame, /findings/)
   assert.match(frame, /BLOCK/)
   unmount()
 })
 
-test('dashboard tab key switches the active tab body', async () => {
+test('dashboard tab key switches the active tab body (Overview → Credentials)', async () => {
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview should load first')
   stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/), 'tab should switch to Credentials body')
+  unmount()
+})
+
+test('dashboard tab key cycles through to Agents and Fleet (workflow order)', async () => {
+  const { lastFrame, stdin, unmount } = mountDashboard()
+  assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview should load first')
+  // overview -> credentials -> posture -> agents (3 tab presses)
+  for (let i = 0; i < 3; i += 1) {
+    stdin.write('\t')
+    await delay(20)
+  }
   assert.ok(await waitFor(lastFrame, /onboarding check/), 'tab should switch to Agents body')
+  // agents -> baseline -> offboard -> fleet (3 more tab presses)
+  for (let i = 0; i < 3; i += 1) {
+    stdin.write('\t')
+    await delay(20)
+  }
+  assert.ok(await waitFor(lastFrame, /로그인 필요|Fleet —/), 'tab should reach Fleet body')
   unmount()
 })
 
@@ -121,9 +139,7 @@ test('S2: 0-finding credentials tab renders 깨끗함 ✓', async () => {
   // With empty data, HeroChart shows "PASS — no residual..." rather than "Findings by surface".
   // Wait for the PASS text to confirm loading completed (footer "0 findings" also works).
   assert.ok(await waitFor(lastFrame, /PASS — no residual|0 findings/), 'overview loaded')
-  // Navigate to Credentials (2 tabs forward: overview → agents → credentials)
-  stdin.write('\t')
-  await delay(25)
+  // Navigate to Credentials (1 tab forward: overview → credentials)
   stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /깨끗함/), '깨끗함 ✓ should appear for 0-item tab')
   unmount()
@@ -164,9 +180,7 @@ test('S1: ? inert when offboardActive (overlay does NOT open)', async () => {
 test('S4: up/down/enter behave identically on credentials tab', async () => {
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
-  // Navigate to Credentials (tab, tab)
-  stdin.write('\t')
-  await delay(20)
+  // Navigate to Credentials (1 tab)
   stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /Credentials —/))
   // Move down
@@ -185,9 +199,7 @@ test('S4: up/down/enter behave identically on posture tab', async () => {
   // Use residuals with posture items (agent-config surface)
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
-  // Navigate to Posture (tab × 3: overview → agents → credentials → posture)
-  stdin.write('\t')
-  await delay(20)
+  // Navigate to Posture (tab × 2: overview → credentials → posture)
   stdin.write('\t')
   await delay(20)
   stdin.write('\t')
@@ -204,9 +216,7 @@ test('S4: up/down/enter behave identically on posture tab', async () => {
 test('S5: detail panel renders all four blocks (path + severity + category + recommendation)', async () => {
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
-  // Navigate to Credentials (2 tabs)
-  stdin.write('\t')
-  await delay(20)
+  // Navigate to Credentials (1 tab)
   stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /Credentials —/))
   await delay(25) // let state settle before pressing enter
@@ -230,9 +240,7 @@ test('S5: detail panel renders all four blocks (path + severity + category + rec
 test('S6: i hides selected item; verdict+aggregate unchanged; rescan restores', async () => {
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
-  // Navigate to Credentials (2 tabs)
-  stdin.write('\t')
-  await delay(20)
+  // Navigate to Credentials (1 tab)
   stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /Credentials —/))
   await delay(30) // let Ink update the useInput callback ref for the new tab
@@ -261,8 +269,6 @@ test('S6/C5: i writes NO files to disk', async () => {
   const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader, onExit: () => {}, homeDir: home }))
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
   stdin.write('\t')
-  await delay(20)
-  stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /Credentials —/))
   stdin.write('i') // hide
   await delay(50)
@@ -278,9 +284,7 @@ test('S6/C5: i writes NO files to disk', async () => {
 test('S7: / enters search; query live-filters; esc clears', async () => {
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
-  // Navigate to Credentials
-  stdin.write('\t')
-  await delay(20)
+  // Navigate to Credentials (1 tab)
   stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /Credentials —/))
   // Enter search mode
@@ -308,8 +312,6 @@ test('S7: enter in search keeps query', async () => {
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
   stdin.write('\t')
-  await delay(20)
-  stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /Credentials —/))
   stdin.write('/')
   await delay(20)
@@ -327,9 +329,7 @@ test('S7: enter in search keeps query', async () => {
 test('S8: g toggles sort indicator in header', async () => {
   const { lastFrame, stdin, unmount } = mountDashboard()
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
-  // Navigate to Credentials
-  stdin.write('\t')
-  await delay(20)
+  // Navigate to Credentials (1 tab)
   stdin.write('\t')
   assert.ok(await waitFor(lastFrame, /Credentials —/))
   // Initially no sort indicator
@@ -410,8 +410,6 @@ test('S6×S7 regression: i hides the DISPLAYED selected item under an active sea
   assert.ok(await waitFor(lastFrame, /Findings by surface/))
   stdin.write('\t')
   await delay(25)
-  stdin.write('\t')
-  await delay(25)
   assert.ok(await waitFor(lastFrame, /Credentials —/), 'should land on the Credentials tab')
   // Search narrows the 3 credential items to the single ai-tool-dir entry whose
   // location contains "claude"; raw-order[0] is the shell-rc item, so a naive
@@ -474,4 +472,98 @@ test('S12: AGENTGUARD_ASCII=1 → unicode tab icons absent from tab bar, no cras
     if (orig === undefined) delete process.env['AGENTGUARD_ASCII']
     else process.env['AGENTGUARD_ASCII'] = orig
   }
+})
+
+// ─── M1b: editor-open action ('e') ───────────────────────────────────────────
+
+test("M1b: 'e' on Credentials opens the selected finding via the injected fake opener; footer shows status", async () => {
+  const calls: { file: string; line: number | undefined }[] = []
+  const fakeOpenInEditor = (file: string, line: number | undefined) => {
+    calls.push({ file, line })
+    return { editor: 'code', command: 'code', args: ['--goto', `${file}:${line}`] }
+  }
+  const home = mkdtempSync(join(tmpdir(), 'agentguard-editor-'))
+  const { lastFrame, stdin, unmount } = render(
+    createElement(Dashboard, { loader, onExit: () => {}, homeDir: home, openInEditor: fakeOpenInEditor }),
+  )
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('\t') // overview -> credentials
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  await delay(30) // let Ink update the useInput callback ref for the new tab
+  stdin.write('e')
+  assert.ok(await waitFor(lastFrame, /에디터로 열었음/), 'footer should show the open-in-editor status')
+  assert.equal(calls.length, 1)
+  // Cursor 0 -> shell-rc '~/.bashrc' with line 3; '~' expands to the injected homeDir.
+  assert.equal(calls[0]!.file, join(home, '.bashrc'))
+  assert.equal(calls[0]!.line, 3)
+  assert.match(lastFrame() ?? '', new RegExp(`code ${join(home, '.bashrc').replace(/[/\\.]/g, '\\$&')}:3`))
+  unmount()
+})
+
+test("M1b: 'e' shows the fallback message when no editor is resolved", async () => {
+  const fakeOpenInEditor = () => ({ editor: undefined, command: 'xdg-open', args: ['x'], message: '열림: 기본 앱' })
+  const { lastFrame, stdin, unmount } = render(
+    createElement(Dashboard, { loader, onExit: () => {}, openInEditor: fakeOpenInEditor }),
+  )
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('\t')
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  await delay(30) // let Ink update the useInput callback ref for the new tab
+  stdin.write('e')
+  assert.ok(await waitFor(lastFrame, /열림: 기본 앱/), 'fallback message should render in the footer')
+  unmount()
+})
+
+test("M1b: 'e' is inert on Overview (not a list tab) — no fake-opener call", async () => {
+  let called = false
+  const fakeOpenInEditor = () => {
+    called = true
+    return { editor: 'code', command: 'code', args: [] }
+  }
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader, onExit: () => {}, openInEditor: fakeOpenInEditor }))
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('e')
+  await delay(40)
+  assert.equal(called, false, 'e must be inert on Overview')
+  unmount()
+})
+
+test("M1b: 'e' with no selection (all items filtered out) does not call the opener", async () => {
+  let called = false
+  const fakeOpenInEditor = () => {
+    called = true
+    return { editor: 'code', command: 'code', args: [] }
+  }
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader, onExit: () => {}, openInEditor: fakeOpenInEditor }))
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  stdin.write('\t') // -> credentials
+  assert.ok(await waitFor(lastFrame, /Credentials —/))
+  stdin.write('/') // search narrows to nothing
+  await delay(20)
+  for (const ch of 'zzz-no-match') {
+    stdin.write(ch)
+    await delay(10)
+  }
+  assert.ok(await waitFor(lastFrame, /Credentials — 0\/3/), 'search should empty the filtered list')
+  stdin.write('e')
+  await delay(40)
+  assert.equal(called, false, 'e with no selected item must not call the opener')
+  unmount()
+})
+
+// ─── M1b: Fleet tab wiring ────────────────────────────────────────────────────
+
+test('M1b: Fleet tab shows the login hint when no session is present', async () => {
+  const noSession = () => undefined
+  const { lastFrame, stdin, unmount } = render(
+    createElement(Dashboard, { loader, onExit: () => {}, readSessionFn: noSession }),
+  )
+  assert.ok(await waitFor(lastFrame, /Findings by surface/))
+  for (let i = 0; i < 6; i += 1) {
+    stdin.write('\t')
+    await delay(20)
+  }
+  assert.ok(await waitFor(lastFrame, /로그인 필요/), 'Fleet tab should show the login hint')
+  assert.match(lastFrame() ?? '', /로컬 전용 모드로 계속 사용 가능/)
+  unmount()
 })

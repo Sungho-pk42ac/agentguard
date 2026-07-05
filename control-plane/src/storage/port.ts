@@ -1,4 +1,16 @@
-import type { AlertRecord, AssetRecord, FindingFilter, FindingRecord, IngestEventRecord } from '../model.js'
+import type {
+  AlertRecord,
+  AssetRecord,
+  DeviceAuthRecord,
+  FindingFilter,
+  FindingRecord,
+  IngestEventRecord,
+  InviteRecord,
+  OrgRecord,
+  Role,
+  SessionRecord,
+  UserRecord,
+} from '../model.js'
 import type { ReportFinding } from '../contract.js'
 
 // Multi-tenant storage boundary. EVERY method takes orgId (except lookups that
@@ -38,6 +50,36 @@ export interface StoragePort {
   // ── OIDC enrollment grants (which provider:subject may enroll into an org) ──
   grantOidc(orgId: string, provider: string, subject: string): void
   isOidcGranted(orgId: string, provider: string, subject: string): boolean
+
+  // ── auth: orgs ──
+  createOrg(org: OrgRecord): void
+  getOrg(orgId: string): OrgRecord | undefined
+
+  // ── auth: users (email is globally unique for login-by-email) ──
+  createUser(user: UserRecord): void
+  getUserByEmail(email: string): UserRecord | undefined
+  getUser(orgId: string, userId: string): UserRecord | undefined
+  listUsers(orgId: string): UserRecord[]
+
+  // ── auth: invites (single-use, expiring — like enrollment codes) ──
+  createInvite(invite: InviteRecord): void
+  consumeInvite(code: string, now: number): InviteRecord | undefined
+
+  // ── auth: sessions ──
+  createSession(session: SessionRecord): void
+  getSession(token: string): SessionRecord | undefined
+  deleteSession(token: string): void
+  touchSession(token: string, at: number): void
+
+  // ── auth: login rate-limiting (per-email failure counter) ──
+  recordLoginFailure(email: string, at: number): void
+  countRecentLoginFailures(email: string, sinceInclusive: number): number
+
+  // ── auth: CLI device-authorization flow ──
+  createDeviceAuth(record: DeviceAuthRecord): void
+  getDeviceAuthByDeviceCode(deviceCode: string): DeviceAuthRecord | undefined
+  approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): boolean
+  consumeDeviceAuth(deviceCode: string, now: number): DeviceAuthRecord | undefined
 
   close(): void
 }

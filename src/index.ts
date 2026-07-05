@@ -9,9 +9,16 @@ import { toMarkdown, toSarif, type MarkdownLanguage } from './report.js'
 import { MAX_FILE_BYTES } from './scanner.js'
 import { resolveScanInput, ScanInputError } from './scan-input.js'
 import type { Finding } from './rules.js'
+import { severityScore } from './rules.js'
 import { resolveIdentity, EnrollmentError } from './enrollment.js'
 import { buildReportPayload, pushReport, RedactionError, ReportPushError } from './report-push.js'
 import { shouldLaunchRepl } from './tui/entry.js'
+import { resolveCommand } from './cli/table.js'
+import { openInEditor } from './open-in-editor.js'
+import { login, logout, enroll, AuthError } from './auth-client.js'
+import { readSession, writeSession, clearSession } from './session.js'
+import { enrollmentPath } from './enrollment.js'
+import { createInterface } from 'node:readline'
 
 interface CliArgs {
   readonly cmd: string
@@ -25,6 +32,10 @@ interface CliArgs {
   readonly endpoint?: string
   readonly org?: string
   readonly asset?: string
+  readonly open: boolean
+  readonly email?: string
+  readonly code?: string
+  readonly label?: string
 }
 
 function printVersion(): never {
@@ -44,6 +55,14 @@ function usage(exitCode = 2): never {
   agentguard posture [경로] [--json]
   agentguard doctor [--lang ko|en]
   agentguard repl
+  agentguard scan files [경로]
+  agentguard scan diff < diff.patch
+  agentguard scan log < transcript.log
+  agentguard scan mcp < config.toml
+  agentguard open <path[:line]>
+  agentguard login --endpoint <url> --email <e>
+  agentguard logout
+  agentguard enroll --endpoint <url> --org <id> --code <c> [--label <l>]
 
 AI 에이전트 보안 감사 — diff, 로그, MCP 설정, 파일을 검사해 위험 행동을 탐지합니다.
 
@@ -71,7 +90,11 @@ Options:
   --out <file>, --out=<file>        결과를 파일로 저장
   --push                            스캔 결과(redacted만)를 control plane로 전송
   --endpoint <url>                  control plane 주소 (--push와 함께 사용)
-  --org <id>, --asset <id>          조직·자산 식별자 (미지정 시 enrollment에서 해석)`
+  --org <id>, --asset <id>          조직·자산 식별자 (미지정 시 enrollment에서 해석)
+  --open                            스캔 후 가장 심각한 finding을 에디터에서 열기
+  --email <email>                   login 계정 이메일
+  --code <code>                     enroll 등록 코드
+  --label <label>                   enroll 자산 라벨`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)
@@ -111,6 +134,10 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
   let endpoint: string | undefined
   let org: string | undefined
   let asset: string | undefined
+  let open = false
+  let email: string | undefined
+  let code: string | undefined
+  let label: string | undefined
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -193,6 +220,29 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
       else { if (asset !== undefined) return undefined; asset = value }
       continue
     }
+    if (arg === '--open') {
+      open = true
+      continue
+    }
+    if (arg === '--email' || arg === '--code' || arg === '--label') {
+      const value = args[index + 1]
+      if (!isOptionValue(value)) return undefined
+      if (arg === '--email') { if (email !== undefined) return undefined; email = value }
+      else if (arg === '--code') { if (code !== undefined) return undefined; code = value }
+      else { if (label !== undefined) return undefined; label = value }
+      index += 1
+      continue
+    }
+    if (arg.startsWith('--email=') || arg.startsWith('--code=') || arg.startsWith('--label=')) {
+      const eq2 = arg.indexOf('=')
+      const key2 = arg.slice(2, eq2)
+      const value2 = arg.slice(eq2 + 1)
+      if (value2.length === 0) return undefined
+      if (key2 === 'email') { if (email !== undefined) return undefined; email = value2 }
+      else if (key2 === 'code') { if (code !== undefined) return undefined; code = value2 }
+      else { if (label !== undefined) return undefined; label = value2 }
+      continue
+    }
     if (arg.startsWith('--')) return undefined
     if (!cmd) cmd = arg
     else cleanArgs.push(arg)
@@ -200,7 +250,7 @@ function parseArgs(args: readonly string[]): CliArgs | undefined {
 
   if (!cmd) return undefined
   if (['--help', '-h', '--version', '-v'].includes(cmd) && cleanArgs.length > 0) return undefined
-  return { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage, push, endpoint, org, asset }
+  return { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage, push, endpoint, org, asset, open, email, code, label }
 }
 
 function isMarkdownLanguage(value: string | undefined): value is MarkdownLanguage {
@@ -266,6 +316,51 @@ function parsePostureArgs(args: readonly string[]): PostureArgs | undefined {
   }
   return { path, json }
 }
+async function promptPassword(): Promise<string> {
+  if (!process.stdin.isTTY) {
+    // Non-interactive (piped) stdin: read exactly one line, no masking needed/possible.
+    return new Promise((resolve, reject) => {
+      const rl = createInterface({ input: process.stdin, terminal: false })
+      let line: string | undefined
+      rl.on('line', (input) => {
+        if (line === undefined) line = input
+      })
+      rl.on('close', () => resolve(line ?? ''))
+      rl.on('error', reject)
+    })
+  }
+  return new Promise((resolve) => {
+    process.stderr.write('Password: ')
+    const stdin = process.stdin
+    let password = ''
+    const cleanup = () => {
+      stdin.removeListener('data', onData)
+      stdin.setRawMode(false)
+      stdin.pause()
+    }
+    const onData = (char: string) => {
+      if (char === '\n' || char === '\r' || char === '\u0004') {
+        cleanup()
+        process.stderr.write('\n')
+        resolve(password)
+        return
+      }
+      if (char === '\u0003') {
+        cleanup()
+        process.exit(130)
+      }
+      if (char === '\u007f' || char === '\b') {
+        password = password.slice(0, -1)
+        return
+      }
+      password += char
+    }
+    stdin.setRawMode(true)
+    stdin.resume()
+    stdin.setEncoding('utf8')
+    stdin.on('data', onData)
+  })
+}
 
 const rawArgs = process.argv.slice(2)
 if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdout.isTTY))) {
@@ -290,10 +385,82 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
     console.error(`Could not scan posture: ${postureScanErrorMessage(error)}`)
     process.exit(2)
   }
+} else if (rawArgs[0] === 'open') {
+  const parsed = parseArgs(rawArgs)
+  if (!parsed) usage()
+  const target = parsed.cleanArgs[0]
+  if (!target) usage()
+  const match = /^(.+):(\d+)$/.exec(target)
+  const file = match ? match[1] : target
+  const line = match ? Number(match[2]) : undefined
+  const result = openInEditor(file, line)
+  console.error(`${result.command} ${result.args.join(' ')}`)
+  if (result.message) console.error(result.message)
+  process.exit(0)
+} else if (rawArgs[0] === 'login') {
+  const parsed = parseArgs(rawArgs)
+  if (!parsed || !parsed.endpoint || !parsed.email) usage()
+  const password = await promptPassword()
+  try {
+    const result = await login({ endpoint: parsed.endpoint, email: parsed.email, password })
+    writeSession({
+      endpoint: parsed.endpoint,
+      sessionToken: result.sessionToken,
+      orgId: result.orgId,
+      role: result.role,
+      email: parsed.email,
+    })
+    console.error(`로그인 성공: ${parsed.email} (org ${result.orgId})`)
+    process.exit(0)
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      console.error(`로그인 실패: ${error.message}`)
+      process.exit(2)
+    }
+    throw error
+  }
+} else if (rawArgs[0] === 'logout') {
+  const session = readSession()
+  if (session) {
+    try {
+      await logout({ endpoint: session.endpoint, token: session.sessionToken })
+    } catch {
+      // network failure is tolerated — the local session is cleared regardless
+    }
+  }
+  clearSession()
+  process.exit(0)
+} else if (rawArgs[0] === 'enroll') {
+  const parsed = parseArgs(rawArgs)
+  if (!parsed || !parsed.endpoint || !parsed.org || !parsed.code) usage()
+  try {
+    const result = await enroll({
+      endpoint: parsed.endpoint,
+      orgId: parsed.org,
+      code: parsed.code,
+      label: parsed.label,
+    })
+    const path = enrollmentPath()
+    mkdirSync(dirname(path), { recursive: true })
+    writeFileSync(
+      path,
+      JSON.stringify({ orgId: parsed.org, assetId: result.assetId, deviceToken: result.deviceToken }, null, 2) + '\n',
+    )
+    console.error(`등록 완료: asset ${result.assetId} (org ${parsed.org})`)
+    process.exit(0)
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      console.error(`등록 실패: ${error.message}`)
+      process.exit(2)
+    }
+    throw error
+  }
 } else {
-  const parsedArgs = parseArgs(rawArgs)
+  const resolved = resolveCommand(rawArgs)
+  const effectiveArgs = resolved === undefined ? rawArgs : [resolved.canonical, ...resolved.rest]
+  const parsedArgs = parseArgs(effectiveArgs)
   if (!parsedArgs) usage()
-  const { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage, push, endpoint, org, asset } = parsedArgs
+  const { cmd, cleanArgs, json, sarif, out, policyPath, markdownLanguage, push, endpoint, org, asset, open } = parsedArgs
   if (cmd === '--help' || cmd === '-h') usage(0)
   if (cmd === '--version' || cmd === '-v') printVersion()
   if (!hasValidPositionalArgs(cmd, cleanArgs)) usage()
@@ -382,6 +549,13 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
       process.exit(2)
     }
   } else console.log(output)
+  if (open) {
+    const openable = findings.filter((f): f is Finding & { file: string; line: number } => f.file !== undefined && f.line !== undefined)
+    if (openable.length > 0) {
+      const best = openable.reduce((top, f) => (severityScore(f.severity) > severityScore(top.severity) ? f : top))
+      openInEditor(best.file, best.line)
+    }
+  }
   if (push) {
     if (!endpoint) {
       console.error('--push requires --endpoint <control-plane-url>')

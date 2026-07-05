@@ -1,4 +1,16 @@
-import type { AlertRecord, AssetRecord, FindingFilter, FindingRecord, IngestEventRecord } from '../model.js'
+import type {
+  AlertRecord,
+  AssetRecord,
+  DeviceAuthRecord,
+  FindingFilter,
+  FindingRecord,
+  IngestEventRecord,
+  InviteRecord,
+  OrgRecord,
+  Role,
+  SessionRecord,
+  UserRecord,
+} from '../model.js'
 import type { ReportFinding } from '../contract.js'
 import type { StoragePort, UpsertFindingResult } from './port.js'
 
@@ -12,6 +24,14 @@ export class MemoryStorage implements StoragePort {
   private readonly ingests: IngestEventRecord[] = []
   private readonly codes = new Map<string, number>()
   private readonly oidcGrants = new Set<string>()
+  private readonly orgs = new Map<string, OrgRecord>()
+  private readonly users = new Map<string, UserRecord>()
+  private readonly usersByEmail = new Map<string, string>()
+  private readonly invites = new Map<string, InviteRecord>()
+  private readonly sessions = new Map<string, SessionRecord>()
+  private readonly loginFailures = new Map<string, number[]>()
+  private readonly deviceAuths = new Map<string, DeviceAuthRecord>()
+  private readonly deviceAuthsByUserCode = new Map<string, string>()
 
   private assetKey(orgId: string, assetId: string): string {
     return `${orgId}\u0000${assetId}`
@@ -93,6 +113,92 @@ export class MemoryStorage implements StoragePort {
   }
   isOidcGranted(orgId: string, provider: string, subject: string): boolean {
     return this.oidcGrants.has(`${orgId}\u0000${provider}\u0000${subject}`)
+  }
+
+
+  createOrg(org: OrgRecord): void {
+    this.orgs.set(org.id, { ...org })
+  }
+  getOrg(orgId: string): OrgRecord | undefined {
+    const o = this.orgs.get(orgId)
+    return o ? { ...o } : undefined
+  }
+
+  createUser(user: UserRecord): void {
+    this.users.set(user.id, { ...user })
+    this.usersByEmail.set(user.email, user.id)
+  }
+  getUserByEmail(email: string): UserRecord | undefined {
+    const id = this.usersByEmail.get(email)
+    const u = id ? this.users.get(id) : undefined
+    return u ? { ...u } : undefined
+  }
+  getUser(orgId: string, userId: string): UserRecord | undefined {
+    const u = this.users.get(userId)
+    return u && u.orgId === orgId ? { ...u } : undefined
+  }
+  listUsers(orgId: string): UserRecord[] {
+    return [...this.users.values()].filter((u) => u.orgId === orgId).map((u) => ({ ...u }))
+  }
+
+  createInvite(invite: InviteRecord): void {
+    this.invites.set(invite.code, { ...invite })
+  }
+  consumeInvite(code: string, now: number): InviteRecord | undefined {
+    const invite = this.invites.get(code)
+    if (!invite) return undefined
+    this.invites.delete(code) // single-use regardless of expiry outcome
+    return invite.expiresAt >= now ? { ...invite } : undefined
+  }
+
+  createSession(session: SessionRecord): void {
+    this.sessions.set(session.token, { ...session })
+  }
+  getSession(token: string): SessionRecord | undefined {
+    const s = this.sessions.get(token)
+    return s ? { ...s } : undefined
+  }
+  deleteSession(token: string): void {
+    this.sessions.delete(token)
+  }
+  touchSession(token: string, at: number): void {
+    const s = this.sessions.get(token)
+    if (s) s.lastSeenAt = at
+  }
+
+  recordLoginFailure(email: string, at: number): void {
+    const arr = this.loginFailures.get(email) ?? []
+    arr.push(at)
+    this.loginFailures.set(email, arr)
+  }
+  countRecentLoginFailures(email: string, sinceInclusive: number): number {
+    const arr = this.loginFailures.get(email) ?? []
+    return arr.filter((at) => at >= sinceInclusive).length
+  }
+
+  createDeviceAuth(record: DeviceAuthRecord): void {
+    this.deviceAuths.set(record.deviceCode, { ...record })
+    this.deviceAuthsByUserCode.set(record.userCode, record.deviceCode)
+  }
+  getDeviceAuthByDeviceCode(deviceCode: string): DeviceAuthRecord | undefined {
+    const r = this.deviceAuths.get(deviceCode)
+    return r ? { ...r } : undefined
+  }
+  approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): boolean {
+    const deviceCode = this.deviceAuthsByUserCode.get(userCode)
+    const record = deviceCode ? this.deviceAuths.get(deviceCode) : undefined
+    if (!record || record.status !== 'pending' || record.expiresAt < now) return false
+    record.status = 'approved'
+    record.userId = grant.userId
+    record.orgId = grant.orgId
+    record.role = grant.role
+    return true
+  }
+  consumeDeviceAuth(deviceCode: string, now: number): DeviceAuthRecord | undefined {
+    const record = this.deviceAuths.get(deviceCode)
+    if (!record || record.status !== 'approved' || record.expiresAt < now) return undefined
+    record.status = 'consumed'
+    return { ...record }
   }
 
   close(): void {

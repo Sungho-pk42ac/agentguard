@@ -31,6 +31,7 @@ export const ICONS: Record<string, { readonly unicode: string; readonly ascii: s
   posture:     { unicode: '▲', ascii: '^' },
   baseline:    { unicode: '⊙', ascii: '@' },
   offboard:    { unicode: '✓', ascii: '+' },
+  fleet:       { unicode: '⬡', ascii: '%' },
   // ── Surfaces ────────────────────────────────────────────────────────────
   'shell-rc':    { unicode: '●', ascii: 'o' },
   'ai-tool-dir': { unicode: '▸', ascii: '>' },

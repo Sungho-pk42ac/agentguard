@@ -6,11 +6,11 @@
 //   3. overlay-open
 //   4. confirm-full y/N
 //   5. global  (q/esc/r/?/1/2/3/g/w/o/tab/arrows)
-//   6. list-tab-scoped  (↑↓/j/k/enter/f/i)  [credentials, posture only]
+//   6. list-tab-scoped  (↑↓/j/k/enter/f/i/e)  [credentials, posture only]
 //   7. baseline-tab  (s)
 //   8. offboard-tab  (enter)
 
-export type TabId = 'overview' | 'agents' | 'credentials' | 'posture' | 'baseline' | 'offboard'
+export type TabId = 'overview' | 'agents' | 'credentials' | 'posture' | 'baseline' | 'offboard' | 'fleet'
 
 export interface ClassifyState {
   readonly offboardActive: boolean
@@ -19,6 +19,10 @@ export interface ClassifyState {
   /** Waiting for y/N confirmation before a Full-preset scan from a non-project cwd. */
   readonly confirmFull: boolean
   readonly activeTab: TabId
+  /** Whether a list-tab item is currently selected (a non-empty filtered list).
+   *  Gates the 'e' (open editor) key. Defaults to true for callers that don't
+   *  track selection (e.g. existing tests exercising other rungs). */
+  readonly hasSelection?: boolean
 }
 
 export type Intent =
@@ -40,6 +44,7 @@ export type Intent =
   | { kind: 'detail' }
   | { kind: 'filter' }
   | { kind: 'openOffboard' }
+  | { kind: 'openEditor' }
   | { kind: 'baselineSave' }
   | { kind: 'confirmYes' }
   | { kind: 'confirmNo' }
@@ -102,6 +107,7 @@ export function classifyKey(state: ClassifyState, char: string, key: KeyInput): 
     if (key.return) return { kind: 'detail' }
     if (char === 'f') return { kind: 'filter' }
     if (char === 'i') return { kind: 'hide' }
+    if (char === 'e' && (state.hasSelection ?? true)) return { kind: 'openEditor' }
   }
 
   // 7. Baseline-tab scoped

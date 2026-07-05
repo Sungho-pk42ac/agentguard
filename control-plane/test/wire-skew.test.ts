@@ -35,16 +35,16 @@ function deviceAsset(orgId: string, assetId: string): AssetRecord {
 
 test('(a) a v1 payload (no advisory findings) is accepted (202) by a v2-capable server', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const body = JSON.stringify(payload('orgA', 'pc1', [finding()], { schemaVersion: 1 }))
   const res = await handleReport(body, deviceHeaders('pc1', SECRET, body, TS), c.deps)
   assert.equal(res.status, 202)
-  assert.equal(c.storage.listFindings('orgA').length, 1)
+  assert.equal((await c.storage.listFindings('orgA')).length, 1)
 })
 
 test('(b) a v2 payload with an advisory finding is accepted (202) and the advisory flag is stored', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const advisoryFinding = finding({
     ruleId: 'mcp-unapproved',
     surface: 'mcp-risk',
@@ -56,7 +56,7 @@ test('(b) a v2 payload with an advisory finding is accepted (202) and the adviso
   const res = await handleReport(body, deviceHeaders('pc1', SECRET, body, TS), c.deps)
   assert.equal(res.status, 202)
 
-  const stored = c.storage.listFindings('orgA')
+  const stored = await c.storage.listFindings('orgA')
   assert.equal(stored.length, 2)
   const storedAdvisory = stored.find((f) => f.ruleId === 'mcp-unapproved')
   assert.equal(storedAdvisory?.advisory, true, 'the advisory flag must survive persistence')
@@ -66,15 +66,15 @@ test('(b) a v2 payload with an advisory finding is accepted (202) and the adviso
 
 test('a re-report toggling advisory off updates the stored flag (upsert keeps advisory in sync)', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const shared = { ruleId: 'mcp-unapproved', surface: 'mcp-risk', severity: 'low' as const, evidenceRedacted: 'filesystem', location: 'mcp-config' }
   const advisoryFinding = finding({ ...shared, advisory: true })
   const body1 = JSON.stringify(payload('orgA', 'pc1', [advisoryFinding], { schemaVersion: 2 }))
   await handleReport(body1, deviceHeaders('pc1', SECRET, body1, TS), c.deps)
-  assert.equal(c.storage.listFindings('orgA')[0]?.advisory, true)
+  assert.equal((await c.storage.listFindings('orgA'))[0]?.advisory, true)
 
   const approvedFinding = finding({ ...shared, advisory: false })
   const body2 = JSON.stringify(payload('orgA', 'pc1', [approvedFinding], { schemaVersion: 1 }))
   await handleReport(body2, deviceHeaders('pc1', SECRET, body2, TS), c.deps)
-  assert.notEqual(c.storage.listFindings('orgA')[0]?.advisory, true, 'advisory:false must clear the stored flag on re-report')
+  assert.notEqual((await c.storage.listFindings('orgA'))[0]?.advisory, true, 'advisory:false must clear the stored flag on re-report')
 })

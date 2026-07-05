@@ -1,0 +1,10 @@
+# Internal Caddyfile baked into the `web` image (deploy/web.Dockerfile) — NOT
+# the public-facing proxy (that's deploy/Caddyfile, run by the `proxy`
+# service). This one only serves the prebuilt static export from `/srv`
+# inside the `web` container itself; the outer `proxy` container is the
+# thing browsers actually talk to.
+:80 {
+	root * /srv
+	encode gzip
+	file_server
+}

@@ -58,22 +58,22 @@ export class MemoryStorage implements StoragePort {
     return `${orgId}\u0000${fingerprint}`
   }
 
-  createAsset(asset: AssetRecord): void {
+  async createAsset(asset: AssetRecord): Promise<void> {
     this.assets.set(this.assetKey(asset.orgId, asset.assetId), { ...asset })
   }
-  getAsset(orgId: string, assetId: string): AssetRecord | undefined {
+  async getAsset(orgId: string, assetId: string): Promise<AssetRecord | undefined> {
     const a = this.assets.get(this.assetKey(orgId, assetId))
     return a ? { ...a } : undefined
   }
-  touchAsset(orgId: string, assetId: string, at: number): void {
+  async touchAsset(orgId: string, assetId: string, at: number): Promise<void> {
     const a = this.assets.get(this.assetKey(orgId, assetId))
     if (a) a.lastSeenAt = at
   }
-  listAssets(orgId: string): AssetRecord[] {
+  async listAssets(orgId: string): Promise<AssetRecord[]> {
     return [...this.assets.values()].filter((a) => a.orgId === orgId).map((a) => ({ ...a }))
   }
 
-  upsertFinding(orgId: string, assetId: string, finding: ReportFinding, at: number): UpsertFindingResult {
+  async upsertFinding(orgId: string, assetId: string, finding: ReportFinding, at: number): Promise<UpsertFindingResult> {
     const key = this.findingKey(orgId, assetId, finding.fingerprint)
     const existing = this.findings.get(key)
     if (existing) {
@@ -89,7 +89,7 @@ export class MemoryStorage implements StoragePort {
     this.findings.set(key, { ...finding, orgId, assetId, firstSeen: at, lastSeen: at, status: 'open' })
     return { isNew: true }
   }
-  listFindings(orgId: string, filter: FindingFilter = {}): FindingRecord[] {
+  async listFindings(orgId: string, filter: FindingFilter = {}): Promise<FindingRecord[]> {
     return [...this.findings.values()]
       .filter((f) => f.orgId === orgId)
       .filter((f) => (filter.surface ? f.surface === filter.surface : true))
@@ -98,25 +98,25 @@ export class MemoryStorage implements StoragePort {
       .map((f) => ({ ...f }))
   }
 
-  recordIngest(event: IngestEventRecord): void {
+  async recordIngest(event: IngestEventRecord): Promise<void> {
     this.ingests.push({ ...event })
   }
 
-  alertExists(orgId: string, fingerprint: string): boolean {
+  async alertExists(orgId: string, fingerprint: string): Promise<boolean> {
     return this.alerts.has(this.alertKey(orgId, fingerprint))
   }
-  recordAlert(alert: AlertRecord): void {
+  async recordAlert(alert: AlertRecord): Promise<void> {
     const key = this.alertKey(alert.orgId, alert.fingerprint)
     if (!this.alerts.has(key)) this.alerts.set(key, { ...alert })
   }
-  listAlerts(orgId: string): AlertRecord[] {
+  async listAlerts(orgId: string): Promise<AlertRecord[]> {
     return [...this.alerts.values()].filter((a) => a.orgId === orgId).map((a) => ({ ...a }))
   }
 
-  putEnrollmentCode(orgId: string, codeHash: string, expiresAt: number): void {
+  async putEnrollmentCode(orgId: string, codeHash: string, expiresAt: number): Promise<void> {
     this.codes.set(this.alertKey(orgId, codeHash), expiresAt)
   }
-  consumeEnrollmentCode(orgId: string, codeHash: string, now: number): boolean {
+  async consumeEnrollmentCode(orgId: string, codeHash: string, now: number): Promise<boolean> {
     const key = this.alertKey(orgId, codeHash)
     const expiresAt = this.codes.get(key)
     if (expiresAt === undefined) return false
@@ -124,83 +124,83 @@ export class MemoryStorage implements StoragePort {
     return expiresAt >= now
   }
 
-  grantOidc(orgId: string, provider: string, subject: string): void {
+  async grantOidc(orgId: string, provider: string, subject: string): Promise<void> {
     this.oidcGrants.add(`${orgId}\u0000${provider}\u0000${subject}`)
   }
-  isOidcGranted(orgId: string, provider: string, subject: string): boolean {
+  async isOidcGranted(orgId: string, provider: string, subject: string): Promise<boolean> {
     return this.oidcGrants.has(`${orgId}\u0000${provider}\u0000${subject}`)
   }
 
 
-  createOrg(org: OrgRecord): void {
+  async createOrg(org: OrgRecord): Promise<void> {
     this.orgs.set(org.id, { ...org })
   }
-  getOrg(orgId: string): OrgRecord | undefined {
+  async getOrg(orgId: string): Promise<OrgRecord | undefined> {
     const o = this.orgs.get(orgId)
     return o ? { ...o } : undefined
   }
 
-  createUser(user: UserRecord): void {
+  async createUser(user: UserRecord): Promise<void> {
     this.users.set(user.id, { ...user })
     this.usersByEmail.set(user.email, user.id)
   }
-  getUserByEmail(email: string): UserRecord | undefined {
+  async getUserByEmail(email: string): Promise<UserRecord | undefined> {
     const id = this.usersByEmail.get(email)
     const u = id ? this.users.get(id) : undefined
     return u ? { ...u } : undefined
   }
-  getUser(orgId: string, userId: string): UserRecord | undefined {
+  async getUser(orgId: string, userId: string): Promise<UserRecord | undefined> {
     const u = this.users.get(userId)
     return u && u.orgId === orgId ? { ...u } : undefined
   }
-  listUsers(orgId: string): UserRecord[] {
+  async listUsers(orgId: string): Promise<UserRecord[]> {
     return [...this.users.values()].filter((u) => u.orgId === orgId).map((u) => ({ ...u }))
   }
 
-  createInvite(invite: InviteRecord): void {
+  async createInvite(invite: InviteRecord): Promise<void> {
     this.invites.set(invite.code, { ...invite })
   }
-  consumeInvite(code: string, now: number): InviteRecord | undefined {
+  async consumeInvite(code: string, now: number): Promise<InviteRecord | undefined> {
     const invite = this.invites.get(code)
     if (!invite) return undefined
     this.invites.delete(code) // single-use regardless of expiry outcome
     return invite.expiresAt >= now ? { ...invite } : undefined
   }
 
-  createSession(session: SessionRecord): void {
+  async createSession(session: SessionRecord): Promise<void> {
     this.sessions.set(session.token, { ...session })
   }
-  getSession(token: string): SessionRecord | undefined {
+  async getSession(token: string): Promise<SessionRecord | undefined> {
     const s = this.sessions.get(token)
     return s ? { ...s } : undefined
   }
-  deleteSession(token: string): void {
+  async deleteSession(token: string): Promise<void> {
     this.sessions.delete(token)
   }
-  touchSession(token: string, at: number): void {
+  async touchSession(token: string, at: number): Promise<void> {
     const s = this.sessions.get(token)
     if (s) s.lastSeenAt = at
   }
 
-  recordLoginFailure(email: string, at: number): void {
+  async recordLoginFailure(email: string, at: number): Promise<void> {
     const arr = this.loginFailures.get(email) ?? []
     arr.push(at)
     this.loginFailures.set(email, arr)
   }
-  countRecentLoginFailures(email: string, sinceInclusive: number): number {
+  async countRecentLoginFailures(email: string, sinceInclusive: number): Promise<number> {
     const arr = this.loginFailures.get(email) ?? []
     return arr.filter((at) => at >= sinceInclusive).length
   }
 
-  createDeviceAuth(record: DeviceAuthRecord): void {
+  async createDeviceAuth(record: DeviceAuthRecord): Promise<void> {
     this.deviceAuths.set(record.deviceCode, { ...record })
     this.deviceAuthsByUserCode.set(record.userCode, record.deviceCode)
   }
-  getDeviceAuthByDeviceCode(deviceCode: string): DeviceAuthRecord | undefined {
+  async getDeviceAuthByDeviceCode(deviceCode: string): Promise<DeviceAuthRecord | undefined> {
     const r = this.deviceAuths.get(deviceCode)
     return r ? { ...r } : undefined
   }
-  approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): boolean {
+  async approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): Promise<boolean> {
     const deviceCode = this.deviceAuthsByUserCode.get(userCode)
     const record = deviceCode ? this.deviceAuths.get(deviceCode) : undefined
     if (!record || record.status !== 'pending' || record.expiresAt < now) return false
@@ -210,13 +210,13 @@ export class MemoryStorage implements StoragePort {
     record.role = grant.role
     return true
   }
-  consumeDeviceAuth(deviceCode: string, now: number): DeviceAuthRecord | undefined {
+  async consumeDeviceAuth(deviceCode: string, now: number): Promise<DeviceAuthRecord | undefined> {
     const record = this.deviceAuths.get(deviceCode)
     if (!record || record.status !== 'approved' || record.expiresAt < now) return undefined
     record.status = 'consumed'
     return { ...record }
   }
-  createOffboardingTask(task: OffboardingTask): { task: OffboardingTask; created: boolean } {
+  async createOffboardingTask(task: OffboardingTask): Promise<{ task: OffboardingTask; created: boolean }> {
     const key = this.offboardingKey(task.orgId, task.employee.id, task.effectiveAt)
     const existingId = this.offboardingTasksByKey.get(key)
     const existing = existingId ? this.offboardingTasks.get(existingId) : undefined
@@ -225,20 +225,20 @@ export class MemoryStorage implements StoragePort {
     this.offboardingTasksByKey.set(key, task.id)
     return { task: this.cloneOffboarding(task), created: true }
   }
-  getOffboardingTask(orgId: string, id: string): OffboardingTask | undefined {
+  async getOffboardingTask(orgId: string, id: string): Promise<OffboardingTask | undefined> {
     const t = this.offboardingTasks.get(id)
     return t && t.orgId === orgId ? this.cloneOffboarding(t) : undefined
   }
-  listOffboardingTasks(orgId: string): OffboardingTask[] {
+  async listOffboardingTasks(orgId: string): Promise<OffboardingTask[]> {
     return [...this.offboardingTasks.values()].filter((t) => t.orgId === orgId).map((t) => this.cloneOffboarding(t))
   }
-  transitionOffboardingTask(
+  async transitionOffboardingTask(
     orgId: string,
     id: string,
     to: OffboardingStatus,
     actor: string,
     at: number,
-  ): { ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' } {
+  ): Promise<{ ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' }> {
     const t = this.offboardingTasks.get(id)
     if (!t || t.orgId !== orgId) return { ok: false, reason: 'not_found' }
     if (!isLegalOffboardingTransition(t.status, to)) return { ok: false, reason: 'invalid_transition' }
@@ -254,14 +254,14 @@ export class MemoryStorage implements StoragePort {
     return { ...t, employee: { ...t.employee }, assetIds: [...t.assetIds], audit: t.audit.map((a) => ({ ...a })) }
   }
 
-  close(): void {
+  async close(): Promise<void> {
     // nothing to release
   }
-  getPolicy(orgId: string): PolicyRecord | undefined {
+  async getPolicy(orgId: string): Promise<PolicyRecord | undefined> {
     const p = this.policies.get(orgId)
     return p ? { ...p } : undefined
   }
-  putPolicyRules(orgId: string, rules: string): PolicyRecord {
+  async putPolicyRules(orgId: string, rules: string): Promise<PolicyRecord> {
     const existing = this.policies.get(orgId)
     const record: PolicyRecord = {
       orgId,
@@ -272,13 +272,13 @@ export class MemoryStorage implements StoragePort {
     this.policies.set(orgId, record)
     return { ...record }
   }
-  listExceptions(orgId: string): PolicyExceptionRecord[] {
+  async listExceptions(orgId: string): Promise<PolicyExceptionRecord[]> {
     return [...this.exceptions.values()].filter((e) => e.orgId === orgId).map((e) => ({ ...e }))
   }
-  createException(record: PolicyExceptionRecord): void {
+  async createException(record: PolicyExceptionRecord): Promise<void> {
     this.exceptions.set(record.id, { ...record })
   }
-  resolveException(orgId: string, id: string, status: 'approved' | 'rejected', now: number): PolicyExceptionRecord | undefined {
+  async resolveException(orgId: string, id: string, status: 'approved' | 'rejected', now: number): Promise<PolicyExceptionRecord | undefined> {
     const e = this.exceptions.get(id)
     if (!e || e.orgId !== orgId || e.status !== 'pending') return undefined
     e.status = status
@@ -295,36 +295,36 @@ export class MemoryStorage implements StoragePort {
   private cveCacheKey(ecosystem: string, pkg: string, version: string): string {
     return `${ecosystem}\u0000${pkg}\u0000${version}`
   }
-  getCveCache(ecosystem: string, pkg: string, version: string): CveCacheRecord | undefined {
+  async getCveCache(ecosystem: string, pkg: string, version: string): Promise<CveCacheRecord | undefined> {
     const r = this.cveCache.get(this.cveCacheKey(ecosystem, pkg, version))
     return r ? { ...r, vulnIds: [...r.vulnIds], details: r.details.map((d) => ({ ...d })) } : undefined
   }
-  putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): void {
+  async putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): Promise<void> {
     this.cveCache.set(this.cveCacheKey(ecosystem, pkg, version), {
       ...record,
       vulnIds: [...record.vulnIds],
       details: record.details.map((d) => ({ ...d })),
     })
   }
-  updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): void {
+  async updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): Promise<void> {
     const f = this.findings.get(this.findingKey(orgId, assetId, fingerprint))
     if (!f) return
     f.cveIds = [...cveIds]
     f.cveSeverity = cveSeverity
   }
-  getMcpCatalog(orgId: string): McpCatalogEntry[] {
+  async getMcpCatalog(orgId: string): Promise<McpCatalogEntry[]> {
     return (this.mcpCatalog.get(orgId) ?? []).map((e) => ({ ...e, riskTags: [...e.riskTags] }))
   }
-  putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): void {
+  async putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): Promise<void> {
     this.mcpCatalog.set(
       orgId,
       entries.map((e) => ({ ...e, riskTags: [...e.riskTags] })),
     )
   }
-  getMcpStrictMode(orgId: string): boolean {
+  async getMcpStrictMode(orgId: string): Promise<boolean> {
     return this.mcpStrictMode.get(orgId) ?? false
   }
-  setMcpStrictMode(orgId: string, value: boolean): void {
+  async setMcpStrictMode(orgId: string, value: boolean): Promise<void> {
     this.mcpStrictMode.set(orgId, value)
   }
 }

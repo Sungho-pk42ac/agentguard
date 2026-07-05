@@ -84,10 +84,9 @@ function parseOffboardingBody(body: Record<string, unknown>): ParsedOffboardingB
 }
 
 /** Match org assets whose label or subject equals the employee's id or email. */
-function matchAssetsForEmployee(storage: StoragePort, orgId: string, employee: { id: string; email: string }): string[] {
+async function matchAssetsForEmployee(storage: StoragePort, orgId: string, employee: { id: string; email: string }): Promise<string[]> {
   const needles = new Set([employee.id, employee.email])
-  return storage
-    .listAssets(orgId)
+  return (await storage.listAssets(orgId))
     .filter((a) => needles.has(a.label) || (a.subject !== undefined && needles.has(a.subject)))
     .map((a) => a.assetId)
 }
@@ -115,12 +114,12 @@ function taskJson(task: OffboardingTask): Record<string, unknown> {
  *   - principal === null: signed-webhook path, orgId comes from the body
  *     (the signature proves possession of that org's webhookSecret).
  */
-export function handleCreateOffboarding(
+export async function handleCreateOffboarding(
   principal: Principal | null,
   rawBody: string,
   headers: Record<string, string>,
   deps: OffboardingDeps,
-): HandlerResponse {
+): Promise<HandlerResponse> {
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
 
@@ -133,7 +132,7 @@ export function handleCreateOffboarding(
     if (!isNonEmptyString(bodyOrgId)) {
       return { status: 401, json: { error: 'unauthorized: session or signed webhook required' } }
     }
-    const org = deps.storage.getOrg(bodyOrgId)
+    const org = await deps.storage.getOrg(bodyOrgId)
     if (!org) return { status: 401, json: { error: 'unauthorized: unknown org' } }
     const now = deps.now()
     if (!verifyOffboardingWebhookSignature(headers, rawBody, org.webhookSecret, Math.floor(now / 1000), deps.webhookFreshnessWindowSec)) {
@@ -154,7 +153,7 @@ export function handleCreateOffboarding(
     assetIds = parsed.assetIds
     unmatched = false
   } else {
-    assetIds = matchAssetsForEmployee(deps.storage, orgId, parsed.employee)
+    assetIds = await matchAssetsForEmployee(deps.storage, orgId, parsed.employee)
     unmatched = assetIds.length === 0
   }
 
@@ -171,19 +170,19 @@ export function handleCreateOffboarding(
     updatedAt: now,
     audit: [{ at: now, from: '', to: 'open', actor }],
   }
-  const { task, created } = deps.storage.createOffboardingTask(candidate)
+  const { task, created } = await deps.storage.createOffboardingTask(candidate)
   return { status: created ? 201 : 200, json: taskJson(task) }
 }
 
 /** GET /v1/workflows/offboarding (session, any role). */
-export function handleListOffboarding(orgId: string, deps: OffboardingDeps): HandlerResponse {
-  const tasks = deps.storage.listOffboardingTasks(orgId).map(taskJson)
+export async function handleListOffboarding(orgId: string, deps: OffboardingDeps): Promise<HandlerResponse> {
+  const tasks = (await deps.storage.listOffboardingTasks(orgId)).map(taskJson)
   return { status: 200, json: { tasks } }
 }
 
 /** GET /v1/workflows/offboarding/:id (session, any role). */
-export function handleGetOffboarding(orgId: string, id: string, deps: OffboardingDeps): HandlerResponse {
-  const task = deps.storage.getOffboardingTask(orgId, id)
+export async function handleGetOffboarding(orgId: string, id: string, deps: OffboardingDeps): Promise<HandlerResponse> {
+  const task = await deps.storage.getOffboardingTask(orgId, id)
   if (!task) return { status: 404, json: { error: 'offboarding task not found' } }
   return { status: 200, json: taskJson(task) }
 }
@@ -193,7 +192,7 @@ export function handleGetOffboarding(orgId: string, id: string, deps: Offboardin
  * role checked by the caller). open -> sweeping -> done, no skips, no
  * backwards transitions; illegal transitions are 409.
  */
-export function handleTransitionOffboarding(principal: Principal, id: string, rawBody: string, deps: OffboardingDeps): HandlerResponse {
+export async function handleTransitionOffboarding(principal: Principal, id: string, rawBody: string, deps: OffboardingDeps): Promise<HandlerResponse> {
   if (principal.role !== 'admin') return { status: 403, json: { error: 'admin role required' } }
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
@@ -201,7 +200,7 @@ export function handleTransitionOffboarding(principal: Principal, id: string, ra
   if (to !== 'open' && to !== 'sweeping' && to !== 'done') {
     return { status: 400, json: { error: "to must be one of 'open', 'sweeping', 'done'" } }
   }
-  const result = deps.storage.transitionOffboardingTask(principal.orgId, id, to as OffboardingStatus, principal.userId, deps.now())
+  const result = await deps.storage.transitionOffboardingTask(principal.orgId, id, to as OffboardingStatus, principal.userId, deps.now())
   if (!result.ok) {
     if (result.reason === 'not_found') return { status: 404, json: { error: 'offboarding task not found' } }
     return { status: 409, json: { error: `illegal transition to '${to}'` } }

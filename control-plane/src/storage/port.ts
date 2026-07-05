@@ -22,10 +22,12 @@ import type {
 import type { ReportFinding } from '../contract.js'
 
 // Multi-tenant storage boundary. EVERY method takes orgId (except lookups that
-// key by a globally-unique row id); there is no unscoped read path. Two
-// implementations ship in Phase 1: MemoryStorage and SqliteStorage. A
-// PostgresStorage adapter implements the same interface for production
-// (documented, not verified locally).
+// key by a globally-unique row id); there is no unscoped read path. Every
+// method is async: MemoryStorage and SqliteStorage wrap synchronous bodies in
+// Promises (unchanged behavior, just an async shape), while PostgresStorage
+// (control-plane/src/storage/postgres.ts) issues real async network queries
+// against a Postgres server via an injected PgQueryable. There is no honest
+// synchronous adapter for a networked database, so the whole port is async.
 
 export interface UpsertFindingResult {
   /** True when this (orgId, assetId, fingerprint) was not previously stored. */
@@ -34,84 +36,84 @@ export interface UpsertFindingResult {
 
 export interface StoragePort {
   // ── assets ──
-  createAsset(asset: AssetRecord): void
-  getAsset(orgId: string, assetId: string): AssetRecord | undefined
-  touchAsset(orgId: string, assetId: string, at: number): void
-  listAssets(orgId: string): AssetRecord[]
+  createAsset(asset: AssetRecord): Promise<void>
+  getAsset(orgId: string, assetId: string): Promise<AssetRecord | undefined>
+  touchAsset(orgId: string, assetId: string, at: number): Promise<void>
+  listAssets(orgId: string): Promise<AssetRecord[]>
 
   // ── findings ──
-  upsertFinding(orgId: string, assetId: string, finding: ReportFinding, at: number): UpsertFindingResult
-  listFindings(orgId: string, filter?: FindingFilter): FindingRecord[]
+  upsertFinding(orgId: string, assetId: string, finding: ReportFinding, at: number): Promise<UpsertFindingResult>
+  listFindings(orgId: string, filter?: FindingFilter): Promise<FindingRecord[]>
 
   // ── ingest audit ──
-  recordIngest(event: IngestEventRecord): void
+  recordIngest(event: IngestEventRecord): Promise<void>
 
   // ── alerts (dedup keyed on (orgId, fingerprint)) ──
-  alertExists(orgId: string, fingerprint: string): boolean
-  recordAlert(alert: AlertRecord): void
-  listAlerts(orgId: string): AlertRecord[]
+  alertExists(orgId: string, fingerprint: string): Promise<boolean>
+  recordAlert(alert: AlertRecord): Promise<void>
+  listAlerts(orgId: string): Promise<AlertRecord[]>
 
   // ── enrollment codes (one-time, hashed, expiring) ──
-  putEnrollmentCode(orgId: string, codeHash: string, expiresAt: number): void
-  consumeEnrollmentCode(orgId: string, codeHash: string, now: number): boolean
+  putEnrollmentCode(orgId: string, codeHash: string, expiresAt: number): Promise<void>
+  consumeEnrollmentCode(orgId: string, codeHash: string, now: number): Promise<boolean>
 
   // ── OIDC enrollment grants (which provider:subject may enroll into an org) ──
-  grantOidc(orgId: string, provider: string, subject: string): void
-  isOidcGranted(orgId: string, provider: string, subject: string): boolean
+  grantOidc(orgId: string, provider: string, subject: string): Promise<void>
+  isOidcGranted(orgId: string, provider: string, subject: string): Promise<boolean>
 
   // ── auth: orgs ──
-  createOrg(org: OrgRecord): void
-  getOrg(orgId: string): OrgRecord | undefined
+  createOrg(org: OrgRecord): Promise<void>
+  getOrg(orgId: string): Promise<OrgRecord | undefined>
 
   // ── auth: users (email is globally unique for login-by-email) ──
-  createUser(user: UserRecord): void
-  getUserByEmail(email: string): UserRecord | undefined
-  getUser(orgId: string, userId: string): UserRecord | undefined
-  listUsers(orgId: string): UserRecord[]
+  createUser(user: UserRecord): Promise<void>
+  getUserByEmail(email: string): Promise<UserRecord | undefined>
+  getUser(orgId: string, userId: string): Promise<UserRecord | undefined>
+  listUsers(orgId: string): Promise<UserRecord[]>
 
   // ── auth: invites (single-use, expiring — like enrollment codes) ──
-  createInvite(invite: InviteRecord): void
-  consumeInvite(code: string, now: number): InviteRecord | undefined
+  createInvite(invite: InviteRecord): Promise<void>
+  consumeInvite(code: string, now: number): Promise<InviteRecord | undefined>
 
   // ── auth: sessions ──
-  createSession(session: SessionRecord): void
-  getSession(token: string): SessionRecord | undefined
-  deleteSession(token: string): void
-  touchSession(token: string, at: number): void
+  createSession(session: SessionRecord): Promise<void>
+  getSession(token: string): Promise<SessionRecord | undefined>
+  deleteSession(token: string): Promise<void>
+  touchSession(token: string, at: number): Promise<void>
 
   // ── auth: login rate-limiting (per-email failure counter) ──
-  recordLoginFailure(email: string, at: number): void
-  countRecentLoginFailures(email: string, sinceInclusive: number): number
+  recordLoginFailure(email: string, at: number): Promise<void>
+  countRecentLoginFailures(email: string, sinceInclusive: number): Promise<number>
 
   // ── auth: CLI device-authorization flow ──
-  createDeviceAuth(record: DeviceAuthRecord): void
-  getDeviceAuthByDeviceCode(deviceCode: string): DeviceAuthRecord | undefined
-  approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): boolean
-  consumeDeviceAuth(deviceCode: string, now: number): DeviceAuthRecord | undefined
+  createDeviceAuth(record: DeviceAuthRecord): Promise<void>
+  getDeviceAuthByDeviceCode(deviceCode: string): Promise<DeviceAuthRecord | undefined>
+  approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): Promise<boolean>
+  consumeDeviceAuth(deviceCode: string, now: number): Promise<DeviceAuthRecord | undefined>
 
   // ── offboarding tasks (org-scoped; idempotent by (orgId, employee.id, effectiveAt)) ──
   // createOffboardingTask: if a task with the same idempotency key already
   // exists, the passed-in record is discarded and the EXISTING task is
   // returned with created:false — the caller never observes a duplicate.
-  createOffboardingTask(task: OffboardingTask): { task: OffboardingTask; created: boolean }
-  getOffboardingTask(orgId: string, id: string): OffboardingTask | undefined
-  listOffboardingTasks(orgId: string): OffboardingTask[]
+  createOffboardingTask(task: OffboardingTask): Promise<{ task: OffboardingTask; created: boolean }>
+  getOffboardingTask(orgId: string, id: string): Promise<OffboardingTask | undefined>
+  listOffboardingTasks(orgId: string): Promise<OffboardingTask[]>
   transitionOffboardingTask(
     orgId: string,
     id: string,
     to: OffboardingStatus,
     actor: string,
     at: number,
-  ): { ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' }
+  ): Promise<{ ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' }>
 
   // ── policy sync (org-scoped rules doc + exceptions) ──
-  getPolicy(orgId: string): PolicyRecord | undefined
+  getPolicy(orgId: string): Promise<PolicyRecord | undefined>
   /** Upsert the org's rules text and bump rulesVersion (1 on first write). */
-  putPolicyRules(orgId: string, rules: string): PolicyRecord
-  listExceptions(orgId: string): PolicyExceptionRecord[]
-  createException(record: PolicyExceptionRecord): void
+  putPolicyRules(orgId: string, rules: string): Promise<PolicyRecord>
+  listExceptions(orgId: string): Promise<PolicyExceptionRecord[]>
+  createException(record: PolicyExceptionRecord): Promise<void>
   /** Resolve a pending exception; bumps the org's exceptionsVersion. Returns undefined if unknown or not pending. */
-  resolveException(orgId: string, id: string, status: Exclude<PolicyExceptionStatus, 'pending'>, now: number): PolicyExceptionRecord | undefined
+  resolveException(orgId: string, id: string, status: Exclude<PolicyExceptionStatus, 'pending'>, now: number): Promise<PolicyExceptionRecord | undefined>
 
   // ── CVE cache (`cve_cache`, M2d) — the SOLE intentionally-global
   // (non-org-scoped) StoragePort surface. Keyed by (ecosystem, package,
@@ -122,18 +124,18 @@ export interface StoragePort {
   // it is public knowledge, not tenant data. tenancy-invariant.test.ts
   // explicitly whitelists exactly this surface; every other StoragePort
   // method must stay orgId-scoped.
-  getCveCache(ecosystem: string, pkg: string, version: string): CveCacheRecord | undefined
-  putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): void
+  getCveCache(ecosystem: string, pkg: string, version: string): Promise<CveCacheRecord | undefined>
+  putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): Promise<void>
 
   // ── CVE enrichment result projected onto a finding (org-scoped: identifies
   // WHICH org's finding matched a globally-cached CVE). ──
-  updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): void
+  updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): Promise<void>
 
   // ── MCP catalog (M2e/§6.6): org-scoped approval list + strict-mode toggle ──
-  getMcpCatalog(orgId: string): McpCatalogEntry[]
-  putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): void
-  getMcpStrictMode(orgId: string): boolean
-  setMcpStrictMode(orgId: string, value: boolean): void
+  getMcpCatalog(orgId: string): Promise<McpCatalogEntry[]>
+  putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): Promise<void>
+  getMcpStrictMode(orgId: string): Promise<boolean>
+  setMcpStrictMode(orgId: string, value: boolean): Promise<void>
 
-  close(): void
+  close(): Promise<void>
 }

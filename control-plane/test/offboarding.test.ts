@@ -81,7 +81,7 @@ test('valid signed webhook 201 + task fields, zero-match sets unmatched', async 
   await withServer(deps, async (base) => {
     const reg = await post(base, '/v1/auth/register', { orgName: 'Acme', email: 'admin@acme.test', password: 'adminpass1' })
     const orgId = reg.json.orgId as string
-    const secret = deps.storage.getOrg(orgId)!.webhookSecret
+    const secret = (await deps.storage.getOrg(orgId))!.webhookSecret
 
     const body = { orgId, employee: { id: 'emp-1', email: 'leaver@acme.test', name: 'Leaver One' }, effectiveAt: '2026-08-01T00:00:00.000Z' }
     const rawBody = JSON.stringify(body)
@@ -107,7 +107,7 @@ test('tampered body -> 401 (signature no longer matches)', async () => {
   await withServer(deps, async (base) => {
     const reg = await post(base, '/v1/auth/register', { orgName: 'Acme', email: 'admin@acme.test', password: 'adminpass1' })
     const orgId = reg.json.orgId as string
-    const secret = deps.storage.getOrg(orgId)!.webhookSecret
+    const secret = (await deps.storage.getOrg(orgId))!.webhookSecret
 
     const signedBody = JSON.stringify({ orgId, employee: { id: 'emp-1', email: 'x@acme.test', name: 'X' }, effectiveAt: '2026-08-01T00:00:00.000Z' })
     const ts = Math.floor(Date.now() / 1000)
@@ -124,7 +124,7 @@ test('stale timestamp (outside +/-300s window) -> 401', async () => {
   await withServer(deps, async (base) => {
     const reg = await post(base, '/v1/auth/register', { orgName: 'Acme', email: 'admin@acme.test', password: 'adminpass1' })
     const orgId = reg.json.orgId as string
-    const secret = deps.storage.getOrg(orgId)!.webhookSecret
+    const secret = (await deps.storage.getOrg(orgId))!.webhookSecret
 
     const body = JSON.stringify({ orgId, employee: { id: 'emp-1', email: 'x@acme.test', name: 'X' }, effectiveAt: '2026-08-01T00:00:00.000Z' })
     const staleTs = Math.floor(Date.now() / 1000) - 1000
@@ -140,7 +140,7 @@ test('wrong-org secret -> 401 (signature computed with a different org secret)',
     const orgAId = regA.json.orgId as string
     const regB = await post(base, '/v1/auth/register', { orgName: 'Other', email: 'admin-b@other.test', password: 'adminpass1' })
     const orgBId = regB.json.orgId as string
-    const orgBSecret = deps.storage.getOrg(orgBId)!.webhookSecret
+    const orgBSecret = (await deps.storage.getOrg(orgBId))!.webhookSecret
 
     // Body claims orgA, but is signed with orgB's secret.
     const body = JSON.stringify({ orgId: orgAId, employee: { id: 'emp-1', email: 'x@acme.test', name: 'X' }, effectiveAt: '2026-08-01T00:00:00.000Z' })
@@ -155,7 +155,7 @@ test('replay: identical body is idempotent-OK, but a DIFFERENT body with a reuse
   await withServer(deps, async (base) => {
     const reg = await post(base, '/v1/auth/register', { orgName: 'Acme', email: 'admin@acme.test', password: 'adminpass1' })
     const orgId = reg.json.orgId as string
-    const secret = deps.storage.getOrg(orgId)!.webhookSecret
+    const secret = (await deps.storage.getOrg(orgId))!.webhookSecret
 
     const body = JSON.stringify({ orgId, employee: { id: 'emp-1', email: 'x@acme.test', name: 'X' }, effectiveAt: '2026-08-01T00:00:00.000Z' })
     const ts = Math.floor(Date.now() / 1000)
@@ -240,9 +240,9 @@ test('assetIds absent -> label/subject match fills assetIds (matches by employee
     const orgId = reg.json.orgId as string
     const adminToken = reg.json.sessionToken as string
 
-    deps.storage.createAsset({ orgId, assetId: 'pc-1', label: 'leaver@acme.test', kind: 'pc', authKind: 'device-token', secret: 's1', lastSeenAt: null, createdAt: 0 })
-    deps.storage.createAsset({ orgId, assetId: 'ci-1', label: 'unrelated', kind: 'ci', authKind: 'oidc', subject: 'emp-42', provider: 'github', lastSeenAt: null, createdAt: 0 })
-    deps.storage.createAsset({ orgId, assetId: 'pc-2', label: 'someone-else@acme.test', kind: 'pc', authKind: 'device-token', secret: 's2', lastSeenAt: null, createdAt: 0 })
+    await deps.storage.createAsset({ orgId, assetId: 'pc-1', label: 'leaver@acme.test', kind: 'pc', authKind: 'device-token', secret: 's1', lastSeenAt: null, createdAt: 0 })
+    await deps.storage.createAsset({ orgId, assetId: 'ci-1', label: 'unrelated', kind: 'ci', authKind: 'oidc', subject: 'emp-42', provider: 'github', lastSeenAt: null, createdAt: 0 })
+    await deps.storage.createAsset({ orgId, assetId: 'pc-2', label: 'someone-else@acme.test', kind: 'pc', authKind: 'device-token', secret: 's2', lastSeenAt: null, createdAt: 0 })
 
     const body = { employee: { id: 'emp-42', email: 'leaver@acme.test', name: 'Leaver' }, effectiveAt: '2026-09-10T00:00:00.000Z' }
     const res = await post(base, '/v1/workflows/offboarding', body, { authorization: `Bearer ${adminToken}` })

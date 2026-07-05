@@ -31,13 +31,13 @@ function deviceAsset(orgId: string, assetId: string): AssetRecord {
 
 test('valid signed device report is accepted (202) and persisted', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const body = JSON.stringify(payload('orgA', 'pc1', [finding()]))
   const res = await handleReport(body, deviceHeaders('pc1', SECRET, body, TS), c.deps)
   assert.equal(res.status, 202)
   assert.equal(res.json.accepted, true)
-  assert.equal(c.storage.listFindings('orgA').length, 1)
-  assert.equal(c.storage.getAsset('orgA', 'pc1')?.lastSeenAt, NOW_MS)
+  assert.equal((await c.storage.listFindings('orgA')).length, 1)
+  assert.equal((await c.storage.getAsset('orgA', 'pc1'))?.lastSeenAt, NOW_MS)
 })
 
 // Regression (red-team G003): a real, server-minted orgId/assetId (opaque high-
@@ -48,27 +48,27 @@ test('a report from a real minted-shaped org is accepted (202), not 422 by the r
   const c = ctx()
   const orgId = 'org_ff90c42435483214c82bdcea' // org_ + 24 hex, entropy ~4.0
   const assetId = 'pc-a1b2c3d4' // realistic short asset id (actor.subject in prod)
-  c.storage.createAsset(deviceAsset(orgId, assetId))
+  await c.storage.createAsset(deviceAsset(orgId, assetId))
   const body = JSON.stringify(payload(orgId, assetId, [finding()], { actor: { type: 'device-token', subject: assetId } }))
   const res = await handleReport(body, deviceHeaders(assetId, SECRET, body, TS), c.deps)
   assert.equal(res.status, 202, 'the opaque minted orgId is structural, not a secret-leak surface')
-  assert.equal(c.storage.listFindings(orgId).length, 1)
+  assert.equal((await c.storage.listFindings(orgId)).length, 1)
 })
 
 test('tampered body fails signature verification (401)', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const signedBody = JSON.stringify(payload('orgA', 'pc1', [finding()]))
   const headers = deviceHeaders('pc1', SECRET, signedBody, TS)
   const tamperedBody = JSON.stringify(payload('orgA', 'pc1', [finding({ severity: 'low' })]))
   const res = await handleReport(tamperedBody, headers, c.deps)
   assert.equal(res.status, 401)
-  assert.equal(c.storage.listFindings('orgA').length, 0)
+  assert.equal((await c.storage.listFindings('orgA')).length, 0)
 })
 
 test('stale timestamp is rejected (401)', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const staleTs = TS - 1000 // > 300s window
   const body = JSON.stringify(payload('orgA', 'pc1', [finding()]))
   const res = await handleReport(body, deviceHeaders('pc1', SECRET, body, staleTs), c.deps)
@@ -84,7 +84,7 @@ test('unknown/unenrolled asset is rejected (401)', async () => {
 
 test('asset header/body mismatch is rejected (401)', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const body = JSON.stringify(payload('orgA', 'pc1', [finding()]))
   const headers = { ...deviceHeaders('pc1', SECRET, body, TS), 'x-agentguard-asset': 'pc2' }
   const res = await handleReport(body, headers, c.deps)
@@ -93,7 +93,7 @@ test('asset header/body mismatch is rejected (401)', async () => {
 
 test('schema-invalid body is rejected (422) after auth passes', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   // valid-enough to carry org/asset, but findings has a bad severity -> schema fails
   const badBody = JSON.stringify({
     schemaVersion: 1,
@@ -106,33 +106,33 @@ test('schema-invalid body is rejected (422) after auth passes', async () => {
   })
   const res = await handleReport(badBody, deviceHeaders('pc1', SECRET, badBody, TS), c.deps)
   assert.equal(res.status, 422)
-  assert.equal(c.storage.listFindings('orgA').length, 0)
+  assert.equal((await c.storage.listFindings('orgA')).length, 0)
 })
 
 test('ADVERSARIAL: a raw secret the client sweep missed is rejected (422), nothing stored', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const leaked = finding({ evidenceRedacted: 'Zx9Kq2Lm7Pv4Rt8Nw1Yb6Hd3Fg5Jc0Aq2Ws4Ex7' })
   const body = JSON.stringify(payload('orgA', 'pc1', [leaked]))
   const res = await handleReport(body, deviceHeaders('pc1', SECRET, body, TS), c.deps)
   assert.equal(res.status, 422)
   assert.match(String(res.json.error), /redaction/)
-  assert.equal(c.storage.listFindings('orgA').length, 0, 'a redaction-failing report must not be stored')
+  assert.equal((await c.storage.listFindings('orgA')).length, 0, 'a redaction-failing report must not be stored')
 })
 
 test('TENANT ISOLATION: a report claiming another org for the asset is rejected', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   // attacker signs a body claiming orgB for pc1; getAsset(orgB, pc1) misses -> 401
   const body = JSON.stringify(payload('orgB', 'pc1', [finding()]))
   const res = await handleReport(body, deviceHeaders('pc1', SECRET, body, TS), c.deps)
   assert.equal(res.status, 401)
-  assert.equal(c.storage.listFindings('orgB').length, 0)
+  assert.equal((await c.storage.listFindings('orgB')).length, 0)
 })
 
 test('OIDC bearer report is accepted for an enrolled oidc asset', async () => {
   const c = ctx()
-  c.storage.createAsset({
+  await c.storage.createAsset({
     orgId: 'orgA',
     assetId: 'ci-github',
     label: 'CI',
@@ -153,7 +153,7 @@ test('OIDC bearer report is accepted for an enrolled oidc asset', async () => {
 
 test('OIDC report with an unknown token is rejected (401)', async () => {
   const c = ctx()
-  c.storage.createAsset({
+  await c.storage.createAsset({
     orgId: 'orgA',
     assetId: 'ci-github',
     label: 'CI',
@@ -173,7 +173,7 @@ test('OIDC report with an unknown token is rejected (401)', async () => {
 
 test('ALERT DEDUP: a new critical fires exactly one alert; a re-report fires none', async () => {
   const c = ctx()
-  c.storage.createAsset(deviceAsset('orgA', 'pc1'))
+  await c.storage.createAsset(deviceAsset('orgA', 'pc1'))
   const body = JSON.stringify(payload('orgA', 'pc1', [finding({ severity: 'critical' })]))
   const first = await handleReport(body, deviceHeaders('pc1', SECRET, body, TS), c.deps)
   assert.equal(first.json.newCriticalCount, 1)

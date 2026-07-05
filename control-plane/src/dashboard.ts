@@ -9,26 +9,26 @@ export interface ReadDeps {
   readonly staleThresholdHours?: number
 }
 
-export function handleSummary(orgId: string, deps: ReadDeps): HandlerResponse {
-  const summary = summarize(deps.storage.listFindings(orgId), deps.storage.listAssets(orgId))
+export async function handleSummary(orgId: string, deps: ReadDeps): Promise<HandlerResponse> {
+  const summary = summarize(await deps.storage.listFindings(orgId), await deps.storage.listAssets(orgId))
   return { status: 200, json: summary as unknown as Record<string, unknown> }
 }
 
-export function handleTrend(orgId: string, windowDays: number, deps: ReadDeps): HandlerResponse {
-  const points = trend(deps.storage.listFindings(orgId), { now: deps.now(), windowDays })
+export async function handleTrend(orgId: string, windowDays: number, deps: ReadDeps): Promise<HandlerResponse> {
+  const points = trend(await deps.storage.listFindings(orgId), { now: deps.now(), windowDays })
   return { status: 200, json: { points } }
 }
 
-export function handleAssets(orgId: string, deps: ReadDeps): HandlerResponse {
-  const statuses = assetStatuses(deps.storage.listAssets(orgId), {
+export async function handleAssets(orgId: string, deps: ReadDeps): Promise<HandlerResponse> {
+  const statuses = assetStatuses(await deps.storage.listAssets(orgId), {
     now: deps.now(),
     staleThresholdHours: deps.staleThresholdHours ?? 48,
   })
   return { status: 200, json: { assets: statuses } }
 }
 
-export function handleFindings(orgId: string, filter: FindingFilter, deps: ReadDeps): HandlerResponse {
-  const findings = deps.storage.listFindings(orgId, filter).map((f) => ({
+export async function handleFindings(orgId: string, filter: FindingFilter, deps: ReadDeps): Promise<HandlerResponse> {
+  const findings = (await deps.storage.listFindings(orgId, filter)).map((f) => ({
     assetId: f.assetId,
     ruleId: f.ruleId,
     surface: f.surface,
@@ -72,13 +72,15 @@ function bars(counts: Record<string, number>): string {
 }
 
 /** Server-rendered fleet dashboard for one org (reads the /v1 API model only). */
-export function renderDashboardHtml(orgId: string, deps: ReadDeps): string {
-  const summary: FleetSummary = summarize(deps.storage.listFindings(orgId), deps.storage.listAssets(orgId))
-  const assets: AssetStatus[] = assetStatuses(deps.storage.listAssets(orgId), {
+export async function renderDashboardHtml(orgId: string, deps: ReadDeps): Promise<string> {
+  const findingsList = await deps.storage.listFindings(orgId)
+  const assetsList = await deps.storage.listAssets(orgId)
+  const summary: FleetSummary = summarize(findingsList, assetsList)
+  const assets: AssetStatus[] = assetStatuses(assetsList, {
     now: deps.now(),
     staleThresholdHours: deps.staleThresholdHours ?? 48,
   })
-  const points: TrendPoint[] = trend(deps.storage.listFindings(orgId), { now: deps.now(), windowDays: 30 })
+  const points: TrendPoint[] = trend(findingsList, { now: deps.now(), windowDays: 30 })
   const staleCount = assets.filter((a) => a.stale).length
   const verdict = summary.bySeverity.critical > 0 ? 'BLOCK' : summary.totalFindings > 0 ? 'REVIEW' : 'PASS'
   const verdictColor = verdict === 'BLOCK' ? '#f7768e' : verdict === 'REVIEW' ? '#f9e2af' : '#a6e3a1'

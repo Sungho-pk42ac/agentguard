@@ -80,7 +80,7 @@ export async function handleReport(rawBody: string, headers: Record<string, stri
     return { status: 401, json: { error: 'asset header does not match payload' } }
   }
 
-  const asset = deps.storage.getAsset(orgId, headerAsset)
+  const asset = await deps.storage.getAsset(orgId, headerAsset)
   if (!asset) return { status: 401, json: { error: 'unknown or unenrolled asset' } }
 
   // Freshness bounds replay to a 300s window. A replay within that window has no
@@ -109,10 +109,10 @@ export async function handleReport(rawBody: string, headers: Record<string, stri
   }
 
   for (const finding of payload.findings) {
-    deps.storage.upsertFinding(orgId, headerAsset, finding, now)
+    await deps.storage.upsertFinding(orgId, headerAsset, finding, now)
   }
-  deps.storage.touchAsset(orgId, headerAsset, now)
-  deps.storage.recordIngest({ orgId, assetId: headerAsset, receivedAt: now, findingCount: payload.findings.length })
+  await deps.storage.touchAsset(orgId, headerAsset, now)
+  await deps.storage.recordIngest({ orgId, assetId: headerAsset, receivedAt: now, findingCount: payload.findings.length })
 
   const newCriticalCount = await processAlerts(orgId, headerAsset, payload.findings, {
     storage: deps.storage,
@@ -146,7 +146,7 @@ export interface EnrollDeps {
 }
 
 /** POST /v1/enroll. OIDC (CI) verifies the id-token; PC exchanges a one-time code. */
-export function handleEnroll(rawBody: string, deps: EnrollDeps): HandlerResponse {
+export async function handleEnroll(rawBody: string, deps: EnrollDeps): Promise<HandlerResponse> {
   let raw: unknown
   try {
     raw = JSON.parse(rawBody)
@@ -168,14 +168,14 @@ export function handleEnroll(rawBody: string, deps: EnrollDeps): HandlerResponse
     // Authorization: the verified subject/provider must be pre-granted for this
     // org. Without this, any holder of a verifiable token could self-enroll into
     // a victim org and inject reports.
-    if (!deps.storage.isOidcGranted(orgId, claims.provider, claims.subject)) {
+    if (!(await deps.storage.isOidcGranted(orgId, claims.provider, claims.subject))) {
       return { status: 403, json: { error: 'OIDC identity is not authorized to enroll into this org' } }
     }
     const assetId = typeof body.assetId === 'string' && body.assetId.length > 0 ? body.assetId : `ci-${claims.provider}`
-    if (deps.storage.getAsset(orgId, assetId)) {
+    if (await deps.storage.getAsset(orgId, assetId)) {
       return { status: 409, json: { error: 'asset already enrolled' } }
     }
-    deps.storage.createAsset({
+    await deps.storage.createAsset({
       orgId,
       assetId,
       label,
@@ -192,15 +192,15 @@ export function handleEnroll(rawBody: string, deps: EnrollDeps): HandlerResponse
   // PC device-token path (one-time enrollment code)
   if (typeof body.enrollmentCode === 'string' && body.enrollmentCode.length > 0) {
     const codeHash = createHash('sha256').update(body.enrollmentCode).digest('hex')
-    if (!deps.storage.consumeEnrollmentCode(orgId, codeHash, now)) {
+    if (!(await deps.storage.consumeEnrollmentCode(orgId, codeHash, now))) {
       return { status: 401, json: { error: 'invalid or expired enrollment code' } }
     }
     const assetId = typeof body.assetId === 'string' && body.assetId.length > 0 ? body.assetId : `pc-${randomBytes(4).toString('hex')}`
-    if (deps.storage.getAsset(orgId, assetId)) {
+    if (await deps.storage.getAsset(orgId, assetId)) {
       return { status: 409, json: { error: 'asset already enrolled' } }
     }
     const deviceToken = (deps.mintToken ?? (() => randomBytes(24).toString('hex')))()
-    deps.storage.createAsset({
+    await deps.storage.createAsset({
       orgId,
       assetId,
       label,

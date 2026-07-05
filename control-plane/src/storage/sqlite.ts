@@ -221,7 +221,7 @@ export class SqliteStorage implements StoragePort {
     `)
   }
 
-  createAsset(a: AssetRecord): void {
+  async createAsset(a: AssetRecord): Promise<void> {
     this.db
       .prepare(
         `INSERT OR REPLACE INTO assets
@@ -231,21 +231,21 @@ export class SqliteStorage implements StoragePort {
       .run(a.orgId, a.assetId, a.label, a.kind, a.authKind, a.secret ?? null, a.subject ?? null, a.provider ?? null, a.lastSeenAt, a.createdAt)
   }
 
-  getAsset(orgId: string, assetId: string): AssetRecord | undefined {
+  async getAsset(orgId: string, assetId: string): Promise<AssetRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM assets WHERE org_id = ? AND asset_id = ?`).get(orgId, assetId) as unknown as AssetRow | undefined
     return row ? this.toAsset(row) : undefined
   }
 
-  touchAsset(orgId: string, assetId: string, at: number): void {
+  async touchAsset(orgId: string, assetId: string, at: number): Promise<void> {
     this.db.prepare(`UPDATE assets SET last_seen_at = ? WHERE org_id = ? AND asset_id = ?`).run(at, orgId, assetId)
   }
 
-  listAssets(orgId: string): AssetRecord[] {
+  async listAssets(orgId: string): Promise<AssetRecord[]> {
     const rows = this.db.prepare(`SELECT * FROM assets WHERE org_id = ? ORDER BY asset_id`).all(orgId) as unknown as AssetRow[]
     return rows.map((r) => this.toAsset(r))
   }
 
-  upsertFinding(orgId: string, assetId: string, finding: ReportFinding, at: number): UpsertFindingResult {
+  async upsertFinding(orgId: string, assetId: string, finding: ReportFinding, at: number): Promise<UpsertFindingResult> {
     const existing = this.db
       .prepare(`SELECT fingerprint FROM findings WHERE org_id = ? AND asset_id = ? AND fingerprint = ?`)
       .get(orgId, assetId, finding.fingerprint)
@@ -291,7 +291,7 @@ export class SqliteStorage implements StoragePort {
     return { isNew: true }
   }
 
-  listFindings(orgId: string, filter: FindingFilter = {}): FindingRecord[] {
+  async listFindings(orgId: string, filter: FindingFilter = {}): Promise<FindingRecord[]> {
     const clauses = ['org_id = ?']
     const params: (string | number)[] = [orgId]
     if (filter.surface) {
@@ -312,23 +312,23 @@ export class SqliteStorage implements StoragePort {
     return rows.map((r) => this.toFinding(r))
   }
 
-  recordIngest(event: IngestEventRecord): void {
+  async recordIngest(event: IngestEventRecord): Promise<void> {
     this.db
       .prepare(`INSERT INTO ingest_events (org_id, asset_id, received_at, finding_count) VALUES (?, ?, ?, ?)`)
       .run(event.orgId, event.assetId, event.receivedAt, event.findingCount)
   }
 
-  alertExists(orgId: string, fingerprint: string): boolean {
+  async alertExists(orgId: string, fingerprint: string): Promise<boolean> {
     return this.db.prepare(`SELECT 1 FROM alerts WHERE org_id = ? AND fingerprint = ?`).get(orgId, fingerprint) !== undefined
   }
 
-  recordAlert(alert: AlertRecord): void {
+  async recordAlert(alert: AlertRecord): Promise<void> {
     this.db
       .prepare(`INSERT OR IGNORE INTO alerts (org_id, fingerprint, severity, fired_at, channel) VALUES (?, ?, ?, ?, ?)`)
       .run(alert.orgId, alert.fingerprint, alert.severity, alert.firedAt, alert.channel)
   }
 
-  listAlerts(orgId: string): AlertRecord[] {
+  async listAlerts(orgId: string): Promise<AlertRecord[]> {
     const rows = this.db.prepare(`SELECT * FROM alerts WHERE org_id = ? ORDER BY fired_at`).all(orgId) as unknown as Array<{
       org_id: string
       fingerprint: string
@@ -339,11 +339,11 @@ export class SqliteStorage implements StoragePort {
     return rows.map((r) => ({ orgId: r.org_id, fingerprint: r.fingerprint, severity: r.severity as Severity, firedAt: r.fired_at, channel: r.channel }))
   }
 
-  putEnrollmentCode(orgId: string, codeHash: string, expiresAt: number): void {
+  async putEnrollmentCode(orgId: string, codeHash: string, expiresAt: number): Promise<void> {
     this.db.prepare(`INSERT OR REPLACE INTO enrollment_codes (org_id, code_hash, expires_at) VALUES (?, ?, ?)`).run(orgId, codeHash, expiresAt)
   }
 
-  consumeEnrollmentCode(orgId: string, codeHash: string, now: number): boolean {
+  async consumeEnrollmentCode(orgId: string, codeHash: string, now: number): Promise<boolean> {
     const row = this.db.prepare(`SELECT expires_at FROM enrollment_codes WHERE org_id = ? AND code_hash = ?`).get(orgId, codeHash) as unknown as
       | { expires_at: number }
       | undefined
@@ -352,51 +352,51 @@ export class SqliteStorage implements StoragePort {
     return row.expires_at >= now
   }
 
-  grantOidc(orgId: string, provider: string, subject: string): void {
+  async grantOidc(orgId: string, provider: string, subject: string): Promise<void> {
     this.db.prepare(`INSERT OR IGNORE INTO oidc_grants (org_id, provider, subject) VALUES (?, ?, ?)`).run(orgId, provider, subject)
   }
 
-  isOidcGranted(orgId: string, provider: string, subject: string): boolean {
+  async isOidcGranted(orgId: string, provider: string, subject: string): Promise<boolean> {
     return this.db.prepare(`SELECT 1 FROM oidc_grants WHERE org_id = ? AND provider = ? AND subject = ?`).get(orgId, provider, subject) !== undefined
   }
 
 
-  createOrg(org: OrgRecord): void {
+  async createOrg(org: OrgRecord): Promise<void> {
     this.db
       .prepare(`INSERT OR REPLACE INTO orgs (id, name, webhook_secret, created_at) VALUES (?, ?, ?, ?)`)
       .run(org.id, org.name, org.webhookSecret, org.createdAt)
   }
-  getOrg(orgId: string): OrgRecord | undefined {
+  async getOrg(orgId: string): Promise<OrgRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM orgs WHERE id = ?`).get(orgId) as unknown as
       | { id: string; name: string; webhook_secret: string; created_at: number }
       | undefined
     return row ? { id: row.id, name: row.name, webhookSecret: row.webhook_secret, createdAt: row.created_at } : undefined
   }
 
-  createUser(user: UserRecord): void {
+  async createUser(user: UserRecord): Promise<void> {
     this.db
       .prepare(`INSERT INTO users (id, org_id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
       .run(user.id, user.orgId, user.email, user.passwordHash, user.role, user.createdAt)
   }
-  getUserByEmail(email: string): UserRecord | undefined {
+  async getUserByEmail(email: string): Promise<UserRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM users WHERE email = ?`).get(email) as unknown as UserRow | undefined
     return row ? this.toUser(row) : undefined
   }
-  getUser(orgId: string, userId: string): UserRecord | undefined {
+  async getUser(orgId: string, userId: string): Promise<UserRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM users WHERE org_id = ? AND id = ?`).get(orgId, userId) as unknown as UserRow | undefined
     return row ? this.toUser(row) : undefined
   }
-  listUsers(orgId: string): UserRecord[] {
+  async listUsers(orgId: string): Promise<UserRecord[]> {
     const rows = this.db.prepare(`SELECT * FROM users WHERE org_id = ? ORDER BY created_at`).all(orgId) as unknown as UserRow[]
     return rows.map((r) => this.toUser(r))
   }
 
-  createInvite(invite: InviteRecord): void {
+  async createInvite(invite: InviteRecord): Promise<void> {
     this.db
       .prepare(`INSERT OR REPLACE INTO invites (code, org_id, role, expires_at, used_by) VALUES (?, ?, ?, ?, ?)`)
       .run(invite.code, invite.orgId, invite.role, invite.expiresAt, invite.usedBy ?? null)
   }
-  consumeInvite(code: string, now: number): InviteRecord | undefined {
+  async consumeInvite(code: string, now: number): Promise<InviteRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM invites WHERE code = ?`).get(code) as unknown as
       | { code: string; org_id: string; role: string; expires_at: number; used_by: string | null }
       | undefined
@@ -406,7 +406,7 @@ export class SqliteStorage implements StoragePort {
     return { code: row.code, orgId: row.org_id, role: row.role as Role, expiresAt: row.expires_at, usedBy: row.used_by ?? undefined }
   }
 
-  createSession(session: SessionRecord): void {
+  async createSession(session: SessionRecord): Promise<void> {
     this.db
       .prepare(
         `INSERT INTO sessions (token, user_id, org_id, role, kind, csrf_token, created_at, expires_at, last_seen_at)
@@ -424,28 +424,28 @@ export class SqliteStorage implements StoragePort {
         session.lastSeenAt,
       )
   }
-  getSession(token: string): SessionRecord | undefined {
+  async getSession(token: string): Promise<SessionRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM sessions WHERE token = ?`).get(token) as unknown as SessionRow | undefined
     return row ? this.toSession(row) : undefined
   }
-  deleteSession(token: string): void {
+  async deleteSession(token: string): Promise<void> {
     this.db.prepare(`DELETE FROM sessions WHERE token = ?`).run(token)
   }
-  touchSession(token: string, at: number): void {
+  async touchSession(token: string, at: number): Promise<void> {
     this.db.prepare(`UPDATE sessions SET last_seen_at = ? WHERE token = ?`).run(at, token)
   }
 
-  recordLoginFailure(email: string, at: number): void {
+  async recordLoginFailure(email: string, at: number): Promise<void> {
     this.db.prepare(`INSERT INTO login_failures (email, at) VALUES (?, ?)`).run(email, at)
   }
-  countRecentLoginFailures(email: string, sinceInclusive: number): number {
+  async countRecentLoginFailures(email: string, sinceInclusive: number): Promise<number> {
     const row = this.db.prepare(`SELECT COUNT(*) AS n FROM login_failures WHERE email = ? AND at >= ?`).get(email, sinceInclusive) as unknown as {
       n: number
     }
     return row.n
   }
 
-  createDeviceAuth(record: DeviceAuthRecord): void {
+  async createDeviceAuth(record: DeviceAuthRecord): Promise<void> {
     this.db
       .prepare(
         `INSERT INTO device_auths (device_code, user_code, status, user_id, org_id, role, created_at, expires_at)
@@ -462,11 +462,11 @@ export class SqliteStorage implements StoragePort {
         record.expiresAt,
       )
   }
-  getDeviceAuthByDeviceCode(deviceCode: string): DeviceAuthRecord | undefined {
+  async getDeviceAuthByDeviceCode(deviceCode: string): Promise<DeviceAuthRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM device_auths WHERE device_code = ?`).get(deviceCode) as unknown as DeviceAuthRow | undefined
     return row ? this.toDeviceAuth(row) : undefined
   }
-  approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): boolean {
+  async approveDeviceAuthByUserCode(userCode: string, grant: { userId: string; orgId: string; role: Role }, now: number): Promise<boolean> {
     const row = this.db.prepare(`SELECT * FROM device_auths WHERE user_code = ?`).get(userCode) as unknown as DeviceAuthRow | undefined
     if (!row || row.status !== 'pending' || row.expires_at < now) return false
     this.db
@@ -474,14 +474,14 @@ export class SqliteStorage implements StoragePort {
       .run(grant.userId, grant.orgId, grant.role, userCode)
     return true
   }
-  consumeDeviceAuth(deviceCode: string, now: number): DeviceAuthRecord | undefined {
+  async consumeDeviceAuth(deviceCode: string, now: number): Promise<DeviceAuthRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM device_auths WHERE device_code = ?`).get(deviceCode) as unknown as DeviceAuthRow | undefined
     if (!row || row.status !== 'approved' || row.expires_at < now) return undefined
     this.db.prepare(`UPDATE device_auths SET status = 'consumed' WHERE device_code = ?`).run(deviceCode)
     // Memory parity: the returned record reflects the post-update state.
     return { ...this.toDeviceAuth(row), status: 'consumed' }
   }
-  createOffboardingTask(task: OffboardingTask): { task: OffboardingTask; created: boolean } {
+  async createOffboardingTask(task: OffboardingTask): Promise<{ task: OffboardingTask; created: boolean }> {
     const info = this.db
       .prepare(
         `INSERT OR IGNORE INTO offboarding_tasks
@@ -515,21 +515,21 @@ export class SqliteStorage implements StoragePort {
       created: true,
     }
   }
-  getOffboardingTask(orgId: string, id: string): OffboardingTask | undefined {
+  async getOffboardingTask(orgId: string, id: string): Promise<OffboardingTask | undefined> {
     const row = this.db.prepare(`SELECT * FROM offboarding_tasks WHERE org_id = ? AND id = ?`).get(orgId, id) as unknown as OffboardingRow | undefined
     return row ? this.toOffboarding(row) : undefined
   }
-  listOffboardingTasks(orgId: string): OffboardingTask[] {
+  async listOffboardingTasks(orgId: string): Promise<OffboardingTask[]> {
     const rows = this.db.prepare(`SELECT * FROM offboarding_tasks WHERE org_id = ? ORDER BY created_at`).all(orgId) as unknown as OffboardingRow[]
     return rows.map((r) => this.toOffboarding(r))
   }
-  transitionOffboardingTask(
+  async transitionOffboardingTask(
     orgId: string,
     id: string,
     to: OffboardingStatus,
     actor: string,
     at: number,
-  ): { ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' } {
+  ): Promise<{ ok: true; task: OffboardingTask } | { ok: false; reason: 'not_found' | 'invalid_transition' }> {
     const row = this.db.prepare(`SELECT * FROM offboarding_tasks WHERE org_id = ? AND id = ?`).get(orgId, id) as unknown as OffboardingRow | undefined
     if (!row) return { ok: false, reason: 'not_found' }
     const current = this.toOffboarding(row)
@@ -540,11 +540,11 @@ export class SqliteStorage implements StoragePort {
       .run(to, at, JSON.stringify(audit), orgId, id)
     return { ok: true, task: { ...current, status: to, updatedAt: at, audit } }
   }
-  getPolicy(orgId: string): PolicyRecord | undefined {
+  async getPolicy(orgId: string): Promise<PolicyRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM policies WHERE org_id = ?`).get(orgId) as unknown as PolicyRow | undefined
     return row ? this.toPolicy(row) : undefined
   }
-  putPolicyRules(orgId: string, rules: string): PolicyRecord {
+  async putPolicyRules(orgId: string, rules: string): Promise<PolicyRecord> {
     const existing = this.db.prepare(`SELECT rules_version, exceptions_version FROM policies WHERE org_id = ?`).get(orgId) as unknown as
       | { rules_version: number; exceptions_version: number }
       | undefined
@@ -555,16 +555,16 @@ export class SqliteStorage implements StoragePort {
       .run(orgId, rulesVersion, rules, exceptionsVersion)
     return { orgId, rulesVersion, rules, exceptionsVersion }
   }
-  listExceptions(orgId: string): PolicyExceptionRecord[] {
+  async listExceptions(orgId: string): Promise<PolicyExceptionRecord[]> {
     const rows = this.db.prepare(`SELECT * FROM policy_exceptions WHERE org_id = ? ORDER BY created_at`).all(orgId) as unknown as PolicyExceptionRow[]
     return rows.map((r) => this.toException(r))
   }
-  createException(record: PolicyExceptionRecord): void {
+  async createException(record: PolicyExceptionRecord): Promise<void> {
     this.db
       .prepare(`INSERT INTO policy_exceptions (id, org_id, rule_id, reason, status, created_at, resolved_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
       .run(record.id, record.orgId, record.ruleId, record.reason, record.status, record.createdAt, record.resolvedAt ?? null)
   }
-  resolveException(orgId: string, id: string, status: Exclude<PolicyExceptionStatus, 'pending'>, now: number): PolicyExceptionRecord | undefined {
+  async resolveException(orgId: string, id: string, status: Exclude<PolicyExceptionStatus, 'pending'>, now: number): Promise<PolicyExceptionRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM policy_exceptions WHERE id = ? AND org_id = ?`).get(id, orgId) as unknown as PolicyExceptionRow | undefined
     if (!row || row.status !== 'pending') return undefined
     this.db.prepare(`UPDATE policy_exceptions SET status = ?, resolved_at = ? WHERE id = ?`).run(status, now, id)
@@ -577,7 +577,7 @@ export class SqliteStorage implements StoragePort {
     return { ...this.toException(row), status, resolvedAt: now }
   }
 
-  getCveCache(ecosystem: string, pkg: string, version: string): CveCacheRecord | undefined {
+  async getCveCache(ecosystem: string, pkg: string, version: string): Promise<CveCacheRecord | undefined> {
     const row = this.db.prepare(`SELECT * FROM cve_cache WHERE ecosystem = ? AND package = ? AND version = ?`).get(ecosystem, pkg, version) as unknown as
       | { ecosystem: string; package: string; version: string; vuln_ids: string; details: string; fetched_at: number; status: string }
       | undefined
@@ -589,27 +589,27 @@ export class SqliteStorage implements StoragePort {
       status: row.status as CveCacheRecord['status'],
     }
   }
-  putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): void {
+  async putCveCache(ecosystem: string, pkg: string, version: string, record: CveCacheRecord): Promise<void> {
     this.db
       .prepare(
         `INSERT OR REPLACE INTO cve_cache (ecosystem, package, version, vuln_ids, details, fetched_at, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(ecosystem, pkg, version, JSON.stringify(record.vulnIds), JSON.stringify(record.details), record.fetchedAt, record.status)
   }
-  updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): void {
+  async updateFindingCve(orgId: string, assetId: string, fingerprint: string, cveIds: string[], cveSeverity: CveSeverity): Promise<void> {
     this.db
       .prepare(`UPDATE findings SET cve_ids = ?, cve_severity = ? WHERE org_id = ? AND asset_id = ? AND fingerprint = ?`)
       .run(JSON.stringify(cveIds), cveSeverity, orgId, assetId, fingerprint)
   }
-  close(): void {
+  async close(): Promise<void> {
     this.db.close()
   }
 
-  getMcpCatalog(orgId: string): McpCatalogEntry[] {
+  async getMcpCatalog(orgId: string): Promise<McpCatalogEntry[]> {
     const rows = this.db.prepare(`SELECT * FROM mcp_catalog WHERE org_id = ? ORDER BY server_name`).all(orgId) as unknown as McpCatalogRow[]
     return rows.map((r) => this.toMcpCatalogEntry(r))
   }
-  putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): void {
+  async putMcpCatalog(orgId: string, entries: McpCatalogEntry[]): Promise<void> {
     this.db.prepare(`DELETE FROM mcp_catalog WHERE org_id = ?`).run(orgId)
     for (const e of entries) {
       this.db
@@ -620,13 +620,13 @@ export class SqliteStorage implements StoragePort {
         .run(orgId, e.serverName, e.approved ? 1 : 0, JSON.stringify(e.riskTags), e.note ?? null, e.updatedBy, e.updatedAt)
     }
   }
-  getMcpStrictMode(orgId: string): boolean {
+  async getMcpStrictMode(orgId: string): Promise<boolean> {
     const row = this.db.prepare(`SELECT mcp_strict_mode FROM org_settings WHERE org_id = ?`).get(orgId) as unknown as
       | { mcp_strict_mode: number }
       | undefined
     return row ? row.mcp_strict_mode === 1 : false
   }
-  setMcpStrictMode(orgId: string, value: boolean): void {
+  async setMcpStrictMode(orgId: string, value: boolean): Promise<void> {
     this.db
       .prepare(
         `INSERT INTO org_settings (org_id, mcp_strict_mode) VALUES (?, ?)

@@ -181,7 +181,7 @@ test('invites: single-use, expiring, and admin-only issuance; accept-invite crea
     // expired invite is rejected: exercise the storage contract directly with
     // a "now" far past expiresAt (the HTTP surface has no clock override here).
     const shortLived = await post(base, '/v1/orgs/invites', { role: 'member', expiresInHours: 1 }, { authorization: `Bearer ${adminToken}` })
-    assert.equal(deps.storage.consumeInvite(shortLived.json.code, shortLived.json.expiresAt + 1), undefined)
+    assert.equal(await deps.storage.consumeInvite(shortLived.json.code, shortLived.json.expiresAt + 1), undefined)
 
     // a member session cannot issue invites (403)
     const memberToken = accepted.json.sessionToken as string
@@ -223,7 +223,7 @@ test('x-agentguard-client: cli returns sessionToken in the login body and mints 
 
     // The header selects the long-lived CLI session kind — this is the
     // branch the shipped auth-client actually exercises.
-    const session = deps.storage.getSession(login.json.sessionToken as string)
+    const session = await deps.storage.getSession(login.json.sessionToken as string)
     assert.equal(session?.kind, 'cli')
     const days = Math.round((session!.expiresAt - session!.createdAt) / (24 * 60 * 60 * 1000))
     assert.equal(days, 90, 'CLI sessions live 90 days, not the 30-day cookie default')

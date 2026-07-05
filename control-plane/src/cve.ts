@@ -157,9 +157,9 @@ async function queryAndCache(deps: EnrichDeps, keys: PackageKey[], now: number):
     results = json.results ?? []
   } catch {
     for (const key of keys) {
-      const existing = deps.storage.getCveCache(key.ecosystem, key.name, key.version)
+      const existing = await deps.storage.getCveCache(key.ecosystem, key.name, key.version)
       if (existing) {
-        deps.storage.putCveCache(key.ecosystem, key.name, key.version, { ...existing, status: 'stale' })
+        await deps.storage.putCveCache(key.ecosystem, key.name, key.version, { ...existing, status: 'stale' })
       }
     }
     return
@@ -172,7 +172,7 @@ async function queryAndCache(deps: EnrichDeps, keys: PackageKey[], now: number):
     for (const id of vulnIds) {
       details.push(await fetchVulnDetail(deps, id))
     }
-    deps.storage.putCveCache(key.ecosystem, key.name, key.version, { vulnIds, details, fetchedAt: now, status: 'fresh' })
+    await deps.storage.putCveCache(key.ecosystem, key.name, key.version, { vulnIds, details, fetchedAt: now, status: 'fresh' })
   }
 }
 
@@ -185,7 +185,7 @@ async function queryAndCache(deps: EnrichDeps, keys: PackageKey[], now: number):
  * propagate a failure.
  */
 export async function enrichFindings(deps: EnrichDeps, orgId: string): Promise<void> {
-  const findings = deps.storage.listFindings(orgId)
+  const findings = await deps.storage.listFindings(orgId)
   const targets: Array<{ finding: FindingRecord; key: PackageKey }> = []
   const uniqueKeys = new Map<string, PackageKey>()
   for (const finding of findings) {
@@ -201,7 +201,7 @@ export async function enrichFindings(deps: EnrichDeps, orgId: string): Promise<v
     const ttlMs = deps.ttlMs ?? DEFAULT_TTL_MS
     const toFetch: PackageKey[] = []
     for (const key of uniqueKeys.values()) {
-      const cached = deps.storage.getCveCache(key.ecosystem, key.name, key.version)
+      const cached = await deps.storage.getCveCache(key.ecosystem, key.name, key.version)
       if (!cached || cached.status === 'stale' || now - cached.fetchedAt > ttlMs) {
         toFetch.push(key)
       }
@@ -209,9 +209,9 @@ export async function enrichFindings(deps: EnrichDeps, orgId: string): Promise<v
     if (toFetch.length > 0) await queryAndCache(deps, toFetch, now)
 
     for (const { finding, key } of targets) {
-      const cached = deps.storage.getCveCache(key.ecosystem, key.name, key.version)
+      const cached = await deps.storage.getCveCache(key.ecosystem, key.name, key.version)
       if (!cached || cached.vulnIds.length === 0) continue
-      deps.storage.updateFindingCve(orgId, finding.assetId, finding.fingerprint, cached.vulnIds, maxSeverity(cached.details))
+      await deps.storage.updateFindingCve(orgId, finding.assetId, finding.fingerprint, cached.vulnIds, maxSeverity(cached.details))
     }
   } catch {
     // Enrichment is best-effort and post-persist; nothing here may ever

@@ -142,14 +142,14 @@ function sessionCookies(session: SessionRecord, now: number, secure: boolean): s
 }
 
 /** Session identity for a request: Bearer takes precedence over the cookie. */
-function sessionContext(
+async function sessionContext(
   headers: Record<string, string>,
   cookies: Record<string, string>,
   sessionAuth: PrincipalResolver,
-): { principal: Principal | null; token: string | undefined; viaCookie: boolean } {
+): Promise<{ principal: Principal | null; token: string | undefined; viaCookie: boolean }> {
   const bearer = bearerToken(headers)
   const cookieToken = cookies[SESSION_COOKIE]
-  const principal = sessionAuth.resolvePrincipal({ bearer, cookie: cookieToken })
+  const principal = await sessionAuth.resolvePrincipal({ bearer, cookie: cookieToken })
   return { principal, token: bearer ?? cookieToken, viaCookie: !bearer && cookieToken !== undefined }
 }
 
@@ -228,9 +228,9 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
   // CSRF gate for a cookie-authenticated state-changing request. Bearer-
   // authenticated requests skip this entirely. Returns true iff the request
   // may proceed.
-  const requireCsrfIfCookie = (ctx: { token: string | undefined; viaCookie: boolean }): boolean => {
+  const requireCsrfIfCookie = async (ctx: { token: string | undefined; viaCookie: boolean }): Promise<boolean> => {
     if (!ctx.viaCookie) return true
-    const session = ctx.token ? deps.storage.getSession(ctx.token) : undefined
+    const session = ctx.token ? await deps.storage.getSession(ctx.token) : undefined
     if (!session || !csrfOk(headers, cookies, session)) {
       sendJson(403, { error: 'CSRF check failed: missing or mismatched x-agentguard-csrf' })
       return false
@@ -246,7 +246,7 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
     }
     if (method === 'POST' && path === '/v1/enroll') {
       const body = await readBody(req)
-      const result = handleEnroll(body, deps)
+      const result = await handleEnroll(body, deps)
       return sendJson(result.status, result.json)
     }
 
@@ -256,87 +256,87 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
 
     if (method === 'POST' && path === '/v1/auth/register') {
       const body = await readBody(req)
-      return sendAuth(handleRegister(body, headers, deps))
+      return sendAuth(await handleRegister(body, headers, deps))
     }
     if (method === 'POST' && path === '/v1/auth/login') {
       const body = await readBody(req)
-      return sendAuth(handleLogin(body, headers, deps))
+      return sendAuth(await handleLogin(body, headers, deps))
     }
     if (method === 'POST' && path === '/v1/auth/logout') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.token) return sendJson(401, { error: 'no active session' })
-      if (!requireCsrfIfCookie(ctx)) return
-      return sendAuth(handleLogout(ctx.token, deps))
+      if (!(await requireCsrfIfCookie(ctx))) return
+      return sendAuth(await handleLogout(ctx.token, deps))
     }
     if (method === 'POST' && path === '/v1/auth/accept-invite') {
       const body = await readBody(req)
-      return sendAuth(handleAcceptInvite(body, headers, deps))
+      return sendAuth(await handleAcceptInvite(body, headers, deps))
     }
     if (method === 'POST' && path === '/v1/auth/device/start') {
-      return sendAuth(handleDeviceStart(deps))
+      return sendAuth(await handleDeviceStart(deps))
     }
     if (method === 'POST' && path === '/v1/auth/device/poll') {
       const body = await readBody(req)
-      return sendAuth(handleDevicePoll(body, deps))
+      return sendAuth(await handleDevicePoll(body, deps))
     }
     if (method === 'POST' && path === '/v1/auth/device/approve') {
       // Session-authenticated only: a viewer token or device HMAC identity
       // never resolves to a Principal here.
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      if (!requireCsrfIfCookie(ctx)) return
+      if (!(await requireCsrfIfCookie(ctx))) return
       const body = await readBody(req)
-      return sendAuth(handleDeviceApprove(ctx.principal, body, deps))
+      return sendAuth(await handleDeviceApprove(ctx.principal, body, deps))
     }
     if (method === 'POST' && path === '/v1/orgs/invites') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      if (!requireCsrfIfCookie(ctx)) return
+      if (!(await requireCsrfIfCookie(ctx))) return
       const body = await readBody(req)
-      return sendAuth(handleCreateInvite(ctx.principal, body, deps))
+      return sendAuth(await handleCreateInvite(ctx.principal, body, deps))
     }
     if (method === 'GET' && path === '/v1/orgs/members') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      return sendAuth(handleListMembers(ctx.principal, deps))
+      return sendAuth(await handleListMembers(ctx.principal, deps))
     }
     // ── offboarding (M2c): session admin OR signed HR webhook create;
     // session (any role) reads; session admin transitions. ──
     if (method === 'POST' && path === '/v1/workflows/offboarding') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       const body = await readBody(req)
-      if (ctx.principal && !requireCsrfIfCookie(ctx)) return
-      const r = handleCreateOffboarding(ctx.principal, body, headers, deps)
+      if (ctx.principal && !(await requireCsrfIfCookie(ctx))) return
+      const r = await handleCreateOffboarding(ctx.principal, body, headers, deps)
       return sendJson(r.status, r.json)
     }
     if (method === 'GET' && path === '/v1/workflows/offboarding') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      const r = handleListOffboarding(ctx.principal.orgId, deps)
+      const r = await handleListOffboarding(ctx.principal.orgId, deps)
       return sendJson(r.status, r.json)
     }
     if (method === 'POST' && /^\/v1\/workflows\/offboarding\/[^/]+\/transition$/.test(path)) {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      if (!requireCsrfIfCookie(ctx)) return
+      if (!(await requireCsrfIfCookie(ctx))) return
       const id = path.slice('/v1/workflows/offboarding/'.length, -'/transition'.length)
       const body = await readBody(req)
-      const r = handleTransitionOffboarding(ctx.principal, id, body, deps)
+      const r = await handleTransitionOffboarding(ctx.principal, id, body, deps)
       return sendJson(r.status, r.json)
     }
     if (method === 'GET' && path.startsWith('/v1/workflows/offboarding/')) {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
       const id = path.slice('/v1/workflows/offboarding/'.length)
-      const r = handleGetOffboarding(ctx.principal.orgId, id, deps)
+      const r = await handleGetOffboarding(ctx.principal.orgId, id, deps)
       return sendJson(r.status, r.json)
     }
     // ── policy sync (M2b, §6.3 [CR-A]): any authenticated principal reads;
     // admin PUTs rules / resolves exceptions; any member proposes one. ──
     if (method === 'GET' && path === '/v1/policy') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      const view = buildPolicyView(ctx.principal.orgId, deps.storage)
+      const view = await buildPolicyView(ctx.principal.orgId, deps.storage)
       res.setHeader('etag', `"${view.etag}"`)
       res.setHeader('cache-control', 'no-cache')
       const ifNoneMatch = (headers['if-none-match'] ?? '').replace(/^W\//, '').replace(/"/g, '')
@@ -348,27 +348,27 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
       return sendJson(200, policyViewBody(view))
     }
     if (method === 'PUT' && path === '/v1/policy') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      if (!requireCsrfIfCookie(ctx)) return
+      if (!(await requireCsrfIfCookie(ctx))) return
       const body = await readBody(req)
-      const r = handlePutPolicy(ctx.principal, body, deps)
+      const r = await handlePutPolicy(ctx.principal, body, deps)
       return sendJson(r.status, r.json)
     }
     if (method === 'POST' && path === '/v1/policy/exceptions') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      if (!requireCsrfIfCookie(ctx)) return
+      if (!(await requireCsrfIfCookie(ctx))) return
       const body = await readBody(req)
-      const r = handleCreateException(ctx.principal, body, deps)
+      const r = await handleCreateException(ctx.principal, body, deps)
       return sendJson(r.status, r.json)
     }
     const policyExceptionActionMatch = /^\/v1\/policy\/exceptions\/([^/]+)\/(approve|reject)$/.exec(path)
     if (method === 'POST' && policyExceptionActionMatch) {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      if (!requireCsrfIfCookie(ctx)) return
-      const r = handleResolveException(
+      if (!(await requireCsrfIfCookie(ctx))) return
+      const r = await handleResolveException(
         ctx.principal,
         policyExceptionActionMatch[1]!,
         policyExceptionActionMatch[2] as 'approve' | 'reject',
@@ -380,10 +380,10 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
     // for the org's own findings. 501 when the control plane has no `cve`
     // deps configured (osv.dev enrichment is opt-in). ──
     if (method === 'POST' && path === '/v1/cve/refresh') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
       if (ctx.principal.role !== 'admin') return sendJson(403, { error: 'admin role required' })
-      if (!requireCsrfIfCookie(ctx)) return
+      if (!(await requireCsrfIfCookie(ctx))) return
       if (!deps.cve) return sendJson(501, { error: 'CVE enrichment is not configured on this control plane' })
       await enrichFindings(deps.cve, ctx.principal.orgId)
       return sendJson(202, { accepted: true })
@@ -391,11 +391,11 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
     // ── MCP catalog (M2e/§6.6): admin PUT; any org principal/viewer GETs
     // (wired below in the shared GET org-resolution block). ──
     if (method === 'PUT' && path === '/v1/mcp/catalog') {
-      const ctx = sessionContext(headers, cookies, sessionAuth)
+      const ctx = await sessionContext(headers, cookies, sessionAuth)
       if (!ctx.principal) return sendJson(401, { error: 'unauthorized: a valid session is required' })
-      if (!requireCsrfIfCookie(ctx)) return
+      if (!(await requireCsrfIfCookie(ctx))) return
       const body = await readBody(req)
-      const r = handlePutMcpCatalog(ctx.principal, body, deps)
+      const r = await handlePutMcpCatalog(ctx.principal, body, deps)
       return sendJson(r.status, r.json)
     }
 
@@ -406,7 +406,7 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
       // never from a client-supplied ?org=.
       let org = deps.viewerAuth.resolveOrg(viewerToken(url, headers))
       if (!org) {
-        const ctx = sessionContext(headers, cookies, sessionAuth)
+        const ctx = await sessionContext(headers, cookies, sessionAuth)
         org = ctx.principal?.orgId ?? null
       }
       if (path === '/' || path === '/dashboard') {
@@ -418,21 +418,21 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
           res.setHeader('www-authenticate', 'Bearer realm="agentguard"')
           return sendHtml(401, '<!doctype html><h1>AgentGuard Control Plane</h1><p>Unauthorized — present a viewer token (Authorization: Bearer, or ?key=).</p>')
         }
-        return sendHtml(200, renderDashboardHtml(org, deps))
+        return sendHtml(200, await renderDashboardHtml(org, deps))
       }
       if (path.startsWith('/v1/')) {
         if (!org) return sendJson(401, { error: 'unauthorized: valid viewer token required' })
         if (path === '/v1/dashboard/summary') {
-          const r = handleSummary(org, deps)
+          const r = await handleSummary(org, deps)
           return sendJson(r.status, r.json)
         }
         if (path === '/v1/dashboard/trend') {
           const windowDays = clampWindowDays(url.searchParams.get('window'))
-          const r = handleTrend(org, windowDays, deps)
+          const r = await handleTrend(org, windowDays, deps)
           return sendJson(r.status, r.json)
         }
         if (path === '/v1/assets') {
-          const r = handleAssets(org, deps)
+          const r = await handleAssets(org, deps)
           return sendJson(r.status, r.json)
         }
         if (path === '/v1/findings') {
@@ -442,11 +442,11 @@ async function route(req: IncomingMessage, res: ServerResponse, deps: ControlPla
             severity: sev && SEVERITIES.has(sev as Severity) ? (sev as Severity) : undefined,
             assetId: url.searchParams.get('assetId') ?? undefined,
           }
-          const r = handleFindings(org, filter, deps)
+          const r = await handleFindings(org, filter, deps)
           return sendJson(r.status, r.json)
         }
         if (path === '/v1/mcp/catalog') {
-          const r = handleGetMcpCatalog(org, headers['if-none-match'], deps)
+          const r = await handleGetMcpCatalog(org, headers['if-none-match'], deps)
           if (r.headers) {
             for (const [key, value] of Object.entries(r.headers)) res.setHeader(key, value)
           }

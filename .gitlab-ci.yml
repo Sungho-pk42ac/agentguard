@@ -1,0 +1,94 @@
+# AgentGuard GitLab CI template (plan §M5). Copy/adapt into your own
+# self-hosted fork or GitLab instance — this pipeline builds + tests the CLI
+# package, the control-plane API, and the web console, then packages the two
+# self-host container images (deploy/api.Dockerfile, deploy/web.Dockerfile).
+# It does NOT push images or deploy anywhere; wire that up per your registry
+# once this template is adapted (see the `package` stage's TODO comments).
+
+stages:
+  - build
+  - test
+  - package
+
+default:
+  image: node:22-alpine
+  cache:
+    key:
+      files:
+        - package-lock.json
+        - control-plane/package-lock.json
+        - web/package-lock.json
+    paths:
+      - node_modules/
+      - control-plane/node_modules/
+      - web/node_modules/
+
+variables:
+  # BuildKit is required for the multi-stage Dockerfiles under deploy/.
+  DOCKER_BUILDKIT: '1'
+
+install:
+  stage: build
+  script:
+    - npm ci
+    - npm --prefix control-plane ci
+    - npm --prefix web ci
+  artifacts:
+    paths:
+      - node_modules/
+      - control-plane/node_modules/
+      - web/node_modules/
+    expire_in: 1h
+
+typecheck:
+  stage: test
+  needs: ['install']
+  script:
+    - npm run typecheck
+    - npm --prefix control-plane run typecheck
+    - npm --prefix web run typecheck
+
+test:cli:
+  stage: test
+  needs: ['install']
+  script:
+    - npm test
+
+test:control-plane:
+  stage: test
+  needs: ['install']
+  script:
+    - npm --prefix control-plane test
+
+test:web:
+  stage: test
+  needs: ['install']
+  script:
+    - npm --prefix web test
+
+build:web-static:
+  stage: package
+  needs: ['install']
+  script:
+    - npm --prefix web run build
+  artifacts:
+    paths:
+      - web/out/
+    expire_in: 1 day
+
+package:images:
+  stage: package
+  needs: ['typecheck', 'test:cli', 'test:control-plane', 'test:web']
+  image: docker:27
+  services:
+    - docker:27-dind
+  script:
+    - docker build -f deploy/api.Dockerfile -t agentguard-api:$CI_COMMIT_SHORT_SHA .
+    - docker build -f deploy/web.Dockerfile -t agentguard-web:$CI_COMMIT_SHORT_SHA .
+    # TODO (adopt per your registry): tag + `docker push` to
+    # $CI_REGISTRY_IMAGE, then reference those tags from
+    # deploy/docker-compose.yml's `image:` (replacing `build:`) for
+    # production deploys instead of building on the host.
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'

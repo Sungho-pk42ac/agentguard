@@ -27,9 +27,9 @@ export async function processAlerts(
     if (finding.severity !== 'critical') continue
     if (seenThisBatch.has(finding.fingerprint)) continue
     seenThisBatch.add(finding.fingerprint)
-    if (deps.storage.alertExists(orgId, finding.fingerprint)) continue
+    if (await deps.storage.alertExists(orgId, finding.fingerprint)) continue
     const firedAt = deps.now()
-    deps.storage.recordAlert({ orgId, fingerprint: finding.fingerprint, severity: finding.severity, firedAt, channel })
+    await deps.storage.recordAlert({ orgId, fingerprint: finding.fingerprint, severity: finding.severity, firedAt, channel })
     // Best-effort delivery: a failing/slow notifier must never fail the ingest
     // (the report is already persisted). Delivery errors are logged, not thrown.
     try {

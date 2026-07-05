@@ -138,7 +138,7 @@ const impls: Array<[string, () => StoragePort]> = [
 ]
 
 for (const [name, make] of impls) {
-  test(`${name}: cve_cache is functionally global (no org dimension in its key at all)`, () => {
+  test(`${name}: cve_cache is functionally global (no org dimension in its key at all)`, async () => {
     const s = make()
     const record: CveCacheRecord = {
       vulnIds: ['GHSA-x'],
@@ -146,20 +146,20 @@ for (const [name, make] of impls) {
       fetchedAt: 1000,
       status: 'fresh',
     }
-    s.putCveCache('npm', 'leftpad', '1.0.0', record)
+    await s.putCveCache('npm', 'leftpad', '1.0.0', record)
     // No orgId parameter exists on this surface at all — any caller for any
     // org reads the exact same cached row for the same (ecosystem, pkg, version).
-    assert.deepEqual(s.getCveCache('npm', 'leftpad', '1.0.0'), record)
-    assert.equal(s.getCveCache('npm', 'other-pkg', '1.0.0'), undefined)
-    s.close()
+    assert.deepEqual(await s.getCveCache('npm', 'leftpad', '1.0.0'), record)
+    assert.equal(await s.getCveCache('npm', 'other-pkg', '1.0.0'), undefined)
+    await s.close()
   })
 
-  test(`${name}: every other well-known read stays strictly org-scoped (spot check)`, () => {
+  test(`${name}: every other well-known read stays strictly org-scoped (spot check)`, async () => {
     const s = make()
-    s.createAsset({ orgId: 'orgA', assetId: 'a1', label: 'a1', kind: 'pc', authKind: 'device-token', secret: 's', lastSeenAt: null, createdAt: 0 })
-    s.createAsset({ orgId: 'orgB', assetId: 'a1', label: 'a1', kind: 'pc', authKind: 'device-token', secret: 's', lastSeenAt: null, createdAt: 0 })
-    assert.equal(s.getAsset('orgA', 'a1')?.orgId, 'orgA')
-    assert.equal(s.getAsset('orgB', 'a1')?.orgId, 'orgB')
+    await s.createAsset({ orgId: 'orgA', assetId: 'a1', label: 'a1', kind: 'pc', authKind: 'device-token', secret: 's', lastSeenAt: null, createdAt: 0 })
+    await s.createAsset({ orgId: 'orgB', assetId: 'a1', label: 'a1', kind: 'pc', authKind: 'device-token', secret: 's', lastSeenAt: null, createdAt: 0 })
+    assert.equal((await s.getAsset('orgA', 'a1'))?.orgId, 'orgA')
+    assert.equal((await s.getAsset('orgB', 'a1'))?.orgId, 'orgB')
     s.close()
   })
 }

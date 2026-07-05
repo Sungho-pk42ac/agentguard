@@ -181,32 +181,32 @@ for (const [adapterName, makeStorage] of [
   ['MemoryStorage', () => new MemoryStorage() as StoragePort] as const,
   ['SqliteStorage', () => new SqliteStorage(':memory:') as StoragePort] as const,
 ]) {
-  test(`${adapterName}: getMcpCatalog/putMcpCatalog/getMcpStrictMode/setMcpStrictMode round-trip, org-scoped`, () => {
+  test(`${adapterName}: getMcpCatalog/putMcpCatalog/getMcpStrictMode/setMcpStrictMode round-trip, org-scoped`, async () => {
     const storage = makeStorage()
     try {
-      assert.deepEqual(storage.getMcpCatalog('orgA'), [])
-      assert.equal(storage.getMcpStrictMode('orgA'), false)
+      assert.deepEqual(await storage.getMcpCatalog('orgA'), [])
+      assert.equal(await storage.getMcpStrictMode('orgA'), false)
 
       const seeded = seedMcpCatalog('orgA', 1000)
-      storage.putMcpCatalog('orgA', seeded)
-      storage.setMcpStrictMode('orgA', true)
+      await storage.putMcpCatalog('orgA', seeded)
+      await storage.setMcpStrictMode('orgA', true)
 
-      const fetched = storage.getMcpCatalog('orgA')
+      const fetched = await storage.getMcpCatalog('orgA')
       assert.equal(fetched.length, seeded.length)
-      assert.equal(storage.getMcpStrictMode('orgA'), true)
+      assert.equal(await storage.getMcpStrictMode('orgA'), true)
 
       // org isolation at the storage layer
-      assert.deepEqual(storage.getMcpCatalog('orgB'), [])
-      assert.equal(storage.getMcpStrictMode('orgB'), false)
+      assert.deepEqual(await storage.getMcpCatalog('orgB'), [])
+      assert.equal(await storage.getMcpStrictMode('orgB'), false)
 
       // PUT replaces wholesale
-      storage.putMcpCatalog('orgA', [{ orgId: 'orgA', serverName: 'github', approved: true, riskTags: ['x'], updatedBy: 'u1', updatedAt: 2000 }])
-      const replaced = storage.getMcpCatalog('orgA')
+      await storage.putMcpCatalog('orgA', [{ orgId: 'orgA', serverName: 'github', approved: true, riskTags: ['x'], updatedBy: 'u1', updatedAt: 2000 }])
+      const replaced = await storage.getMcpCatalog('orgA')
       assert.equal(replaced.length, 1)
       assert.equal(replaced[0]!.serverName, 'github')
       assert.equal(replaced[0]!.approved, true)
     } finally {
-      storage.close()
+      await storage.close()
     }
   })
 }

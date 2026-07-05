@@ -47,7 +47,7 @@ export interface PrincipalInput {
 
 export interface PrincipalResolver {
   /** Return the authenticated principal for a Bearer token or session cookie, or null. */
-  resolvePrincipal(input: PrincipalInput): Principal | null
+  resolvePrincipal(input: PrincipalInput): Promise<Principal | null>
 }
 
 /** Session-backed principal resolver. Bearer takes precedence over cookie. */
@@ -57,13 +57,13 @@ export class SessionAuth implements PrincipalResolver {
     private readonly now: () => number,
   ) {}
 
-  resolvePrincipal(input: PrincipalInput): Principal | null {
+  async resolvePrincipal(input: PrincipalInput): Promise<Principal | null> {
     const token = input.bearer ?? input.cookie
     if (!token) return null
-    const session = this.storage.getSession(token)
+    const session = await this.storage.getSession(token)
     if (!session) return null
     if (session.expiresAt < this.now()) return null
-    this.storage.touchSession(token, this.now())
+    await this.storage.touchSession(token, this.now())
     return { orgId: session.orgId, userId: session.userId, role: session.role }
   }
 }

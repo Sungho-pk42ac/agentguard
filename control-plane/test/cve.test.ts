@@ -71,7 +71,7 @@ const impls: Array<[string, () => StoragePort]> = [
 for (const [name, make] of impls) {
   test(`${name}: querybatch is called with the right package set`, async () => {
     const storage = make()
-    storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'f'.repeat(32)), NOW)
+    await storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'f'.repeat(32)), NOW)
     const { deps, calls } = baseEnrichDeps(storage, {
       vulnsByPackageIndex: [['GHSA-1']],
       vulnDetails: { 'GHSA-1': { summary: 'bad', severity: [{ type: 'CVSS_V3', score: '9.8' }] } },
@@ -81,12 +81,12 @@ for (const [name, make] of impls) {
     assert.ok(batchCall, 'querybatch must be called')
     const parsedBody = JSON.parse(batchCall!.body!)
     assert.deepEqual(parsedBody.queries, [{ package: { name: 'leftpad', ecosystem: 'npm' }, version: '1.0.0' }])
-    storage.close()
+    await storage.close()
   })
 
   test(`${name}: findings carry cveIds + max severity after enrichment`, async () => {
     const storage = make()
-    storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'a'.repeat(32)), NOW)
+    await storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'a'.repeat(32)), NOW)
     const { deps } = baseEnrichDeps(storage, {
       vulnsByPackageIndex: [['GHSA-1', 'GHSA-2']],
       vulnDetails: {
@@ -95,10 +95,10 @@ for (const [name, make] of impls) {
       },
     })
     await enrichFindings(deps, 'orgA')
-    const [f] = storage.listFindings('orgA')
+    const [f] = await storage.listFindings('orgA')
     assert.deepEqual(f?.cveIds, ['GHSA-1', 'GHSA-2'])
     assert.equal(f?.cveSeverity, 'critical', 'severity is the MAX across matched vulns')
-    storage.close()
+    await storage.close()
   })
 
   test(`${name}: CVSS score mapping, including unknown (no parseable score/label)`, async () => {
@@ -114,7 +114,7 @@ for (const [name, make] of impls) {
 
   test(`${name}: second enrichment for the same package@version does 0 vuln detail fetches`, async () => {
     const storage = make()
-    storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'b'.repeat(32)), NOW)
+    await storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'b'.repeat(32)), NOW)
     const { deps, calls } = baseEnrichDeps(storage, {
       vulnsByPackageIndex: [['GHSA-1']],
       vulnDetails: { 'GHSA-1': { severity: [{ type: 'CVSS_V3', score: '9.8' }] } },
@@ -128,13 +128,13 @@ for (const [name, make] of impls) {
     const secondVulnFetches = calls.filter((c) => c.url.includes('/v1/vulns/')).length
     assert.equal(secondVulnFetches, 0, 'a fresh cache entry must not re-fetch vuln details')
     assert.equal(calls.filter((c) => c.url === 'https://api.osv.dev/v1/querybatch').length, 0, 'nor re-run querybatch')
-    storage.close()
+    await storage.close()
   })
 
   test(`${name}: cve_cache is global across orgs (org A primes the cache; org B's finding is enriched with 0 new fetches)`, async () => {
     const storage = make()
-    storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'c'.repeat(32)), NOW)
-    storage.upsertFinding('orgB', 'b1', npmFinding('leftpad', '1.0.0', 'd'.repeat(32)), NOW)
+    await storage.upsertFinding('orgA', 'a1', npmFinding('leftpad', '1.0.0', 'c'.repeat(32)), NOW)
+    await storage.upsertFinding('orgB', 'b1', npmFinding('leftpad', '1.0.0', 'd'.repeat(32)), NOW)
     const { deps, calls } = baseEnrichDeps(storage, {
       vulnsByPackageIndex: [['GHSA-1']],
       vulnDetails: { 'GHSA-1': { severity: [{ type: 'CVSS_V3', score: '9.8' }] } },
@@ -144,17 +144,17 @@ for (const [name, make] of impls) {
     await enrichFindings(deps, 'orgB')
     assert.equal(calls.length, 0, 'org B must reuse the global cache primed by org A: zero network calls')
 
-    const [fa] = storage.listFindings('orgA')
-    const [fb] = storage.listFindings('orgB')
+    const [fa] = await storage.listFindings('orgA')
+    const [fb] = await storage.listFindings('orgB')
     assert.deepEqual(fa?.cveIds, ['GHSA-1'])
     assert.deepEqual(fb?.cveIds, ['GHSA-1'], "org B's finding IS enriched from the shared global cache")
-    storage.close()
+    await storage.close()
   })
 
   test(`${name}: osv 5xx never blocks or fails ingest (post-persist async)`, async () => {
     const storage = make()
     const asset: AssetRecord = { orgId: 'orgA', assetId: 'pc1', label: 'pc1', kind: 'pc', authKind: 'device-token', secret: SECRET, lastSeenAt: null, createdAt: 0 }
-    storage.createAsset(asset)
+    await storage.createAsset(asset)
     const { fetch } = mockFetch({ vulnsByPackageIndex: [], vulnDetails: {}, querybatchStatus: 503 })
     let enqueued: (() => void) | undefined
     const deps: IngestDeps = {
@@ -169,13 +169,13 @@ for (const [name, make] of impls) {
     assert.equal(res.status, 202, 'ingest must accept despite osv 5xx')
     assert.ok(enqueued, 'enrichment must have been enqueued')
     await enqueued!() // run it out-of-band; must not throw
-    storage.close()
+    await storage.close()
   })
 
   test(`${name}: osv throw never blocks or fails ingest`, async () => {
     const storage = make()
     const asset: AssetRecord = { orgId: 'orgA', assetId: 'pc1', label: 'pc1', kind: 'pc', authKind: 'device-token', secret: SECRET, lastSeenAt: null, createdAt: 0 }
-    storage.createAsset(asset)
+    await storage.createAsset(asset)
     const { fetch } = mockFetch({ vulnsByPackageIndex: [], vulnDetails: {}, querybatchFails: true })
     let enqueued: (() => void) | undefined
     const deps: IngestDeps = {
@@ -190,13 +190,13 @@ for (const [name, make] of impls) {
     assert.equal(res.status, 202)
     assert.ok(enqueued)
     await assert.doesNotReject(async () => enqueued!())
-    storage.close()
+    await storage.close()
   })
 
   test(`${name}: osv hang never blocks ingest (response returns before enrichment settles)`, async () => {
     const storage = make()
     const asset: AssetRecord = { orgId: 'orgA', assetId: 'pc1', label: 'pc1', kind: 'pc', authKind: 'device-token', secret: SECRET, lastSeenAt: null, createdAt: 0 }
-    storage.createAsset(asset)
+    await storage.createAsset(asset)
     const { fetch } = mockFetch({ vulnsByPackageIndex: [], vulnDetails: {}, hang: true })
     let enqueueCalled = false
     const deps: IngestDeps = {
@@ -218,7 +218,7 @@ for (const [name, make] of impls) {
     const res = await handleReport(body, deviceHeaders('pc1', SECRET, body, Math.floor(NOW / 1000)), deps)
     assert.equal(res.status, 202, 'ingest returns even though the enqueued enrichment job is hung forever')
     assert.equal(enqueueCalled, true)
-    storage.close()
+    await storage.close()
   })
 
   test(`${name}: extractPackage only matches package-shaped (npm-global) surfaces`, () => {
@@ -229,12 +229,12 @@ for (const [name, make] of impls) {
 
   test(`${name}: non-package findings are left untouched by enrichment`, async () => {
     const storage = make()
-    storage.upsertFinding('orgA', 'a1', finding(), NOW) // secret surface, not package-shaped
+    await storage.upsertFinding('orgA', 'a1', finding(), NOW) // secret surface, not package-shaped
     const { deps, calls } = baseEnrichDeps(storage, { vulnsByPackageIndex: [], vulnDetails: {} })
     await enrichFindings(deps, 'orgA')
     assert.equal(calls.length, 0, 'no osv call for a finding with no extractable package')
-    const [f] = storage.listFindings('orgA')
+    const [f] = await storage.listFindings('orgA')
     assert.equal(f?.cveIds, undefined)
-    storage.close()
+    await storage.close()
   })
 }

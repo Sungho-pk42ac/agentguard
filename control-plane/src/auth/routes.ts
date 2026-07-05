@@ -64,7 +64,7 @@ function isRole(role: unknown): role is Role {
 }
 
 /** Mint a fresh session (never reuse an existing token) and persist it. */
-function mintSession(deps: AuthDeps, userId: string, orgId: string, role: Role, cli: boolean): SessionRecord {
+async function mintSession(deps: AuthDeps, userId: string, orgId: string, role: Role, cli: boolean): Promise<SessionRecord> {
   const now = deps.now()
   const days = cli ? (deps.cliSessionDays ?? DEFAULT_CLI_SESSION_DAYS) : (deps.sessionCookieDays ?? DEFAULT_SESSION_COOKIE_DAYS)
   const session: SessionRecord = {
@@ -78,7 +78,7 @@ function mintSession(deps: AuthDeps, userId: string, orgId: string, role: Role, 
     expiresAt: now + days * DAY_MS,
     lastSeenAt: now,
   }
-  deps.storage.createSession(session)
+  await deps.storage.createSession(session)
   return session
 }
 
@@ -94,7 +94,7 @@ function sessionBody(session: SessionRecord, includeToken: boolean): Record<stri
  * contract (auth-client.ts) requires it unconditionally; x-agentguard-client:
  * cli is honored too but is not the sole gate.
  */
-export function handleRegister(rawBody: string, headers: Record<string, string>, deps: AuthDeps): AuthHandlerResponse {
+export async function handleRegister(rawBody: string, headers: Record<string, string>, deps: AuthDeps): Promise<AuthHandlerResponse> {
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
   const orgName = body.orgName
@@ -103,18 +103,18 @@ export function handleRegister(rawBody: string, headers: Record<string, string>,
   if (typeof orgName !== 'string' || orgName.trim().length === 0 || !email || !isValidPassword(password)) {
     return { status: 400, json: { error: 'orgName, a valid email, and a password (min 8 chars) are required' } }
   }
-  if (deps.storage.getUserByEmail(email)) {
+  if (await deps.storage.getUserByEmail(email)) {
     return { status: 409, json: { error: 'an account with this email already exists' } }
   }
 
   const now = deps.now()
   const mkId = deps.mintId ?? mintId
   const org = { id: mkId('org'), name: orgName.trim(), webhookSecret: (deps.mintToken ?? mintToken)(), createdAt: now }
-  deps.storage.createOrg(org)
+  await deps.storage.createOrg(org)
   const user = { id: mkId('user'), orgId: org.id, email, passwordHash: hashPassword(password), role: 'admin' as const, createdAt: now }
-  deps.storage.createUser(user)
+  await deps.storage.createUser(user)
 
-  const session = mintSession(deps, user.id, org.id, 'admin', isCliClient(headers))
+  const session = await mintSession(deps, user.id, org.id, 'admin', isCliClient(headers))
   return { status: 200, json: sessionBody(session, true), session }
 }
 
@@ -123,7 +123,7 @@ export function handleRegister(rawBody: string, headers: Record<string, string>,
  * 401 | 429 (rate-limited). sessionToken is always included in the body — the
  * existing CLI auth-client.ts contract requires it unconditionally.
  */
-export function handleLogin(rawBody: string, headers: Record<string, string>, deps: AuthDeps): AuthHandlerResponse {
+export async function handleLogin(rawBody: string, headers: Record<string, string>, deps: AuthDeps): Promise<AuthHandlerResponse> {
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
   const email = isValidEmail(body.email) ? normalizeEmail(body.email) : undefined
@@ -135,31 +135,31 @@ export function handleLogin(rawBody: string, headers: Record<string, string>, de
   const now = deps.now()
   const windowMs = deps.rateLimitWindowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS
   const max = deps.rateLimitMax ?? DEFAULT_RATE_LIMIT_MAX
-  if (deps.storage.countRecentLoginFailures(email, now - windowMs) >= max) {
+  if ((await deps.storage.countRecentLoginFailures(email, now - windowMs)) >= max) {
     return { status: 429, json: { error: 'too many failed login attempts; try again later' } }
   }
 
-  const user = deps.storage.getUserByEmail(email)
+  const user = await deps.storage.getUserByEmail(email)
   if (!user || !verifyPassword(password, user.passwordHash)) {
-    deps.storage.recordLoginFailure(email, now)
+    await deps.storage.recordLoginFailure(email, now)
     return { status: 401, json: { error: 'invalid email or password' } }
   }
 
-  const session = mintSession(deps, user.id, user.orgId, user.role, isCliClient(headers))
+  const session = await mintSession(deps, user.id, user.orgId, user.role, isCliClient(headers))
   return { status: 200, json: sessionBody(session, true), session }
 }
 
 /** POST /v1/auth/logout. 204 on success, 401 when no valid session was presented. */
-export function handleLogout(token: string | undefined, deps: AuthDeps): AuthHandlerResponse {
-  if (!token || !deps.storage.getSession(token)) {
+export async function handleLogout(token: string | undefined, deps: AuthDeps): Promise<AuthHandlerResponse> {
+  if (!token || !(await deps.storage.getSession(token))) {
     return { status: 401, json: { error: 'no active session' } }
   }
-  deps.storage.deleteSession(token)
+  await deps.storage.deleteSession(token)
   return { status: 204, json: {}, clearSession: true }
 }
 
 /** POST /v1/orgs/invites (admin only) {role,expiresInHours?} -> 200 {code,expiresAt}. */
-export function handleCreateInvite(principal: Principal, rawBody: string, deps: AuthDeps): AuthHandlerResponse {
+export async function handleCreateInvite(principal: Principal, rawBody: string, deps: AuthDeps): Promise<AuthHandlerResponse> {
   if (principal.role !== 'admin') return { status: 403, json: { error: 'admin role required' } }
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
@@ -172,12 +172,12 @@ export function handleCreateInvite(principal: Principal, rawBody: string, deps: 
   const now = deps.now()
   const code = (deps.mintToken ?? mintToken)()
   const expiresAt = now + Math.floor(expiresInHours * 60 * 60 * 1000)
-  deps.storage.createInvite({ code, orgId: principal.orgId, role, expiresAt })
+  await deps.storage.createInvite({ code, orgId: principal.orgId, role, expiresAt })
   return { status: 200, json: { code, expiresAt } }
 }
 
 /** POST /v1/auth/accept-invite {code,email,password} -> creates member User + session. */
-export function handleAcceptInvite(rawBody: string, headers: Record<string, string>, deps: AuthDeps): AuthHandlerResponse {
+export async function handleAcceptInvite(rawBody: string, headers: Record<string, string>, deps: AuthDeps): Promise<AuthHandlerResponse> {
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
   const code = typeof body.code === 'string' ? body.code : undefined
@@ -188,9 +188,9 @@ export function handleAcceptInvite(rawBody: string, headers: Record<string, stri
   }
 
   const now = deps.now()
-  const invite = deps.storage.consumeInvite(code, now)
+  const invite = await deps.storage.consumeInvite(code, now)
   if (!invite) return { status: 401, json: { error: 'invalid, expired, or already-used invite code' } }
-  if (deps.storage.getUserByEmail(email)) {
+  if (await deps.storage.getUserByEmail(email)) {
     return { status: 409, json: { error: 'an account with this email already exists' } }
   }
 
@@ -202,16 +202,16 @@ export function handleAcceptInvite(rawBody: string, headers: Record<string, stri
     role: invite.role,
     createdAt: now,
   }
-  deps.storage.createUser(user)
+  await deps.storage.createUser(user)
 
-  const session = mintSession(deps, user.id, user.orgId, user.role, isCliClient(headers))
+  const session = await mintSession(deps, user.id, user.orgId, user.role, isCliClient(headers))
   return { status: 200, json: sessionBody(session, true), session }
 }
 
 /** GET /v1/orgs/members (admin only) -> {members:[{id,email,role,createdAt}]} — never passwordHash. */
-export function handleListMembers(principal: Principal, deps: AuthDeps): AuthHandlerResponse {
+export async function handleListMembers(principal: Principal, deps: AuthDeps): Promise<AuthHandlerResponse> {
   if (principal.role !== 'admin') return { status: 403, json: { error: 'admin role required' } }
-  const members = deps.storage.listUsers(principal.orgId).map((u) => ({ id: u.id, email: u.email, role: u.role, createdAt: u.createdAt }))
+  const members = (await deps.storage.listUsers(principal.orgId)).map((u) => ({ id: u.id, email: u.email, role: u.role, createdAt: u.createdAt }))
   return { status: 200, json: { members } }
 }
 
@@ -221,44 +221,44 @@ export function handleMeta(): AuthHandlerResponse {
 }
 
 /** POST /v1/auth/device/start -> {deviceCode,userCode,expiresAt}. */
-export function handleDeviceStart(deps: AuthDeps): AuthHandlerResponse {
+export async function handleDeviceStart(deps: AuthDeps): Promise<AuthHandlerResponse> {
   const now = deps.now()
   const expiresAt = now + (deps.deviceCodeTtlMs ?? DEFAULT_DEVICE_CODE_TTL_MS)
   const deviceCode = (deps.mintToken ?? mintToken)()
   const userCode = (deps.mintUserCode ?? mintUserCode)()
-  deps.storage.createDeviceAuth({ deviceCode, userCode, status: 'pending', createdAt: now, expiresAt })
+  await deps.storage.createDeviceAuth({ deviceCode, userCode, status: 'pending', createdAt: now, expiresAt })
   return { status: 200, json: { deviceCode, userCode, expiresAt } }
 }
 
 /** POST /v1/auth/device/approve (session-authenticated) {userCode} -> 204 | 404. */
-export function handleDeviceApprove(principal: Principal, rawBody: string, deps: AuthDeps): AuthHandlerResponse {
+export async function handleDeviceApprove(principal: Principal, rawBody: string, deps: AuthDeps): Promise<AuthHandlerResponse> {
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
   const userCode = typeof body.userCode === 'string' ? body.userCode : undefined
   if (!userCode) return { status: 400, json: { error: 'userCode is required' } }
-  const ok = deps.storage.approveDeviceAuthByUserCode(userCode, { userId: principal.userId, orgId: principal.orgId, role: principal.role }, deps.now())
+  const ok = await deps.storage.approveDeviceAuthByUserCode(userCode, { userId: principal.userId, orgId: principal.orgId, role: principal.role }, deps.now())
   if (!ok) return { status: 404, json: { error: 'unknown, expired, or already-resolved user code' } }
   return { status: 204, json: {} }
 }
 
 /** POST /v1/auth/device/poll {deviceCode} -> 200 {sessionToken,orgId,role} | 428 pending | 410 expired/consumed | 404 unknown. */
-export function handleDevicePoll(rawBody: string, deps: AuthDeps): AuthHandlerResponse {
+export async function handleDevicePoll(rawBody: string, deps: AuthDeps): Promise<AuthHandlerResponse> {
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
   const deviceCode = typeof body.deviceCode === 'string' ? body.deviceCode : undefined
   if (!deviceCode) return { status: 400, json: { error: 'deviceCode is required' } }
 
   const now = deps.now()
-  const record = deps.storage.getDeviceAuthByDeviceCode(deviceCode)
+  const record = await deps.storage.getDeviceAuthByDeviceCode(deviceCode)
   if (!record) return { status: 404, json: { error: 'unknown device code' } }
   if (record.expiresAt < now) return { status: 410, json: { error: 'device code expired' } }
   if (record.status === 'pending') return { status: 428, json: { error: 'authorization pending' } }
   if (record.status === 'consumed') return { status: 410, json: { error: 'device code already redeemed' } }
 
-  const grant = deps.storage.consumeDeviceAuth(deviceCode, now)
+  const grant = await deps.storage.consumeDeviceAuth(deviceCode, now)
   if (!grant || !grant.userId || !grant.orgId || !grant.role) {
     return { status: 410, json: { error: 'device code already redeemed' } }
   }
-  const session = mintSession(deps, grant.userId, grant.orgId, grant.role, true)
+  const session = await mintSession(deps, grant.userId, grant.orgId, grant.role, true)
   return { status: 200, json: sessionBody(session, true), session }
 }

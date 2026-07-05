@@ -42,11 +42,11 @@ export function seedMcpCatalog(orgId: string, now: number): McpCatalogEntry[] {
   }))
 }
 
-function loadOrSeedCatalog(orgId: string, deps: McpCatalogDeps): McpCatalogEntry[] {
-  const existing = deps.storage.getMcpCatalog(orgId)
+async function loadOrSeedCatalog(orgId: string, deps: McpCatalogDeps): Promise<McpCatalogEntry[]> {
+  const existing = await deps.storage.getMcpCatalog(orgId)
   if (existing.length > 0) return existing
   const seeded = seedMcpCatalog(orgId, deps.now())
-  deps.storage.putMcpCatalog(orgId, seeded)
+  await deps.storage.putMcpCatalog(orgId, seeded)
   return seeded
 }
 
@@ -59,9 +59,9 @@ function stripWeak(etag: string): string {
 }
 
 /** GET /v1/mcp/catalog (any org principal — viewer token or session). */
-export function handleGetMcpCatalog(orgId: string, ifNoneMatch: string | undefined, deps: McpCatalogDeps): McpCatalogHandlerResponse {
-  const entries = loadOrSeedCatalog(orgId, deps)
-  const mcpStrictMode = deps.storage.getMcpStrictMode(orgId)
+export async function handleGetMcpCatalog(orgId: string, ifNoneMatch: string | undefined, deps: McpCatalogDeps): Promise<McpCatalogHandlerResponse> {
+  const entries = await loadOrSeedCatalog(orgId, deps)
+  const mcpStrictMode = await deps.storage.getMcpStrictMode(orgId)
   const etag = computeEtag(entries, mcpStrictMode)
   if (ifNoneMatch && stripWeak(ifNoneMatch) === etag) {
     return { status: 304, json: {}, headers: { etag: `"${etag}"` } }
@@ -79,7 +79,7 @@ function parseJson(rawBody: string): Record<string, unknown> | undefined {
 }
 
 /** PUT /v1/mcp/catalog (admin only) {entries:[{serverName,approved,riskTags?,note?}], mcpStrictMode?}. */
-export function handlePutMcpCatalog(principal: Principal, rawBody: string, deps: McpCatalogDeps): McpCatalogHandlerResponse {
+export async function handlePutMcpCatalog(principal: Principal, rawBody: string, deps: McpCatalogDeps): Promise<McpCatalogHandlerResponse> {
   if (principal.role !== 'admin') return { status: 403, json: { error: 'admin role required' } }
   const body = parseJson(rawBody)
   if (!body) return { status: 400, json: { error: 'invalid JSON body' } }
@@ -103,10 +103,10 @@ export function handlePutMcpCatalog(principal: Principal, rawBody: string, deps:
     entries.push({ orgId: principal.orgId, serverName, approved, riskTags, note, updatedBy: principal.userId, updatedAt: now })
   }
 
-  deps.storage.putMcpCatalog(principal.orgId, entries)
+  await deps.storage.putMcpCatalog(principal.orgId, entries)
   if (typeof body.mcpStrictMode === 'boolean') {
-    deps.storage.setMcpStrictMode(principal.orgId, body.mcpStrictMode)
+    await deps.storage.setMcpStrictMode(principal.orgId, body.mcpStrictMode)
   }
-  const mcpStrictMode = deps.storage.getMcpStrictMode(principal.orgId)
+  const mcpStrictMode = await deps.storage.getMcpStrictMode(principal.orgId)
   return { status: 200, json: { entries, mcpStrictMode } }
 }

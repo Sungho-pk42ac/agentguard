@@ -1,0 +1,46 @@
+# AgentGuard self-host reverse proxy (plan §M5).
+#
+# ONE public origin in front of `web` (static console) and `api`
+# (control-plane). Routing everything through a single origin is what makes
+# the control-plane's session + CSRF cookies (agentguard_session,
+# agentguard_csrf — see control-plane/src/server.ts) first-party: the web
+# console never calls a different host/port for /v1/*, so the browser treats
+# proxy+web+api as one same-origin application.
+#
+# {$DOMAIN:localhost} controls both the site address AND automatic HTTPS:
+#   - DOMAIN=localhost (default, dev)  -> Caddy skips ACME and serves plain
+#     HTTP on :80 — this is the "localhost/:80 dev block" behavior, no extra
+#     site block needed.
+#   - DOMAIN=agentguard.example.com (prod) -> Caddy provisions a Let's
+#     Encrypt certificate automatically on first request and serves HTTPS on
+#     :443 (with an HTTP->HTTPS redirect on :80). Ports 80 and 443 must be
+#     reachable from the internet for the ACME HTTP-01 challenge.
+{$DOMAIN:localhost} {
+	encode gzip
+
+	# Control-plane JSON API. Kept same-origin (no host/port change) so
+	# Set-Cookie from /v1/auth/register|login is a first-party cookie.
+	handle /v1/* {
+		reverse_proxy api:8787
+	}
+
+	# Reserved alias for a future versioned/non-/v1 API surface — routes to
+	# the same upstream as /v1/* today so nothing has to move if it's used.
+	handle /api/* {
+		reverse_proxy api:8787
+	}
+
+	# Liveness/readiness probe (control-plane/src/server.ts: GET /healthz).
+	handle /healthz {
+		reverse_proxy api:8787
+	}
+
+	# Everything else: the static web console (Next.js `output: 'export'`,
+	# served by deploy/web.Dockerfile's caddy:2-alpine stage on :80).
+	# handle_path (rather than plain handle) makes explicit that this is the
+	# catch-all static route; the "/*" pattern has no literal prefix to
+	# strip, so no path rewriting actually happens here.
+	handle_path /* {
+		reverse_proxy web:80
+	}
+}

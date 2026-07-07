@@ -112,6 +112,8 @@ For Korean-first hard objection scripts against public agent-security references
 
 For a Korean-first SARIF reviewer loop from company problem to evidence command and approval condition, see [AX SARIF reviewer loop card](ax-sarif-reviewer-loop-card.md).
 
+For a Korean-first public-reference-to-command routing card with exact fixture-backed evidence commands, see [AX reference command routing card](ax-reference-command-routing-card.md).
+
 For Korean-first live-demo failure-mode handling with exact fixture-backed commands and non-claim guardrails, see [AX demo failure mode register](ax-demo-failure-mode-register.md).
 
 For a Korean-first 3-minute live demo rehearsal path with exact exits, artifacts, and fallback wording, see [AX demo operator checklist](ax-demo-operator-checklist.md).

@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .agentguard-demo/
+agentguard.sarif
 *.log
 .env
 .env.*

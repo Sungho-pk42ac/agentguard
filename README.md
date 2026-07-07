@@ -178,6 +178,7 @@ Verdicts:
 - [AX executive risk memo](docs/ax-executive-risk-memo.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)
 - [AX judge handoff packet](docs/ax-judge-handoff-packet.md)
+- [AX agent permission review packet](docs/ax-agent-permission-review-packet.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite triage card](docs/ax-onsite-triage-card.md)
 - [AX onsite pivot guide](docs/ax-onsite-pivot-guide.md)

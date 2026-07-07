@@ -6,6 +6,7 @@ agentguard.sarif
 *.log
 .env
 .env.*
+!deploy/.env.example
 
 # agent workflow/runtime state (not product)
 .gjc/

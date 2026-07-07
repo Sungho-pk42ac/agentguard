@@ -168,6 +168,7 @@ Verdicts:
 - [AX agent rollback drill](docs/ax-agent-rollback-drill.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
+- [AX judge rubric crosswalk](docs/ax-judge-rubric-crosswalk.md)
 - [AX rollout control map](docs/ax-rollout-control-map.md)
 - [AX boardroom go/no-go brief](docs/ax-boardroom-go-no-go-brief.md)
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)

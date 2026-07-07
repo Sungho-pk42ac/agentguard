@@ -162,6 +162,7 @@ Verdicts:
 - [AX live demo runbook](docs/ax-live-demo-runbook.md)
 - [AX demo operator checklist](docs/ax-demo-operator-checklist.md)
 - [AX 30-second demo command card](docs/ax-30-second-demo-card.md)
+- [AX cross-shell demo command card](docs/ax-cross-shell-demo-command-card.md)
 - [AX 90-second judge evidence tour](docs/ax-90-second-judge-evidence-tour.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX agent rollback drill](docs/ax-agent-rollback-drill.md)

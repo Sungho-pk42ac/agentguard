@@ -7,6 +7,28 @@ import { fileURLToPath } from 'node:url'
 const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = findRepoRoot(testDir)
 const comparisonDocPath = join(repoRoot, 'docs', 'ax-competitive-comparison.md')
+const requiredReferenceUrls = [
+  'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
+  'https://modelcontextprotocol.io/specification/draft/basic/security_best_practices',
+  'https://github.com/snyk/agent-scan',
+  'https://github.com/Tencent/AI-Infra-Guard',
+  'https://github.com/splx-ai/agentic-radar',
+  'https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
+] as const
+
+const requiredDemoRoutingTerms = [
+  'Demo/evidence routing',
+  'agentguard scan-diff',
+  'agentguard scan-mcp',
+  'agentguard scan-log',
+  'examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff',
+  'examples/enterprise-scenarios/commerce-voc-agent/risky-mcp.json',
+  'examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log',
+  'SARIF',
+  'Markdown evidence',
+] as const
+
 const forbiddenClaimPatterns = [
   /(?:실제\s*)?고객사|도입\s*(?:완료|사례)|레퍼런스\s*고객/i,
   /AgentGuard[^\n|.]{0,80}(?:실제\s*채택|채택\s*완료|운영\s*실적|레퍼런스\s*보유)/i,
@@ -64,6 +86,22 @@ test('AX competitive comparison names required references and Korean judging ter
   }
 })
 
+test('AX competitive comparison includes public reference URLs', () => {
+  const comparisonDoc = readComparisonDoc()
+
+  for (const requiredReferenceUrl of requiredReferenceUrls) {
+    assert.match(comparisonDoc, new RegExp(escapeRegExp(requiredReferenceUrl)))
+  }
+})
+
+test('AX competitive comparison routes references to fixture-backed demo evidence', () => {
+  const comparisonDoc = readComparisonDoc()
+
+  for (const requiredDemoRoutingTerm of requiredDemoRoutingTerms) {
+    assert.match(comparisonDoc, new RegExp(escapeRegExp(requiredDemoRoutingTerm), 'i'))
+  }
+})
+
 test('AX competitive comparison forbids unsupported trust and platform claims', () => {
   const comparisonDoc = readComparisonDoc()
 
@@ -72,6 +110,9 @@ test('AX competitive comparison forbids unsupported trust and platform claims', 
   assert.match(comparisonDoc, /broad-platform/i)
   assert.match(comparisonDoc, /rollout gate/i)
   assert.match(comparisonDoc, /full platform/i)
+  assert.match(comparisonDoc, /not as a full platform/i)
+  assert.match(comparisonDoc, /not as vendor-equivalent/i)
+  assert.match(comparisonDoc, /not as security certification/i)
 
   for (const forbiddenClaimPattern of forbiddenClaimPatterns) {
     assert.doesNotMatch(comparisonDoc, forbiddenClaimPattern)

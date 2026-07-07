@@ -511,7 +511,13 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
   }
 
   const stdin = () => {
-    const raw = readFileSync(0)
+    let raw: Buffer
+    try {
+      raw = readFileSync(0)
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error)
+      throw new ScanInputError(`stdin input could not be read; input may exceed the ${MAX_FILE_BYTES} byte limit or be temporarily unavailable: ${reason}`)
+    }
     if (raw.byteLength > MAX_FILE_BYTES) {
       console.error(`Could not read stdin: input is ${raw.byteLength} bytes, exceeding the ${MAX_FILE_BYTES} byte limit. Scan a smaller input.`)
       process.exit(2)

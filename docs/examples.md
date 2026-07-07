@@ -128,6 +128,8 @@ For a tiny Korean before/after MCP rollout approval story, see [AX before/after 
 
 For a one-page Korean judge evidence handoff, see [AX judge evidence index](ax-judge-evidence-index.md).
 
+For a Korean-first crosswalk from AX judging lenses to current AgentGuard evidence commands and public-reference guardrails, see [AX judge rubric crosswalk](ax-judge-rubric-crosswalk.md).
+
 For a Korean-first control map from public threats to AgentGuard surfaces, exact commands, approval conditions, and residual risks, see [AX rollout control map](ax-rollout-control-map.md).
 
 For a Korean-first REAL PROBLEM / REAL JUDGE / REAL OUTPUT map to current fixture-backed commands, see [AX real judge demo map](ax-real-judge-demo-map.md).

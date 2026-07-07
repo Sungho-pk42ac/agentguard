@@ -120,6 +120,8 @@ For a Korean-first 3-minute live demo rehearsal path with exact exits, artifacts
 
 For a Korean-first 90-second judge path from company problem to command, verdict, and approval sentence, see [AX 90-second judge evidence tour](ax-90-second-judge-evidence-tour.md).
 
+For Korean-first POSIX, PowerShell, and GitHub Actions command variants that preserve the same fixture-backed evidence and SARIF artifact path, see [AX cross-shell demo command card](ax-cross-shell-demo-command-card.md).
+
 For a Korean-first competition-rule compliance checklist that separates public facts, current evidence, and gated unknowns, see [AX rule compliance checklist](ax-rule-compliance-checklist.md).
 
 For a tiny Korean before/after MCP rollout approval story, see [AX before/after rollout demo](ax-before-after-rollout-demo.md).

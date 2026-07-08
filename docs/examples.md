@@ -112,6 +112,8 @@ For Korean-first hard objection scripts against public agent-security references
 
 For a Korean-first SARIF reviewer loop from company problem to evidence command and approval condition, see [AX SARIF reviewer loop card](ax-sarif-reviewer-loop-card.md).
 
+For a Korean-first AX CI evidence handoff from company problem to split CI step, preserved artifact, and reviewer approval condition, see [AX CI evidence handoff card](ax-ci-evidence-handoff-card.md).
+
 For a Korean-first public-reference-to-command routing card with exact fixture-backed evidence commands, see [AX reference command routing card](ax-reference-command-routing-card.md).
 
 For a Korean-first MCP consent/token handoff from company problem to exact fixture-backed command, expected verdict, and approval question, see [AX MCP consent/token handoff card](ax-mcp-consent-token-handoff.md).

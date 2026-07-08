@@ -198,6 +198,7 @@ Verdicts:
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
 - [AX pilot responsibility card](docs/ax-pilot-responsibility-card.md)
 - [AX incident response evidence card](docs/ax-incident-response-evidence-card.md)
+- [AX agent change-control evidence card](docs/ax-agent-change-control-evidence-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)
 - [AX final company-problem worksheet](docs/ax-final-problem-worksheet.md)
 - [Roadmap](docs/roadmap.md)

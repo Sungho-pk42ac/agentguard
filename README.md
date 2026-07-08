@@ -40,6 +40,9 @@ agentguard scan-files .
 # 로컬 설치/예제/스캐너 준비 상태 확인
 agentguard doctor
 
+# 팀/CI readiness gate용 machine-readable JSON
+agentguard doctor --json
+
 # Claude/Codex/Gemini/MCP 로컬 설정의 에이전트 권한 posture 점검
 agentguard posture .
 

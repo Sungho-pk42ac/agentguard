@@ -194,6 +194,7 @@ Verdicts:
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
 - [AX evidence receipt checklist](docs/ax-evidence-receipt-checklist.md)
+- [AX source-of-record audit card](docs/ax-source-of-record-audit-card.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
 - [AX pilot responsibility card](docs/ax-pilot-responsibility-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)

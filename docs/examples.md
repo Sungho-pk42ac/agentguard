@@ -156,6 +156,8 @@ For a Korean-first evidence bundle manifest that groups exact fixture-backed com
 
 For a Korean-first final company-problem worksheet with fixture-backed commands and public-reference guardrails, see [AX final company-problem worksheet](ax-final-problem-worksheet.md).
 
+For a Korean-first final submission smoke checklist covering PR diff, MCP config, transcript/log, and SARIF/report artifact checks, see [AX final submission smoke checklist](ax-final-submission-smoke-checklist.md).
+
 For a Korean-first pilot responsibility handoff that assigns business approval, residual risk, rollback, and evidence rerun owners, see [AX pilot responsibility card](ax-pilot-responsibility-card.md).
 
 For a Korean-first incident response evidence card mapping AgentGuard `BLOCK` / `REVIEW` findings to triage, containment owner, fix/policy condition, rerun command, and approval/residual-risk sentence, see [AX incident response evidence card](ax-incident-response-evidence-card.md).

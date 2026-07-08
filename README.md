@@ -177,6 +177,7 @@ Verdicts:
 - [AX rollout control map](docs/ax-rollout-control-map.md)
 - [AX boardroom go/no-go brief](docs/ax-boardroom-go-no-go-brief.md)
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
+- [AX CI evidence handoff card](docs/ax-ci-evidence-handoff-card.md)
 - [AX SARIF reviewer loop card](docs/ax-sarif-reviewer-loop-card.md)
 - [AX reference command routing card](docs/ax-reference-command-routing-card.md)
 - [AX MCP consent/token handoff card](docs/ax-mcp-consent-token-handoff.md)

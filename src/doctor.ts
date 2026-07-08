@@ -15,13 +15,38 @@ interface DoctorResult {
   readonly output: string
 }
 
-export function runDoctor(lang: DoctorLanguage = 'ko'): DoctorResult {
+interface DoctorOptions {
+  readonly json?: boolean
+}
+
+interface DoctorJsonOutput {
+  readonly tool: 'agentguard'
+  readonly status: 'PASS' | 'FAIL'
+  readonly checks: readonly DoctorCheck[]
+  readonly updateCommand: string
+}
+
+export function runDoctor(lang: DoctorLanguage = 'ko', options: DoctorOptions = {}): DoctorResult {
   const checks = [packageVersionCheck(lang), examplesDirectoryCheck(lang), scannerSmokeCheck(lang)]
+  const exitCode = checks.every((check) => check.passed) ? 0 : 1
+  if (options.json === true) {
+    const jsonOutput: DoctorJsonOutput = {
+      tool: 'agentguard',
+      status: exitCode === 0 ? 'PASS' : 'FAIL',
+      checks,
+      updateCommand: UPDATE_COMMAND,
+    }
+    return {
+      exitCode,
+      output: JSON.stringify(jsonOutput, null, 2),
+    }
+  }
+
   const lines = [doctorTitle(lang), ...checks.map((check) => `${check.passed ? 'PASS' : 'FAIL'} ${check.label} - ${check.detail}`), updateHint(lang)]
   const output = lines.join('\n')
 
   return {
-    exitCode: checks.every((check) => check.passed) ? 0 : 1,
+    exitCode,
     output,
   }
 }

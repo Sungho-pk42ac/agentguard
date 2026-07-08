@@ -55,7 +55,7 @@ function usage(exitCode = 2): never {
   agentguard report < input.txt
   agentguard report --push --endpoint <url> [--org <id>] [--asset <id>]
   agentguard posture [경로] [--json]
-  agentguard doctor [--lang ko|en]
+  agentguard doctor [--lang ko|en] [--json]
   agentguard repl
   agentguard scan files [경로]
   agentguard scan diff < diff.patch
@@ -105,7 +105,7 @@ Options:
 
 function doctorUsage(exitCode = 2): never {
   const output = `Usage:
-  agentguard doctor [--lang ko|en]
+  agentguard doctor [--lang ko|en] [--json]
 
 Checks:
   package version readability, examples directory presence, scanner smoke test`
@@ -272,6 +272,7 @@ function hasValidPositionalArgs(cmd: string, cleanArgs: readonly string[]): bool
 
 interface DoctorArgs {
   readonly lang: DoctorLanguage
+  readonly json: boolean
 }
 
 interface PostureArgs {
@@ -281,9 +282,14 @@ interface PostureArgs {
 
 function parseDoctorArgs(args: readonly string[]): DoctorArgs | undefined {
   let lang: DoctorLanguage = 'ko'
+  let json = false
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
     if (arg === '--help' || arg === '-h') doctorUsage(0)
+    if (arg === '--json') {
+      json = true
+      continue
+    }
     if (arg === '--lang') {
       const value = args[index + 1]
       if (!isMarkdownLanguage(value)) return undefined
@@ -299,7 +305,7 @@ function parseDoctorArgs(args: readonly string[]): DoctorArgs | undefined {
     }
     return undefined
   }
-  return { lang }
+  return { lang, json }
 }
 
 function parsePostureArgs(args: readonly string[]): PostureArgs | undefined {
@@ -374,7 +380,7 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
 } else if (rawArgs[0] === 'doctor') {
   const doctorArgs = parseDoctorArgs(rawArgs.slice(1))
   if (doctorArgs === undefined) doctorUsage()
-  const result = runDoctor(doctorArgs.lang)
+  const result = runDoctor(doctorArgs.lang, { json: doctorArgs.json })
   console.log(result.output)
   process.exit(result.exitCode)
 } else if (rawArgs[0] === 'posture') {

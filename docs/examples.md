@@ -152,6 +152,8 @@ For a 30-second onsite company-problem pivot into existing evidence commands, se
 
 For a Korean-first evidence receipt checklist covering PR diff, MCP, transcript/log, SARIF, and reviewer handoff surfaces, see [AX evidence receipt checklist](ax-evidence-receipt-checklist.md).
 
+For a Korean-first vocabulary map from `PASS` / `REVIEW` / `BLOCK` to judge-facing Korean evidence language, see [AX verdict vocabulary glossary](ax-verdict-vocabulary-glossary.md).
+
 For a Korean-first source-of-record audit card that separates agent self-report from repo/CI/host artifacts plus rerunnable commands, see [AX source-of-record audit card](ax-source-of-record-audit-card.md).
 
 For a Korean-first evidence bundle manifest that groups exact fixture-backed commands, expected artifacts, public-reference borrow/avoid notes, and non-claim guardrails, see [AX evidence bundle manifest](ax-evidence-bundle-manifest.md).

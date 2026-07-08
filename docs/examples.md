@@ -148,6 +148,8 @@ For Korean-first prelim judge Q&A scripts with evidence commands and non-claim g
 
 For a 30-second onsite company-problem pivot into existing evidence commands, see [AX onsite pivot guide](ax-onsite-pivot-guide.md).
 
+For a Korean-first 6-hour onsite execution board from company problem intake to scan commands, SARIF/Markdown handoff, and judge story, see [AX 6-hour onsite execution board](ax-6-hour-onsite-execution-board.md).
+
 ## AX company problem intake kit
 
 [AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.

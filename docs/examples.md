@@ -116,6 +116,8 @@ For a Korean-first public-reference-to-command routing card with exact fixture-b
 
 For a Korean-first MCP consent/token handoff from company problem to exact fixture-backed command, expected verdict, and approval question, see [AX MCP consent/token handoff card](ax-mcp-consent-token-handoff.md).
 
+For a Korean-first authorization callback/state evidence card that separates static AgentGuard evidence from runtime OAuth validation, see [AX authorization callback state card](ax-authorization-callback-state-card.md).
+
 For a Korean-first stakeholder-to-artifact routing card covering Markdown, SARIF/GitHub code scanning, PR/CI artifacts, local operator review, and security approver memos, see [AX reviewer channel routing card](ax-reviewer-channel-routing-card.md).
 
 For Korean-first live-demo failure-mode handling with exact fixture-backed commands and non-claim guardrails, see [AX demo failure mode register](ax-demo-failure-mode-register.md).

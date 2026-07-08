@@ -10,6 +10,25 @@ const referenceDocPath = join(repoRoot, 'docs', 'ax-rollout-references.md')
 const examplesDoc = readFileSync(join(repoRoot, 'docs', 'examples.md'), 'utf8')
 const rootReadme = readFileSync(join(repoRoot, 'README.md'), 'utf8')
 
+const reviewerHandoffCommands = [
+  {
+    command: 'node dist/index.js scan-diff < examples/risky-pr.diff',
+    fixtures: ['examples/risky-pr.diff'],
+  },
+  {
+    command: 'node dist/index.js scan-mcp < examples/risky-mcp.json',
+    fixtures: ['examples/risky-mcp.json'],
+  },
+  {
+    command: 'node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log',
+    fixtures: ['examples/agent-policy.yaml', 'examples/agent-transcript.log'],
+  },
+  {
+    command: 'node dist/index.js scan-diff --sarif --out .agentguard-demo/agentguard.sarif < examples/risky-pr.diff',
+    fixtures: ['examples/risky-pr.diff'],
+  },
+] as const
+
 function findRepoRoot(startDir: string): string {
   let currentDir = startDir
   while (true) {
@@ -106,6 +125,70 @@ test('AX rollout references doc maps target-prize gaps to next evidence slices',
   assert.match(gapSection, /OWASP Agentic AI threat\/mitigation/)
   assert.match(gapSection, /English-compatible/)
   assert.match(gapSection, /No fake adoption, certification, unsupported uniqueness, or broad-platform claim/)
+})
+
+test('AX rollout references doc maps reviewer-handoff signals to exact current evidence commands', () => {
+  const referenceDoc = readFileSync(referenceDocPath, 'utf8')
+  const reviewerSectionStart = referenceDoc.indexOf('## Reviewer-handoff reference refresh')
+
+  assert.notEqual(
+    reviewerSectionStart,
+    -1,
+    'docs/ax-rollout-references.md should include the reviewer-handoff reference refresh section',
+  )
+
+  const reviewerSection = referenceDoc.slice(reviewerSectionStart)
+
+  for (const referenceUrl of [
+    'https://github.com/affaan-m/agentshield',
+    'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+    'https://github.com/Tencent/AI-Infra-Guard',
+    'https://github.com/splx-ai/agentic-radar',
+  ] as const) {
+    assert.match(reviewerSection, new RegExp(escapeRegExp(referenceUrl)))
+  }
+
+  for (const { command, fixtures } of reviewerHandoffCommands) {
+    assert.match(reviewerSection, new RegExp(escapeRegExp(command)))
+    for (const fixturePath of fixtures) {
+      assert.ok(existsSync(join(repoRoot, fixturePath)), `${fixturePath} should exist`)
+      assert.match(reviewerSection, new RegExp(escapeRegExp(fixturePath)))
+    }
+  }
+
+  for (const requiredPhrase of [
+    'Agentshield',
+    'GitHub Action',
+    'SARIF upload',
+    'reviewer handoff',
+    'docs/github-action.md',
+    'docs/ax-ci-reviewer-handoff.md',
+    'docs/ax-sarif-reviewer-loop-card.md',
+    'PR comment',
+    'Markdown report',
+    'GitHub code scanning',
+  ] as const) {
+    assert.match(reviewerSection, new RegExp(escapeRegExp(requiredPhrase), 'i'))
+  }
+})
+
+test('AX rollout references doc keeps reviewer-handoff claims narrow and machine contracts stable', () => {
+  const referenceDoc = readFileSync(referenceDocPath, 'utf8')
+
+  for (const machineContract of [
+    'agentguard scan-diff',
+    'agentguard scan-mcp',
+    'agentguard scan-log',
+    'rule IDs',
+    'JSON',
+    'SARIF',
+  ] as const) {
+    assert.match(referenceDoc, new RegExp(escapeRegExp(machineContract)))
+  }
+
+  assert.doesNotMatch(referenceDoc, /(?:GitHub|code scanning)[^\n|.]{0,100}(?:대체|replaces?|replacement)/i)
+  assert.doesNotMatch(referenceDoc, /AgentGuard[^\n|.]{0,100}(?:parity|동등|same[-\s]?scope)/i)
+  assert.doesNotMatch(referenceDoc, /(?:CLI|command|rule IDs?|JSON|SARIF)[^\n|.]{0,100}(?:rename|renamed|이름\s*변경|번역|translated)/i)
 })
 
 test('AX rollout references doc avoids fake adoption, certification, and first mover claims', () => {

@@ -213,6 +213,21 @@ Verdicts:
 - [`examples/expected-report.md`](examples/expected-report.md) — sample markdown report
 - [`examples/agentguard.sarif`](examples/agentguard.sarif) — sample SARIF payload
 
+## 팀 PR gate workflow
+
+팀 repo에 바로 붙일 때는 [GitHub Actions / SARIF setup](docs/github-action.md)의 `AgentGuard PR gate` 예제를 권장합니다. 이 reusable action은 PR diff를 스캔하고 Markdown/JSON/SARIF artifact를 만들며, 기본값 `fail-on: block`으로 advisory finding을 제외한 위험 점수 기준 `BLOCK` 판정만 merge gate에서 막습니다.
+
+```yaml
+- uses: Sungho-pk42ac/agentguard@main
+  with:
+    base-sha: ${{ github.event.pull_request.base.sha }}
+    head-sha: ${{ github.event.pull_request.head.sha }}
+    report-path: agent-risk-report.md
+    json-path: agent-risk-findings.json
+    sarif-path: agentguard.sarif
+    fail-on: block
+```
+
 ## GitHub code scanning workflow
 
 아래 workflow를 `.github/workflows/agentguard-sarif.yml`로 복사하면 pull request diff를 스캔하고 `agentguard.sarif`를 생성한 뒤 GitHub code scanning에 업로드합니다. `scan-diff --sarif --out agentguard.sarif` 명령은 현재 구현된 CLI flags와 일치합니다.

@@ -154,6 +154,7 @@ Verdicts:
 ## 문서
 
 - [GitHub Actions / SARIF setup](docs/github-action.md)
+- [Team rollout baseline guide](docs/team-rollout-baseline-guide.md)
 - [Policy files](docs/policy.md)
 - [Rule surfaces](docs/rules.md)
 - [Examples](docs/examples.md)

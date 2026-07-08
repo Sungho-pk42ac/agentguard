@@ -2,6 +2,8 @@
 
 AgentGuard can be used as a team PR gate without copying this repository into the target repo. The recommended workflow below installs the published npm CLI through the reusable action, scans the pull request diff, uploads SARIF, uploads artifacts, and posts the markdown report back to the pull request.
 
+For baseline/noise triage and reviewer handoff, see the [Team rollout baseline guide](team-rollout-baseline-guide.md).
+
 ## Recommended team PR gate
 
 Create `.github/workflows/agentguard.yml` in the repository you want to protect:

@@ -8,7 +8,7 @@ test('looksLikeRawSecret detects secret-shaped values', () => {
   assert.equal(looksLikeRawSecret('sk-ant-ABCDEFGHIJKLMNOPQRSTUVWXYZ012345'), true)
   assert.equal(looksLikeRawSecret('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ012345'), true)
   assert.equal(looksLikeRawSecret('AKIAABCDEFGHIJKLMNOP'), true)
-  assert.equal(looksLikeRawSecret('AIzaSyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456'), true)
+  assert.equal(looksLikeRawSecret(`AIzaSy${'A'.repeat(29)}wxyz`), true)
   assert.equal(looksLikeRawSecret('-----BEGIN RSA PRIVATE KEY-----'), true)
 })
 

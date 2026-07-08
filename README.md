@@ -204,6 +204,7 @@ Verdicts:
 - [AX verdict vocabulary glossary](docs/ax-verdict-vocabulary-glossary.md)
 - [AX source-of-record audit card](docs/ax-source-of-record-audit-card.md)
 - [AX evidence custody chain](docs/ax-evidence-custody-chain.md)
+- [AX evidence tamper/replay check](docs/ax-evidence-tamper-replay-check.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
 - [AX pilot responsibility card](docs/ax-pilot-responsibility-card.md)
 - [AX incident response evidence card](docs/ax-incident-response-evidence-card.md)

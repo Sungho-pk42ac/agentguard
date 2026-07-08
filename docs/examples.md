@@ -158,6 +158,8 @@ For a Korean-first vocabulary map from `PASS` / `REVIEW` / `BLOCK` to judge-faci
 
 For a Korean-first source-of-record audit card that separates agent self-report from repo/CI/host artifacts plus rerunnable commands, see [AX source-of-record audit card](ax-source-of-record-audit-card.md).
 
+For a Korean-first tamper/replay check that maps PR diff, MCP config, transcript/log, and SARIF/report evidence to source artifact, rerun command, hash/freshness cue, and approver action, see [AX evidence tamper/replay check](ax-evidence-tamper-replay-check.md).
+
 For a Korean-first evidence bundle manifest that groups exact fixture-backed commands, expected artifacts, public-reference borrow/avoid notes, and non-claim guardrails, see [AX evidence bundle manifest](ax-evidence-bundle-manifest.md).
 
 For a Korean-first final company-problem worksheet with fixture-backed commands and public-reference guardrails, see [AX final company-problem worksheet](ax-final-problem-worksheet.md).

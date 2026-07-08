@@ -200,6 +200,7 @@ Verdicts:
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
 - [AX evidence receipt checklist](docs/ax-evidence-receipt-checklist.md)
+- [AX verdict vocabulary glossary](docs/ax-verdict-vocabulary-glossary.md)
 - [AX source-of-record audit card](docs/ax-source-of-record-audit-card.md)
 - [AX evidence custody chain](docs/ax-evidence-custody-chain.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)

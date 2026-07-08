@@ -169,6 +169,7 @@ Verdicts:
 - [AX 90-second judge evidence tour](docs/ax-90-second-judge-evidence-tour.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX agent rollback drill](docs/ax-agent-rollback-drill.md)
+- [AX adversarial judge checklist](docs/ax-adversarial-judge-checklist.md)
 - [AX judge evidence index](docs/ax-judge-evidence-index.md)
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
 - [AX judge rubric crosswalk](docs/ax-judge-rubric-crosswalk.md)

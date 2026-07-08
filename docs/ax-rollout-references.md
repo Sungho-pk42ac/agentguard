@@ -32,6 +32,23 @@ AgentGuard를 AX 인재전쟁 심사 맥락에서 **AX Rollout Guard**로 설명
 | [GitHub SARIF support docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning) | code scanning이 이해하는 SARIF result, ruleId, location, fingerprint 중심의 증거 구조 | SARIF를 위해 CLI commands, rule IDs, product name을 바꾸는 것 | 기존 SARIF output을 유지하고 PR diff finding은 SARIF location/ruleId와 Markdown report를 같은 판단 근거로 보여준다. |
 | [Anthropic Agent Skills post](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) | skills를 instructions, scripts, resources가 담긴 폴더로 보고 필요한 맥락만 점진적으로 읽는 방식 | AgentGuard가 Agent Skills 런타임이나 Anthropic 기능을 구현했다는 표현 | MCP 설정과 `transcript/log`에서 agent procedure drift를 증거화하고, demo tailoring은 company-problem worksheet에 한정해 기록한다. |
 
+## Reviewer-handoff reference refresh
+
+| Signal | Borrow | Avoid | AgentGuard action |
+|---|---|---|---|
+| [Agentshield](https://github.com/affaan-m/agentshield) | CLI, GitHub Action, App packaging vocabulary for agent/MCP/tool permission scanning | Agentshield parity, adoption, trust badge, or same-scope coverage claim | AgentGuard keeps the narrower Korean-first PR+MCP+transcript reviewer handoff, with policy-as-code and fixture-backed commands. |
+| [GitHub SARIF upload docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github) | SARIF upload as reviewer handoff artifact routing into GitHub code scanning | Automatic upload, platform certification, or product substitution claims | `docs/github-action.md`, `docs/ax-ci-reviewer-handoff.md`, and `docs/ax-sarif-reviewer-loop-card.md` show how CI can keep a SARIF artifact, Markdown report, and PR comment together for reviewer approval. |
+| [Tencent AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) and [splx-ai agentic-radar](https://github.com/splx-ai/agentic-radar) | Broad AI infrastructure and agentic workflow-risk vocabulary | Full-stack platform, attack-simulation, or vendor-scale detection parity | AgentGuard stays narrow: deterministic PR diff, MCP config, and transcript/log evidence become approval conditions before rollout. |
+
+| Reviewer handoff | Exact current evidence command | Fixture-backed artifact |
+|---|---|---|
+| PR diff Markdown report | `node dist/index.js scan-diff < examples/risky-pr.diff` | `examples/risky-pr.diff` becomes stdout Markdown for reviewer handoff or PR comment. |
+| MCP JSON permission review | `node dist/index.js scan-mcp < examples/risky-mcp.json` | `examples/risky-mcp.json` preserves JSON input and English-compatible rule IDs. |
+| Transcript/log approval evidence | `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log` | `examples/agent-policy.yaml` and `examples/agent-transcript.log` map agent behavior to approval conditions. |
+| SARIF upload handoff | `node dist/index.js scan-diff --sarif --out .agentguard-demo/agentguard.sarif < examples/risky-pr.diff` | `.agentguard-demo/agentguard.sarif` can be uploaded by a configured GitHub Action for GitHub code scanning reviewer triage. |
+
+Machine contracts stay English-compatible: `agentguard scan-diff`, `agentguard scan-mcp`, `agentguard scan-log`, rule IDs, JSON, and SARIF fields are not presentation-layer copy.
+
 ## Target-prize gap-to-slice table
 
 | Target-prize gap | Public signal | Borrow | Avoid | Next evidence slice |

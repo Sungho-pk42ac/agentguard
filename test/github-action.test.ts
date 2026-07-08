@@ -42,6 +42,10 @@ test('published GitHub Action exposes a team-ready PR gate contract', () => {
   const scanRun = scanStep.run as string
 
   assert.match(stepText, /npx --yes/)
+  assert.ok(scanRun.includes('if [[ ! "$BASE_SHA" =~ ^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$ ]]'))
+  assert.match(scanRun, /base-sha must be a 40 or 64-character commit SHA/)
+  assert.ok(scanRun.includes('if [[ ! "$HEAD_SHA" =~ ^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$ ]]'))
+  assert.match(scanRun, /head-sha must be a 40 or 64-character commit SHA/)
   assert.match(scanRun, /git diff --no-ext-diff --unified=0 "\$BASE_SHA" "\$HEAD_SHA"/)
   assert.match(scanRun, /"\$\{agentguard_cmd\[@\]\}" scan-diff "\$\{policy_args\[@\]\}" --json --out "\$json_path"/)
   assert.match(scanRun, /"\$\{agentguard_cmd\[@\]\}" scan-diff "\$\{policy_args\[@\]\}" --sarif --out "\$sarif_path"/)
@@ -114,6 +118,10 @@ test('GitHub Action exposes PR diff report artifact/comment contract', () => {
   assert.match(stepText, /GITHUB_STEP_SUMMARY/)
   assert.match(stepText, /const weight = \{ low: 1, medium: 2, high: 3, critical: 4 \}/)
   assert.match(stepText, /filter\(\(finding\) => !finding\.advisory\)/)
+  assert.ok(scanRun.includes('if [[ ! "$BASE_SHA" =~ ^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$ ]]'))
+  assert.match(scanRun, /base-sha must be a 40 or 64-character commit SHA/)
+  assert.ok(scanRun.includes('if [[ ! "$HEAD_SHA" =~ ^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$ ]]'))
+  assert.match(scanRun, /head-sha must be a 40 or 64-character commit SHA/)
   assert.match(scanRun, /BASE_SHA/)
   assert.match(scanRun, /HEAD_SHA/)
   assert.match(scanRun, /echo "json-path=\$json_path"/)

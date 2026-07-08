@@ -174,6 +174,7 @@ Verdicts:
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
 - [AX SARIF reviewer loop card](docs/ax-sarif-reviewer-loop-card.md)
 - [AX reference command routing card](docs/ax-reference-command-routing-card.md)
+- [AX agent asset inventory card](docs/ax-agent-asset-inventory-card.md)
 - [AX reviewer channel routing card](docs/ax-reviewer-channel-routing-card.md)
 - [AX executive risk memo](docs/ax-executive-risk-memo.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)

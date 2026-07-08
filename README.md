@@ -202,6 +202,7 @@ Verdicts:
 - [AX agent change-control evidence card](docs/ax-agent-change-control-evidence-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)
 - [AX final company-problem worksheet](docs/ax-final-problem-worksheet.md)
+- [AX final submission smoke checklist](docs/ax-final-submission-smoke-checklist.md)
 - [Roadmap](docs/roadmap.md)
 - [Development harness](docs/harness-workflow.md)
 

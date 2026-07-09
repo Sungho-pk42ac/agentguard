@@ -6,11 +6,15 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import YAML from 'yaml'
 
-function actionConclusion(actionPath: string, findings: readonly Record<string, unknown>[]): string {
+function scanRunFor(actionPath: string): string {
   const action = YAML.parse(readFileSync(actionPath, 'utf8'))
   const scanStep = action.runs.steps.find((step: { id?: string }) => step.id === 'scan')
   assert.ok(scanStep)
-  const scanRun = scanStep.run as string
+  return scanStep.run as string
+}
+
+function actionConclusion(actionPath: string, findings: readonly Record<string, unknown>[]): string {
+  const scanRun = scanRunFor(actionPath)
   const match = scanRun.match(/conclusion=\$\(node --input-type=module -e "([\s\S]*?)" -- "\$json_path"\)/)
   assert.ok(match, 'action should compute conclusion from JSON findings with node -e')
 
@@ -57,6 +61,34 @@ test('published GitHub Action exposes a team-ready PR gate contract', () => {
   assert.doesNotMatch(scanRun, /severity === 'critical'/)
   assert.ok(scanRun.includes('[[ "$conclusion" == "block" && "$fail_on" =~ ^(block|review)$ ]]'))
   assert.doesNotMatch(scanRun, /node dist\/index\.js/)
+})
+
+test('published and local GitHub Actions reject unsafe artifact paths before file operations', () => {
+  const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
+    ['action.yml', ['report_path', 'json_path', 'sarif_path']],
+    ['.github/actions/agentguard/action.yml', ['report_path', 'json_path']],
+  ]
+
+  for (const [actionPath, variables] of cases) {
+    const scanRun = scanRunFor(actionPath)
+    assert.match(scanRun, /validate_artifact_path\(\)/)
+    assert.match(scanRun, /local input_name="\$2"/)
+    assert.match(scanRun, /\$input_name: artifact paths must be relative and stay inside the workspace/)
+    assert.match(scanRun, /artifact paths must be relative and stay inside the workspace/)
+    assert.match(scanRun, /case "\$candidate" in/)
+    assert.match(scanRun, /\*\.\.\*\)/)
+    assert.match(scanRun, /\/\*\)/)
+
+    const validationIndex = scanRun.indexOf('validate_artifact_path()')
+    assert.ok(validationIndex >= 0, `${actionPath}: validation function should exist`)
+    assert.ok(validationIndex < scanRun.indexOf('rm -f --'), `${actionPath}: validation should run before rm`)
+    assert.ok(validationIndex < scanRun.indexOf('mkdir -p --'), `${actionPath}: validation should run before mkdir`)
+    assert.ok(validationIndex < scanRun.indexOf('git diff --no-ext-diff'), `${actionPath}: validation should run before git diff`)
+
+    for (const variable of variables) {
+      assert.match(scanRun, new RegExp(`validate_artifact_path "\\$${variable}" "${variable.replace('_path', '-path')}"`))
+    }
+  }
 })
 
 test('legacy local action uses the same risk-score verdict as the CLI', () => {

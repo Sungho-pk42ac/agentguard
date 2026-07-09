@@ -208,6 +208,7 @@ Verdicts:
 - [AX evidence custody chain](docs/ax-evidence-custody-chain.md)
 - [AX evidence tamper/replay check](docs/ax-evidence-tamper-replay-check.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
+- [AX smoke evidence manifest handoff card](docs/ax-smoke-evidence-manifest-handoff-card.md)
 - [AX pilot responsibility card](docs/ax-pilot-responsibility-card.md)
 - [AX incident response evidence card](docs/ax-incident-response-evidence-card.md)
 - [AX CLI trust onboarding card](docs/ax-cli-trust-onboarding-card.md)

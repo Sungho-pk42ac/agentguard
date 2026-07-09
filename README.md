@@ -191,6 +191,7 @@ Verdicts:
 - [AX prompt-injection evidence routing card](docs/ax-prompt-injection-evidence-routing-card.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite triage card](docs/ax-onsite-triage-card.md)
+- [AX onsite decision log](docs/ax-onsite-decision-log.md)
 - [AX 6-hour onsite execution board](docs/ax-6-hour-onsite-execution-board.md)
 - [AX onsite pivot guide](docs/ax-onsite-pivot-guide.md)
 - [AX Rollout references](docs/ax-rollout-references.md)

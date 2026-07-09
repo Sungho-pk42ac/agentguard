@@ -207,6 +207,7 @@ Verdicts:
 - [AX evidence receipt checklist](docs/ax-evidence-receipt-checklist.md)
 - [AX verdict vocabulary glossary](docs/ax-verdict-vocabulary-glossary.md)
 - [AX source-of-record audit card](docs/ax-source-of-record-audit-card.md)
+- [AX fork PR artifact fallback card](docs/ax-fork-pr-artifact-fallback-card.md)
 - [AX evidence custody chain](docs/ax-evidence-custody-chain.md)
 - [AX evidence tamper/replay check](docs/ax-evidence-tamper-replay-check.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)

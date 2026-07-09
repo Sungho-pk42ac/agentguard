@@ -110,8 +110,24 @@ test('team adoption docs provide copy-paste reusable action workflow', () => {
   assert.match(docs, /fail-on: block/)
   assert.match(docs, /sarif-path: agentguard\.sarif/)
   assert.match(docs, /github\/codeql-action\/upload-sarif@v3/)
+  assert.match(docs, /- name: Upload AgentGuard SARIF\r?\n        if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) \}\}/)
+  assert.match(docs, /- name: Comment AgentGuard report on PR\r?\n        if: \$\{\{ !cancelled\(\) && github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.repo\.full_name == github\.repository \}\}/)
+  assert.match(docs, /- name: Upload AgentGuard artifacts\r?\n        if: \$\{\{ !cancelled\(\) \}\}/)
   assert.match(docs, /body-path: agent-risk-report\.md/)
   assert.match(docs, /permissions:[\s\S]*contents: read[\s\S]*pull-requests: write[\s\S]*security-events: write/)
+})
+
+test('team adoption docs explain fork-safe PR permission fallback', () => {
+  const docs = readFileSync('docs/github-action.md', 'utf8')
+
+  assert.match(docs, /^## Fork PR permission boundary/m)
+  assert.match(docs, /public fork PR/i)
+  assert.match(docs, /read-only `GITHUB_TOKEN`/)
+  assert.match(docs, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/)
+  assert.match(docs, /artifact-only fallback/i)
+  assert.match(docs, /pull_request_target/)
+  assert.match(docs, /do not check out or execute untrusted fork code/i)
+  assert.match(docs, /maintainer can rerun AgentGuard on a same-repository branch/i)
 })
 
 test('published and local actions compute conclusions from score-based non-advisory risk', () => {

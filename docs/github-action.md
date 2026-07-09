@@ -44,7 +44,7 @@ jobs:
           fail-on: block
 
       - name: Upload AgentGuard SARIF
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: agentguard.sarif
@@ -60,7 +60,7 @@ jobs:
             agentguard.sarif
 
       - name: Comment AgentGuard report on PR
-        if: ${{ !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -74,6 +74,12 @@ What the team gets on every PR:
 - JSON findings for automation and archival evidence.
 - SARIF upload for GitHub code scanning.
 - A default fail-closed gate only for `BLOCK` findings, so lower-risk review items do not break adoption on day one.
+
+## Fork PR permission boundary
+
+Public fork PRs usually run with a read-only `GITHUB_TOKEN`. Keep the recommended workflow on the `pull_request` event and treat PR comments and GitHub code scanning upload as same-repository conveniences, not as required evidence. The SARIF upload and comment steps are intentionally guarded by `github.event.pull_request.head.repo.full_name == github.repository`; when that condition is false, the artifact-only fallback is the source of record: job summary, Markdown report, JSON findings, and the generated SARIF file preserved by `actions/upload-artifact`.
+
+Do not switch this workflow to `pull_request_target` just to comment on forks or upload code-scanning results. If a team uses `pull_request_target` for a separate maintainer-owned workflow, do not check out or execute untrusted fork code with write permissions. Safer fork flow: let the fork PR produce artifacts with read-only permissions, then a maintainer can rerun AgentGuard on a same-repository branch if a write-token PR comment or code-scanning upload is required for review.
 
 ## Action inputs
 
@@ -181,7 +187,7 @@ jobs:
           path: agent-risk-report.md
 
       - name: Comment AgentGuard report on PR
-        if: ${{ !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}

@@ -41,6 +41,7 @@
     "test:docs": "tsx --test test/docs/*.test.ts",
     "build": "tsc",
     "postbuild": "node -e \"require('fs').chmodSync('dist/index.js', 0o755)\"",
+    "smoke:ax-demo": "node scripts/ax-demo-smoke.mjs",
     "postinstall": "node scripts/postinstall.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",

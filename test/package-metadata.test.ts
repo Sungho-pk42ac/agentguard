@@ -40,6 +40,11 @@ test('npm package metadata is hardened for first npm publish', () => {
   assert.ok(packageJson.scripts?.prepublishOnly?.includes('build'), 'prepublishOnly should run build')
 })
 
+test('package exposes the AX demo smoke command for reviewers', () => {
+  assert.equal(packageJson.scripts?.['smoke:ax-demo'], 'node scripts/ax-demo-smoke.mjs')
+  assert.ok(packageJson.files?.includes('scripts'), 'published package should include reviewer smoke scripts')
+})
+
 test('CHANGELOG documents the v0.2.0 release', () => {
   const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8')
   assert.match(changelog, /^## \[Unreleased\]/m, 'CHANGELOG should keep an empty Unreleased stub at the top')

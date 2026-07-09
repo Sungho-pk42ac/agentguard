@@ -12,6 +12,18 @@
 
 발표장에서 build 결과와 직접 연결하려면 먼저 `npm run build`를 실행합니다. 위 명령은 POSIX shell(Bash, zsh, Git Bash) 기준의 stdin redirection 예시입니다. CLI가 전역 설치된 환경에서는 같은 입력을 `agentguard scan-diff`, `agentguard scan-mcp`, `agentguard scan-log`로 바꿔 실행할 수 있습니다.
 
+## Reviewer smoke command
+
+Fresh clone에서 심사자가 한 번에 재현하려면 아래 명령을 실행합니다.
+
+```sh
+npm ci
+npm run build
+npm run smoke:ax-demo
+```
+
+이 smoke command는 built CLI인 `node dist/index.js`만 호출하며, PR diff, MCP config, transcript/log JSON evidence와 `agentguard.sarif`, `.agentguard-demo/ax-evidence-smoke/manifest.json`을 `.agentguard-demo/ax-evidence-smoke/` 디렉터리에 남깁니다. 위험 fixture에서 `scan-diff` 또는 `scan-mcp`가 non-zero로 끝나는 것은 expected result일 때만 허용하며, wrapper가 expected rule IDs와 SARIF shape를 확인한 뒤 최종 exit 0을 반환합니다.
+
 ## Public confirmed facts
 
 | Reference | 빌릴 점 / Borrow | 피할 점 / Avoid |

@@ -183,6 +183,15 @@ export async function pushReport(
   identity: PushIdentity,
   options: PushOptions = {},
 ): Promise<PushResult> {
+  try {
+    const parsedEndpoint = new URL(endpoint)
+    if (parsedEndpoint.protocol !== 'http:' && parsedEndpoint.protocol !== 'https:') {
+      throw new ReportPushError('report-push endpoint must be an absolute http(s) URL')
+    }
+  } catch (error) {
+    if (error instanceof ReportPushError) throw error
+    throw new ReportPushError('report-push endpoint must be an absolute http(s) URL')
+  }
   // Guard again immediately before egress (belt and braces).
   assertRedacted(payload)
   const fetchImpl = options.fetchImpl ?? (globalThis.fetch as unknown as FetchLike)

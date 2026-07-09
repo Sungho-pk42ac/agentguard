@@ -161,6 +161,20 @@ test('pushReport signs the exact body and sends device-token headers', async () 
   assert.equal(seen.headers['x-agentguard-signature'], `v1=${signBody(seen.body, 1000, 'dev-secret-123')}`)
 })
 
+test('pushReport rejects invalid endpoints before fetch, including advisory capability probe', async () => {
+  const payload = buildReportPayload([finding({ advisory: true })], { orgId: 'org_acme', assetId: 'asset_pc1', actor: deviceIdentity.actor, home: HOME, username: USER })
+  let fetchCalls = 0
+  const fetchImpl: FetchLike = async () => (fetchCalls += 1, { status: 200, text: async () => '{"schemaVersions":[2]}' })
+
+  for (const endpoint of ['', '/v1/reports', 'ftp://cp.example', 'http://', 'notaurl']) {
+    await assert.rejects(
+      () => pushReport(endpoint, payload, deviceIdentity, { fetchImpl }),
+      (err: unknown) => err instanceof ReportPushError && /report-push endpoint must be an absolute http\(s\) URL/.test(err.message),
+    )
+  }
+  assert.equal(fetchCalls, 0)
+})
+
 test('pushReport sends OIDC bearer for the oidc credential', async () => {
   const payload = buildReportPayload([finding()], {
     orgId: 'org_acme',

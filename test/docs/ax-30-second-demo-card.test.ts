@@ -76,6 +76,11 @@ test('AX 30-second demo command card maps exact fixture-backed commands to verdi
   for (const command of exactCommands) {
     expectLiteral(card, command)
   }
+  for (const command of ['npm ci', 'npm run build', 'npm run smoke:ax-demo'] as const) {
+    expectLiteral(card, command)
+  }
+  expectLiteral(card, '.agentguard-demo/ax-evidence-smoke/manifest.json')
+  expectLiteral(card, 'node dist/index.js')
 
   for (const verdict of ['Expected verdict: `BLOCK`', 'Expected verdict: `REVIEW`'] as const) {
     expectLiteral(card, verdict)

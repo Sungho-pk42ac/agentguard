@@ -220,6 +220,7 @@ Verdicts:
 - [AX CLI trust onboarding card](docs/ax-cli-trust-onboarding-card.md)
 - [AX agent change-control evidence card](docs/ax-agent-change-control-evidence-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)
+- [AX public-reference delta watch](docs/ax-public-reference-delta-watch.md)
 - [AX final company-problem worksheet](docs/ax-final-problem-worksheet.md)
 - [AX final submission smoke checklist](docs/ax-final-submission-smoke-checklist.md)
 - [Roadmap](docs/roadmap.md)

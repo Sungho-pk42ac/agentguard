@@ -188,6 +188,8 @@ For a Korean-first first-run trust path from `agentguard --help` and `agentguard
 
 For a Korean-first change-control evidence card mapping change request to AgentGuard evidence, approver decision, and rollback/rerun, see [AX agent change-control evidence card](ax-agent-change-control-evidence-card.md).
 
+For a Korean-first public-reference delta watch that maps fresh public signals to exact fixture-backed evidence commands without unsupported adoption, endorsement, or scope claims, see [AX public-reference delta watch](ax-public-reference-delta-watch.md).
+
 ## SARIF
 
 ```bash

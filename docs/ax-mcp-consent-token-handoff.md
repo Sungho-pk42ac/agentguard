@@ -1,6 +1,6 @@
 # AX MCP consent/token handoff card
 
-한국어 우선 운영 카드로 회사의 MCP rollout 질문을 사용자 동의(consent), token passthrough, confused deputy 위험과 AgentGuard의 fixture-backed evidence command에 연결한다. CLI commands, rule IDs, JSON, SARIF, API machine fields stay English-compatible.
+한국어 우선 운영 카드로 회사의 MCP rollout 질문을 사용자 동의(consent), token passthrough, confused deputy 위험과 AgentGuard의 static MCP config evidence command에 연결한다. CLI commands, rule IDs, JSON, SARIF, API machine fields stay English-compatible.
 
 ## Company problem
 
@@ -30,6 +30,12 @@ agentguard scan-mcp < examples/risky-mcp.json
 
 Fixture: `examples/risky-mcp.json`.
 
+## Static execution-safety boundary
+
+정적 preflight 경계: `scan-mcp`는 MCP config text를 evidence로 읽고 rule finding을 만든다. AgentGuard는 이 카드의 흐름에서 MCP server를 실행하지 않는다. untrusted MCP server command, package install, OAuth/session handoff, tool call replay, network login은 이 evidence command의 범위 밖이다.
+
+이 경계의 대상권 positioning은 "배포 전에 위험한 MCP 설정 텍스트를 사람 승인 queue로 올리는 control"이다. static no MCP server execution evidence로 broad filesystem root, writable path, credential-like environment passthrough를 먼저 걸러내고, 남는 residual risk는 human approver가 권한 축소, sandbox/consent 요구, 예외 승인, rollout 중지를 결정한다.
+
 ## Expected verdict
 
 Expected verdict: `BLOCK` or `REVIEW` for broad filesystem access, writable filesystem exposure, and credential-like environment passthrough. 대표 rule ID는 `mcp.broad_filesystem_access`이며, terminal/Markdown evidence는 승인자가 읽을 수 있는 한국어 우선 설명을 붙인다.
@@ -48,7 +54,9 @@ Expected verdict: `BLOCK` or `REVIEW` for broad filesystem access, writable file
 |---|---|---|
 | MCP security best practices — https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices | user consent, token passthrough, confused deputy, SSRF/tool-boundary language for why MCP config needs explicit review. | Do not claim AgentGuard enforces runtime authorization, OAuth/session control, consent UI, or complete MCP risk handling. |
 | OWASP Agentic AI threats and mitigations — https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/ | agent autonomy, tool misuse, mitigation/control vocabulary for explaining why human approval is needed. | Do not claim OWASP endorsement, complete threat coverage, or external assurance. |
-| GitHub code scanning — https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning | reviewer handoff language: finding, evidence, owner, and remediation/approval loop. | Do not claim GitHub native app parity, replacement, or hosted code-scanning product behavior. |
+| Snyk `agent-scan` — https://github.com/snyk/agent-scan | explicit warning pattern that some MCP scanners may execute MCP server commands and need consent/sandboxing. | Do not claim AgentGuard launches MCP servers at runtime or provides Snyk enterprise parity. |
+| Tencent `AI-Infra-Guard` — https://github.com/Tencent/AI-Infra-Guard | broad AI infra, MCP, and agent-skill inventory framing for why MCP rollout evidence belongs in the approval packet. | Do not claim end-to-end AI security platform scope or Tencent feature parity. |
+| GitHub SARIF upload — https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning | reviewer-facing artifact handoff language: finding, evidence, owner, and remediation/approval loop. | Do not claim GitHub native app parity, replacement, or hosted code-scanning product behavior. |
 
 ## Machine contract guardrails
 

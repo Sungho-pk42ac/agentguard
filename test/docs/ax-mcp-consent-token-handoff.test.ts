@@ -22,7 +22,9 @@ const fixtureBackedCommands = [
 const publicReferenceUrls = [
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
-  'https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning',
+  'https://github.com/snyk/agent-scan',
+  'https://github.com/Tencent/AI-Infra-Guard',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
 ] as const
 
 function findRepoRoot(startDir: string): string {
@@ -59,6 +61,7 @@ test('AX MCP consent token handoff card is Korean-first with the required handof
     '## Company problem',
     '## MCP risk',
     '## AgentGuard evidence command',
+    '## Static execution-safety boundary',
     '## Expected verdict',
     '## Approval question',
     '## Public reference borrow/avoid notes',
@@ -79,6 +82,8 @@ test('AX MCP consent token handoff card is Korean-first with the required handof
     'tool misuse',
     'human approver',
     '승인 질문',
+    '정적 preflight',
+    'MCP server를 실행하지 않는다',
   ] as const) {
     expectLiteral(card, requiredTerm)
   }
@@ -98,6 +103,8 @@ test('AX MCP consent token handoff card uses exact commands backed by existing f
   assert.match(card, /\bBLOCK\b|\bREVIEW\b/)
   assert.match(card, /broad filesystem access/i)
   assert.match(card, /credential-like environment passthrough/i)
+  assert.match(card, /static/i)
+  assert.match(card, /no MCP server execution|MCP server를 실행하지 않는다/i)
 })
 
 test('AX MCP consent token handoff card cites public references without claiming validation', () => {
@@ -110,7 +117,9 @@ test('AX MCP consent token handoff card cites public references without claiming
   assert.match(card, /\|\s*Public reference\s*\|\s*Borrow\s*\|\s*Avoid\s*\|/)
   assert.match(card, /MCP security best practices/)
   assert.match(card, /OWASP Agentic AI threats and mitigations/)
-  assert.match(card, /GitHub code scanning/)
+  assert.match(card, /Snyk `agent-scan`/)
+  assert.match(card, /Tencent `AI-Infra-Guard`/)
+  assert.match(card, /GitHub SARIF upload/)
 })
 
 test('AX MCP consent token handoff card preserves English-compatible machine contracts and avoids fake claims', () => {
@@ -134,6 +143,8 @@ test('AX MCP consent token handoff card preserves English-compatible machine con
   assert.doesNotMatch(card, /(?:OWASP|MCP)[^\r\n|.]{0,100}(?:endorsed|validated|approved|공식\s*검증|검증\s*완료|인증\s*완료)/i)
   assert.doesNotMatch(card, /AgentGuard\s+(?:has|provides|delivers|implements)\s+MCP[^.\n|]{0,100}(?:consent UI|runtime authorization|OAuth|session control|conformance)/i)
   assert.doesNotMatch(card, /AgentGuard\s+(?:is|has|provides|delivers)\s+(?:a\s+)?GitHub[^.\n|]{0,100}(?:native app|product parity|replacement|동등|대체)/i)
+  assert.doesNotMatch(card, /AgentGuard\s+(?:replaces|matches|is equivalent to|is at parity with)\s+(?:Snyk|Tencent|OWASP|GitHub)/i)
+  assert.doesNotMatch(card, /(?:full|complete|전체)\s+(?:AI\s+)?red[-\s]?team\s+(?:platform|coverage|플랫폼|커버리지)/i)
 })
 
 function escapeRegExp(value: string): string {

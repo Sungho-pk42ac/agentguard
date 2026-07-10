@@ -152,6 +152,8 @@ For a Korean-first onsite decision log that maps company problem, decision, evid
 
 For a Korean-first 6-hour onsite execution board from company problem intake to scan commands, SARIF/Markdown handoff, and judge story, see [AX 6-hour onsite execution board](ax-6-hour-onsite-execution-board.md).
 
+For a Korean-first first-minute evidence priority card that tells operators which fixture-backed proof to show first, see [AX first-60-seconds evidence priority card](ax-first-60-seconds-evidence-priority.md).
+
 ## AX company problem intake kit
 
 [AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.

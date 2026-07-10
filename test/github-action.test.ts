@@ -39,15 +39,6 @@ function packageVersionValidationExit(candidate: string): { status: number | nul
   return { status: result.status, stderr: result.stderr }
 }
 
-function bashAnsiCString(value: string): string {
-  return `$'${value
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, `\\'`)
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t')}'`
-}
-
 function artifactPathValidationExit(
   actionPath: string,
   candidate: string,
@@ -57,9 +48,10 @@ function artifactPathValidationExit(
   const match = scanRun.match(/validate_artifact_path\(\) \{[\s\S]*?\n[}]/)
   assert.ok(match, `${actionPath} should define validate_artifact_path()`)
 
-  const script = `${match[0]}\nvalidate_artifact_path ${bashAnsiCString(candidate)} ${bashAnsiCString(inputName)}`
+  const script = `${match[0]}\nvalidate_artifact_path "$AG_CANDIDATE" "$AG_INPUT_NAME"`
   const result = spawnSync('bash', ['-c', script], {
     encoding: 'utf8',
+    env: { ...process.env, AG_CANDIDATE: candidate, AG_INPUT_NAME: inputName },
   })
   return { status: result.status, stderr: result.stderr }
 }

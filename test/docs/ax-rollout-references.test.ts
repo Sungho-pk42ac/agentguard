@@ -29,6 +29,13 @@ const reviewerHandoffCommands = [
   },
 ] as const
 
+const freshnessBoundaryReferences = [
+  'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+  'https://github.com/Tencent/AI-Infra-Guard',
+  'https://github.com/splx-ai/agentic-radar',
+] as const
+
 function findRepoRoot(startDir: string): string {
   let currentDir = startDir
   while (true) {
@@ -172,6 +179,46 @@ test('AX rollout references doc maps reviewer-handoff signals to exact current e
   }
 })
 
+test('AX rollout references doc pins public reference freshness and source boundaries to current evidence', () => {
+  const referenceDoc = readFileSync(referenceDocPath, 'utf8')
+  const boundarySectionStart = referenceDoc.indexOf('## Public reference freshness boundary')
+
+  assert.notEqual(
+    boundarySectionStart,
+    -1,
+    'docs/ax-rollout-references.md should include the public reference freshness boundary section',
+  )
+
+  const nextSectionStart = referenceDoc.indexOf('\n## ', boundarySectionStart + 1)
+  const boundarySection = referenceDoc.slice(
+    boundarySectionStart,
+    nextSectionStart === -1 ? undefined : nextSectionStart,
+  )
+
+  assert.match(
+    boundarySection,
+    /\|\s*Public reference\s*\|\s*Last checked\s*\|\s*Public\/auth status\s*\|\s*Borrow\s*\|\s*Avoid\s*\|\s*AgentGuard evidence action\s*\|/,
+  )
+
+  for (const referenceUrl of freshnessBoundaryReferences) {
+    assert.match(boundarySection, new RegExp(escapeRegExp(referenceUrl)))
+  }
+
+  const checkedDates = boundarySection.match(/2026-07-10/g) ?? []
+  const publicStatuses = boundarySection.match(/public[^|\n]*no auth required/gi) ?? []
+
+  assert.ok(checkedDates.length >= 3, 'at least three references should record last checked date 2026-07-10')
+  assert.ok(publicStatuses.length >= 3, 'at least three references should record public/no-auth status')
+
+  for (const { command, fixtures } of reviewerHandoffCommands) {
+    assert.match(boundarySection, new RegExp(escapeRegExp(command)))
+    for (const fixturePath of fixtures) {
+      assert.ok(existsSync(join(repoRoot, fixturePath)), `${fixturePath} should exist`)
+      assert.match(boundarySection, new RegExp(escapeRegExp(fixturePath)))
+    }
+  }
+})
+
 test('AX rollout references doc keeps reviewer-handoff claims narrow and machine contracts stable', () => {
   const referenceDoc = readFileSync(referenceDocPath, 'utf8')
 
@@ -197,6 +244,7 @@ test('AX rollout references doc avoids fake adoption, certification, and first m
   assert.doesNotMatch(referenceDoc, /(?:실제\s*)?고객사|도입\s*(?:완료|사례)|레퍼런스\s*고객/i)
   assert.doesNotMatch(referenceDoc, /SOC\s*2|ISO\s*27001|공식\s*인증|certified/i)
   assert.doesNotMatch(referenceDoc, /업계\s*(?:최초|유일)|first[-\s]?mover|first and only|only\s+(?:scanner|solution|tool)/i)
+  assert.doesNotMatch(referenceDoc, /(?:final|본선)\s*(?:company|기업)\s*(?:problem|문제)[^\n|.]{0,80}(?:confirmed|확정|받았다|received)/i)
 })
 
 function escapeRegExp(value: string): string {

@@ -168,6 +168,7 @@ Verdicts:
 - [AX 30-second demo command card](docs/ax-30-second-demo-card.md)
 - [AX first-60-seconds evidence priority card](docs/ax-first-60-seconds-evidence-priority.md)
 - [AX cross-shell demo command card](docs/ax-cross-shell-demo-command-card.md)
+- [AX CLI benchmark quickstart card](docs/ax-cli-benchmark-quickstart-card.md)
 - [AX demo-day command rehearsal](docs/ax-demo-day-command-rehearsal.md)
 - [AX 90-second judge evidence tour](docs/ax-90-second-judge-evidence-tour.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)

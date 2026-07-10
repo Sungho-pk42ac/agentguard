@@ -39,15 +39,6 @@ function packageVersionValidationExit(candidate: string): { status: number | nul
   return { status: result.status, stderr: result.stderr }
 }
 
-function bashAnsiCString(value: string): string {
-  return `$'${value
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, `\\'`)
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t')}'`
-}
-
 function artifactPathValidationExit(
   actionPath: string,
   candidate: string,
@@ -57,9 +48,16 @@ function artifactPathValidationExit(
   const match = scanRun.match(/validate_artifact_path\(\) \{[\s\S]*?\n[}]/)
   assert.ok(match, `${actionPath} should define validate_artifact_path()`)
 
-  const script = `${match[0]}\nvalidate_artifact_path ${bashAnsiCString(candidate)} ${bashAnsiCString(inputName)}`
+  const script = `${match[0]}\nvalidate_artifact_path "$AG_CANDIDATE" "$AG_INPUT_NAME"`
   const result = spawnSync('bash', ['-c', script], {
     encoding: 'utf8',
+    env: {
+      ...process.env,
+      AG_CANDIDATE: candidate,
+      AG_INPUT_NAME: inputName,
+      MSYS2_ARG_CONV_EXCL: '*',
+      MSYS2_ENV_CONV_EXCL: 'AG_CANDIDATE',
+    },
   })
   return { status: result.status, stderr: result.stderr }
 }
@@ -111,9 +109,8 @@ test('published and local GitHub Actions reject unsafe artifact paths before fil
     assert.match(scanRun, /local input_name="\$2"/)
     assert.match(scanRun, /\$input_name: artifact paths must be relative and stay inside the workspace/)
     assert.match(scanRun, /artifact paths must be relative and stay inside the workspace/)
-    assert.match(scanRun, /case "\$candidate" in/)
-    assert.match(scanRun, /\*\.\.\*\)/)
-    assert.match(scanRun, /\/\*\)/)
+    assert.match(scanRun, /case "\$normalized" in/)
+    assert.match(scanRun, /\/\*\|\[A-Za-z\]:\*\)/)
 
     const validationIndex = scanRun.indexOf('validate_artifact_path()')
     assert.ok(validationIndex >= 0, `${actionPath}: validation function should exist`)
@@ -130,6 +127,47 @@ test('published and local GitHub Actions reject unsafe artifact paths before fil
       assert.ok(invocationIndex < scanRun.indexOf('mkdir -p --'), `${actionPath}: ${variable} validation call should run before mkdir`)
       assert.ok(invocationIndex < scanRun.indexOf('git diff --no-ext-diff'), `${actionPath}: ${variable} validation call should run before git diff`)
       assert.ok(invocationIndex < scanRun.indexOf('GITHUB_OUTPUT'), `${actionPath}: ${variable} validation call should run before output emission`)
+    }
+  }
+})
+
+test('published and local GitHub Actions execute artifact path validation for dotted and traversal paths', { skip: process.platform === 'win32' ? 'Git-for-Windows/MSYS rewrites path-like bash arguments before validation' : false }, () => {
+  const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
+    ['action.yml', ['report-path', 'json-path', 'sarif-path']],
+    ['.github/actions/agentguard/action.yml', ['report-path', 'json-path']],
+  ]
+  const safePaths = [
+    'reports/v1.2/agent-risk-report.md',
+    '.agentguard-demo/agentguard.sarif',
+    'reports/v1..2/agent-risk-report.md',
+  ] as const
+  // POSIX/backslash root absolute paths are covered by the static contract test above.
+  // Git-for-Windows/MSYS bash rewrites `/tmp/...` and `\\tmp\\...` before the
+  // function sees them, so this executable harness focuses on traversal and
+  // Windows drive path forms.
+  const unsafePaths = [
+    'C:/tmp/report.md',
+    'C:\\tmp\\report.md',
+    '..',
+    '../secret',
+    '..\\secret',
+    'reports/../secret',
+    'reports\\..\\secret',
+    'a/..',
+    'a\\..',
+  ] as const
+
+  for (const [actionPath, inputNames] of cases) {
+    for (const safePath of safePaths) {
+      assert.equal(artifactPathValidationExit(actionPath, safePath).status, 0, `${actionPath} should allow ${safePath}`)
+    }
+
+    for (const inputName of inputNames) {
+      for (const unsafePath of unsafePaths) {
+        const result = artifactPathValidationExit(actionPath, unsafePath, inputName)
+        assert.equal(result.status, 2, `${actionPath} ${inputName} should reject ${unsafePath}`)
+        assert.match(result.stderr, new RegExp(`${inputName}: artifact paths must be relative and stay inside the workspace`))
+      }
     }
   }
 })

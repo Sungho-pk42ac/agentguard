@@ -69,7 +69,7 @@ test('policy-path validation accepts empty and workspace-relative paths in both 
   }
 })
 
-test('policy-path validation rejects unsafe paths in both GitHub Actions', () => {
+test('policy-path validation rejects unsafe paths in both GitHub Actions', { skip: process.platform === 'win32' ? 'Git-for-Windows/MSYS rewrites path-like bash arguments before validation; static wiring test covers the patterns' : false }, () => {
   for (const actionPath of ACTION_PATHS) {
     for (const policyPath of UNSAFE_POLICY_PATHS) {
       const result = policyPathValidationExit(actionPath, policyPath)

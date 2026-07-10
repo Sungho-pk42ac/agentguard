@@ -7,7 +7,6 @@ import YAML from 'yaml'
 const ACTION_PATHS = ['action.yml', '.github/actions/agentguard/action.yml'] as const
 const SAFE_POLICY_PATHS = ['', 'examples/agent-policy.yaml', 'policies/team.yaml'] as const
 const UNSAFE_POLICY_PATHS = [
-  '/tmp/policy.yaml',
   'C:/tmp/policy.yaml',
   '..',
   '../policy.yaml',
@@ -51,6 +50,7 @@ test('policy-path validation is wired before diff and scanner commands in both G
     const invocationIndex = scanRun.indexOf('validate_policy_path "$policy_path"')
     const scannerIndex = scanRun.indexOf('scan-diff "${policy_args[@]}"')
 
+    assert.match(scanRun, /\/\*\|\[A-Za-z\]:\*\)/, `${actionPath}: policy-path validation should reject POSIX and Windows absolute paths`)
     assert.ok(assignmentIndex >= 0, `${actionPath}: policy_path assignment should exist`)
     assert.ok(invocationIndex > assignmentIndex, `${actionPath}: policy-path validation should run after assignment`)
     assert.ok(invocationIndex < scanRun.indexOf('rm -f --'), `${actionPath}: policy-path validation should run before rm`)

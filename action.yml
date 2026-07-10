@@ -96,6 +96,16 @@ runs:
           esac
         }
 
+        validate_package_version() {
+          local candidate="$1"
+          case "$candidate" in
+            ''|*[^0-9A-Za-z._~-]*)
+              echo "package-version must be a safe npm version or dist-tag" >&2
+              exit 2
+              ;;
+          esac
+        }
+
         validate_artifact_path "$report_path" "report-path"
         validate_artifact_path "$json_path" "json-path"
         validate_artifact_path "$sarif_path" "sarif-path"
@@ -111,6 +121,7 @@ runs:
         if [[ -n "$policy_path" ]]; then
           policy_args=(--policy "$policy_path")
         fi
+        validate_package_version "$package_version"
         agentguard_cmd=(npx --yes "@pk42ac/agentguard@${package_version}")
 
         set +e

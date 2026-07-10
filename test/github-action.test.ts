@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -26,6 +26,17 @@ function actionConclusion(actionPath: string, findings: readonly Record<string, 
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+}
+
+function packageVersionValidationExit(candidate: string): { status: number | null; stderr: string } {
+  const scanRun = scanRunFor('action.yml')
+  const match = scanRun.match(/validate_package_version\(\) \{[\s\S]*?\n\s*\}/)
+  assert.ok(match, 'action should define validate_package_version()')
+
+  const result = spawnSync('bash', ['-c', `${match[0]}\nvalidate_package_version "$1"`, '_', candidate], {
+    encoding: 'utf8',
+  })
+  return { status: result.status, stderr: result.stderr }
 }
 
 test('published GitHub Action exposes a team-ready PR gate contract', () => {
@@ -88,6 +99,34 @@ test('published and local GitHub Actions reject unsafe artifact paths before fil
     for (const variable of variables) {
       assert.match(scanRun, new RegExp(`validate_artifact_path "\\$${variable}" "${variable.replace('_path', '-path')}"`))
     }
+  }
+})
+
+test('published GitHub Action validates package-version before constructing npx package spec', () => {
+  const scanRun = scanRunFor('action.yml')
+
+  assert.match(scanRun, /validate_package_version\(\)/)
+  assert.match(scanRun, /package-version must be a safe npm version or dist-tag/)
+  assert.match(scanRun, /case "\$candidate" in/)
+  assert.match(scanRun, /\*\[\^0-9A-Za-z._~-\]\*\)/)
+  assert.match(scanRun, /validate_package_version "\$package_version"/)
+
+  const validationIndex = scanRun.indexOf('validate_package_version "$package_version"')
+  const commandIndex = scanRun.indexOf('agentguard_cmd=(npx --yes "@pk42ac/agentguard@${package_version}")')
+  assert.ok(validationIndex >= 0, 'package-version validation call should exist')
+  assert.ok(commandIndex >= 0, 'npx package command should still be constructed')
+  assert.ok(validationIndex < commandIndex, 'package-version validation should run before constructing npx package spec')
+})
+
+test('published GitHub Action package-version validation passes safe versions and rejects unsafe strings', () => {
+  for (const safe of ['latest', '0.5.0', '1.2.3-beta.1']) {
+    assert.equal(packageVersionValidationExit(safe).status, 0, `${safe} should be accepted`)
+  }
+
+  for (const unsafe of ['', 'bad;echo', 'two words', '$VAR', '`id`', "'quote'"]) {
+    const result = packageVersionValidationExit(unsafe)
+    assert.equal(result.status, 2, `${unsafe || '<empty>'} should be rejected`)
+    assert.match(result.stderr, /package-version must be a safe npm version or dist-tag/)
   }
 })
 

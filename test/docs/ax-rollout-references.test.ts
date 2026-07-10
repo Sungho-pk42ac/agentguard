@@ -30,6 +30,7 @@ const reviewerHandoffCommands = [
 ] as const
 
 const freshnessBoundaryReferences = [
+  'https://hackathon.jocodingax.ai/',
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
   'https://github.com/Tencent/AI-Infra-Guard',
@@ -207,8 +208,12 @@ test('AX rollout references doc pins public reference freshness and source bound
   const checkedDates = boundarySection.match(/2026-07-10/g) ?? []
   const publicStatuses = boundarySection.match(/public[^|\n]*no auth required/gi) ?? []
 
-  assert.ok(checkedDates.length >= 3, 'at least three references should record last checked date 2026-07-10')
-  assert.ok(publicStatuses.length >= 3, 'at least three references should record public/no-auth status')
+  assert.ok(checkedDates.length >= 4, 'at least four references should record last checked date 2026-07-10')
+  assert.ok(publicStatuses.length >= 4, 'at least four references should record public/no-auth status')
+
+  for (const publicCue of ['기업의 실제 문제', '예선은 AI가 심사', '성과를 증명하고, 설득하고, 납득']) {
+    assert.match(boundarySection, new RegExp(escapeRegExp(publicCue)))
+  }
 
   for (const { command, fixtures } of reviewerHandoffCommands) {
     assert.match(boundarySection, new RegExp(escapeRegExp(command)))

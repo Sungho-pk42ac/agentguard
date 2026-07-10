@@ -141,8 +141,10 @@ test('published and local GitHub Actions execute artifact path validation for do
     '.agentguard-demo/agentguard.sarif',
     'reports/v1..2/agent-risk-report.md',
   ] as const
+  // POSIX-style absolute paths are covered by the static contract test above.
+  // Git-for-Windows/MSYS bash rewrites `/tmp/...` before the function sees it,
+  // so this executable harness focuses on traversal and Windows path forms.
   const unsafePaths = [
-    '/tmp/report.md',
     '\\tmp\\report.md',
     'C:/tmp/report.md',
     'C:\\tmp\\report.md',

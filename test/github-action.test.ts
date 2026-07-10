@@ -39,6 +39,31 @@ function packageVersionValidationExit(candidate: string): { status: number | nul
   return { status: result.status, stderr: result.stderr }
 }
 
+function bashAnsiCString(value: string): string {
+  return `$'${value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, `\\'`)
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')}'`
+}
+
+function artifactPathValidationExit(
+  actionPath: string,
+  candidate: string,
+  inputName = 'report-path',
+): { status: number | null; stderr: string } {
+  const scanRun = scanRunFor(actionPath)
+  const match = scanRun.match(/validate_artifact_path\(\) \{[\s\S]*?\n[}]/)
+  assert.ok(match, `${actionPath} should define validate_artifact_path()`)
+
+  const script = `${match[0]}\nvalidate_artifact_path ${bashAnsiCString(candidate)} ${bashAnsiCString(inputName)}`
+  const result = spawnSync('bash', ['-c', script], {
+    encoding: 'utf8',
+  })
+  return { status: result.status, stderr: result.stderr }
+}
+
 test('published GitHub Action exposes a team-ready PR gate contract', () => {
   const action = YAML.parse(readFileSync('action.yml', 'utf8'))
 
@@ -95,9 +120,39 @@ test('published and local GitHub Actions reject unsafe artifact paths before fil
     assert.ok(validationIndex < scanRun.indexOf('rm -f --'), `${actionPath}: validation should run before rm`)
     assert.ok(validationIndex < scanRun.indexOf('mkdir -p --'), `${actionPath}: validation should run before mkdir`)
     assert.ok(validationIndex < scanRun.indexOf('git diff --no-ext-diff'), `${actionPath}: validation should run before git diff`)
+    assert.ok(validationIndex < scanRun.indexOf('GITHUB_OUTPUT'), `${actionPath}: validation should run before output emission`)
 
     for (const variable of variables) {
-      assert.match(scanRun, new RegExp(`validate_artifact_path "\\$${variable}" "${variable.replace('_path', '-path')}"`))
+      const invocation = `validate_artifact_path "$${variable}" "${variable.replace('_path', '-path')}"`
+      const invocationIndex = scanRun.indexOf(invocation)
+      assert.ok(invocationIndex >= 0, `${actionPath}: ${variable} validation call should exist`)
+      assert.ok(invocationIndex < scanRun.indexOf('rm -f --'), `${actionPath}: ${variable} validation call should run before rm`)
+      assert.ok(invocationIndex < scanRun.indexOf('mkdir -p --'), `${actionPath}: ${variable} validation call should run before mkdir`)
+      assert.ok(invocationIndex < scanRun.indexOf('git diff --no-ext-diff'), `${actionPath}: ${variable} validation call should run before git diff`)
+      assert.ok(invocationIndex < scanRun.indexOf('GITHUB_OUTPUT'), `${actionPath}: ${variable} validation call should run before output emission`)
+    }
+  }
+})
+
+test('published and local GitHub Actions reject artifact path control characters', () => {
+  const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
+    ['action.yml', ['report-path', 'json-path', 'sarif-path']],
+    ['.github/actions/agentguard/action.yml', ['report-path', 'json-path']],
+  ]
+
+  for (const [actionPath, inputNames] of cases) {
+    assert.equal(artifactPathValidationExit(actionPath, 'reports/agent-risk-report.md').status, 0)
+
+    for (const inputName of inputNames) {
+      for (const unsafe of [
+        'reports/agent-risk-report.md\nconclusion=pass',
+        'reports/agent-risk-report.md\rconclusion=pass',
+        'reports/agent\trisk.md',
+      ]) {
+        const result = artifactPathValidationExit(actionPath, unsafe, inputName)
+        assert.equal(result.status, 2, `${actionPath} ${inputName} should reject control characters`)
+        assert.match(result.stderr, new RegExp(`${inputName}: artifact paths must not contain control characters`))
+      }
     }
   }
 })

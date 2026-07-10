@@ -84,6 +84,10 @@ runs:
         validate_artifact_path() {
           local candidate="$1"
           local input_name="$2"
+          if [[ "$candidate" == *$'\n'* || "$candidate" == *$'\r'* || "$candidate" == *$'\t'* || "$candidate" =~ [[:cntrl:]] ]]; then
+            echo "$input_name: artifact paths must not contain control characters" >&2
+            exit 2
+          fi
           case "$candidate" in
             /*)
               echo "$input_name: artifact paths must be relative and stay inside the workspace" >&2

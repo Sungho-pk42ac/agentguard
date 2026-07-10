@@ -15,6 +15,10 @@ inputs:
     description: JSON findings file path to write.
     required: false
     default: agent-risk-findings.json
+  sarif-path:
+    description: SARIF file path to write for GitHub code scanning upload.
+    required: false
+    default: agentguard.sarif
   policy-path:
     description: Optional agent-policy.yaml/json path.
     required: false
@@ -29,6 +33,9 @@ outputs:
   json-path:
     description: Path to the JSON AgentGuard findings artifact
     value: ${{ steps.scan.outputs.json-path }}
+  sarif-path:
+    description: Path to the SARIF AgentGuard artifact
+    value: ${{ steps.scan.outputs.sarif-path }}
 runs:
   using: composite
   steps:
@@ -48,6 +55,7 @@ runs:
         HEAD_SHA: ${{ inputs.head-sha }}
         REPORT_PATH: ${{ inputs.report-path }}
         JSON_PATH: ${{ inputs.json-path }}
+        SARIF_PATH: ${{ inputs.sarif-path }}
         POLICY_PATH: ${{ inputs.policy-path }}
       run: |
         set -euo pipefail
@@ -55,6 +63,7 @@ runs:
         # Default report artifact: agent-risk-report.md
         report_path="$REPORT_PATH"
         json_path="$JSON_PATH"
+        sarif_path="$SARIF_PATH"
         policy_path="$POLICY_PATH"
         diff_path="${RUNNER_TEMP:-/tmp}/agentguard-pr.diff"
 
@@ -105,11 +114,13 @@ runs:
 
         validate_artifact_path "$report_path" "report-path"
         validate_artifact_path "$json_path" "json-path"
+        validate_artifact_path "$sarif_path" "sarif-path"
         validate_policy_path "$policy_path"
 
-        rm -f -- "$report_path" "$json_path"
+        rm -f -- "$report_path" "$json_path" "$sarif_path"
         mkdir -p -- "$(dirname -- "$report_path")"
         mkdir -p -- "$(dirname -- "$json_path")"
+        mkdir -p -- "$(dirname -- "$sarif_path")"
 
         git diff --no-ext-diff --unified=0 "$BASE_SHA" "$HEAD_SHA" > "$diff_path"
 
@@ -121,17 +132,24 @@ runs:
         set +e
         node dist/index.js scan-diff "${policy_args[@]}" --json --out "$json_path" < "$diff_path"
         json_status=$?
+        node dist/index.js scan-diff "${policy_args[@]}" --sarif --out "$sarif_path" < "$diff_path"
+        sarif_status=$?
         node dist/index.js scan-diff "${policy_args[@]}" --out "$report_path" < "$diff_path"
         markdown_status=$?
         set -e
 
-        if [[ $json_status -gt 1 || $markdown_status -gt 1 ]]; then
+        if [[ $json_status -gt 1 || $sarif_status -gt 1 || $markdown_status -gt 1 ]]; then
           echo "AgentGuard failed to scan the PR diff" >&2
           exit 2
         fi
 
         if [[ ! -s "$json_path" ]]; then
           echo "AgentGuard did not create the JSON findings artifact" >&2
+          exit 2
+        fi
+
+        if [[ ! -s "$sarif_path" ]]; then
+          echo "AgentGuard did not create the SARIF artifact" >&2
           exit 2
         fi
 
@@ -155,6 +173,7 @@ runs:
         {
           echo "report-path=$report_path"
           echo "json-path=$json_path"
+          echo "sarif-path=$sarif_path"
           echo "conclusion=$conclusion"
         } >> "$GITHUB_OUTPUT"
 

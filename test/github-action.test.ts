@@ -100,7 +100,7 @@ test('published GitHub Action exposes a team-ready PR gate contract', () => {
 test('published and local GitHub Actions reject unsafe artifact paths before file operations', () => {
   const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['action.yml', ['report_path', 'json_path', 'sarif_path']],
-    ['.github/actions/agentguard/action.yml', ['report_path', 'json_path']],
+    ['.github/actions/agentguard/action.yml', ['report_path', 'json_path', 'sarif_path']],
   ]
 
   for (const [actionPath, variables] of cases) {
@@ -134,7 +134,7 @@ test('published and local GitHub Actions reject unsafe artifact paths before fil
 test('published and local GitHub Actions execute artifact path validation for dotted and traversal paths', { skip: process.platform === 'win32' ? 'Git-for-Windows/MSYS rewrites path-like bash arguments before validation' : false }, () => {
   const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['action.yml', ['report-path', 'json-path', 'sarif-path']],
-    ['.github/actions/agentguard/action.yml', ['report-path', 'json-path']],
+    ['.github/actions/agentguard/action.yml', ['report-path', 'json-path', 'sarif-path']],
   ]
   const safePaths = [
     'reports/v1.2/agent-risk-report.md',
@@ -175,7 +175,7 @@ test('published and local GitHub Actions execute artifact path validation for do
 test('published and local GitHub Actions reject artifact path control characters', () => {
   const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['action.yml', ['report-path', 'json-path', 'sarif-path']],
-    ['.github/actions/agentguard/action.yml', ['report-path', 'json-path']],
+    ['.github/actions/agentguard/action.yml', ['report-path', 'json-path', 'sarif-path']],
   ]
 
   for (const [actionPath, inputNames] of cases) {
@@ -306,7 +306,7 @@ test('GitHub Action exposes PR diff report artifact/comment contract', () => {
   assert.match(scanRun, /HEAD_SHA/)
   assert.match(scanRun, /echo "json-path=\$json_path"/)
   assert.match(scanRun, /" -- "\$json_path"\)/)
-  assert.match(scanRun, /rm -f -- "\$report_path" "\$json_path"/)
+  assert.match(scanRun, /rm -f -- "\$report_path" "\$json_path" "\$sarif_path"/)
   assert.match(scanRun, /mkdir -p -- "\$\(dirname -- "\$report_path"\)"/)
   assert.match(scanRun, /mkdir -p -- "\$\(dirname -- "\$json_path"\)"/)
   assert.match(scanRun, /\[\[ ! -s "\$json_path" \]\]/)
@@ -315,6 +315,27 @@ test('GitHub Action exposes PR diff report artifact/comment contract', () => {
   assert.match(scanRun, /AgentGuard did not create the markdown report artifact/)
   assert.doesNotMatch(scanRun, /inputs\.base-sha.*inputs\.head-sha/)
   assert.doesNotMatch(stepText, /process\.exit\(1\).*review/i)
+})
+
+test('local GitHub Action emits SARIF artifact contract', () => {
+  const action = YAML.parse(readFileSync('.github/actions/agentguard/action.yml', 'utf8'))
+  const scanStep = action.runs.steps.find((step: { id?: string }) => step.id === 'scan')
+  assert.ok(scanStep)
+  const scanRun = scanRunFor('.github/actions/agentguard/action.yml')
+
+  assert.equal(action.inputs['sarif-path'].default, 'agentguard.sarif')
+  assert.equal(action.outputs['sarif-path'].description, 'Path to the SARIF AgentGuard artifact')
+  assert.equal(action.outputs['sarif-path'].value, '${{ steps.scan.outputs.sarif-path }}')
+  assert.equal(scanStep.env.SARIF_PATH, '${{ inputs.sarif-path }}')
+  assert.match(scanRun, /sarif_path="\$SARIF_PATH"/)
+  assert.match(scanRun, /validate_artifact_path "\$sarif_path" "sarif-path"/)
+  assert.match(scanRun, /rm -f -- "\$report_path" "\$json_path" "\$sarif_path"/)
+  assert.match(scanRun, /mkdir -p -- "\$\(dirname -- "\$sarif_path"\)"/)
+  assert.match(scanRun, /node dist\/index\.js scan-diff "\$\{policy_args\[@\]\}" --sarif --out "\$sarif_path"/)
+  assert.match(scanRun, /if \[\[ \$json_status -gt 1 \|\| \$sarif_status -gt 1 \|\| \$markdown_status -gt 1 \]\]/)
+  assert.match(scanRun, /\[\[ ! -s "\$sarif_path" \]\]/)
+  assert.match(scanRun, /AgentGuard did not create the SARIF artifact/)
+  assert.match(scanRun, /echo "sarif-path=\$sarif_path"/)
 })
 
 test('README workflow still uploads and comments the report when AgentGuard blocks', () => {

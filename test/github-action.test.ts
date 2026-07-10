@@ -51,7 +51,13 @@ function artifactPathValidationExit(
   const script = `${match[0]}\nvalidate_artifact_path "$AG_CANDIDATE" "$AG_INPUT_NAME"`
   const result = spawnSync('bash', ['-c', script], {
     encoding: 'utf8',
-    env: { ...process.env, AG_CANDIDATE: candidate, AG_INPUT_NAME: inputName },
+    env: {
+      ...process.env,
+      AG_CANDIDATE: candidate,
+      AG_INPUT_NAME: inputName,
+      MSYS2_ARG_CONV_EXCL: '*',
+      MSYS2_ENV_CONV_EXCL: 'AG_CANDIDATE',
+    },
   })
   return { status: result.status, stderr: result.stderr }
 }

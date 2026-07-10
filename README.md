@@ -216,6 +216,7 @@ Verdicts:
 - [AX smoke evidence manifest handoff card](docs/ax-smoke-evidence-manifest-handoff-card.md)
 - [AX pilot responsibility card](docs/ax-pilot-responsibility-card.md)
 - [AX incident response evidence card](docs/ax-incident-response-evidence-card.md)
+- [AX timeboxed escalation drill](docs/ax-timeboxed-escalation-drill.md)
 - [AX CLI trust onboarding card](docs/ax-cli-trust-onboarding-card.md)
 - [AX agent change-control evidence card](docs/ax-agent-change-control-evidence-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)

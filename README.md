@@ -190,6 +190,7 @@ Verdicts:
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)
 - [AX judge handoff packet](docs/ax-judge-handoff-packet.md)
 - [AX agent permission review packet](docs/ax-agent-permission-review-packet.md)
+- [AX approval owner escalation matrix](docs/ax-approval-owner-escalation-matrix.md)
 - [AX prompt-injection evidence routing card](docs/ax-prompt-injection-evidence-routing-card.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite triage card](docs/ax-onsite-triage-card.md)

@@ -178,6 +178,8 @@ For a Korean-first final submission smoke checklist covering PR diff, MCP config
 
 For a Korean-first pilot responsibility handoff that assigns business approval, residual risk, rollback, and evidence rerun owners, see [AX pilot responsibility card](ax-pilot-responsibility-card.md).
 
+For a Korean-first approval owner escalation matrix that maps `PASS` / `REVIEW` / `BLOCK` evidence to business/security owner action and rerun responsibility, see [AX approval owner escalation matrix](ax-approval-owner-escalation-matrix.md).
+
 For a Korean-first incident response evidence card mapping AgentGuard `BLOCK` / `REVIEW` findings to triage, containment owner, fix/policy condition, rerun command, and approval/residual-risk sentence, see [AX incident response evidence card](ax-incident-response-evidence-card.md).
 
 For a Korean-first first-run trust path from `agentguard --help` and `agentguard doctor` to fixture-backed PR/MCP/transcript/SARIF evidence, see [AX CLI trust onboarding card](ax-cli-trust-onboarding-card.md).

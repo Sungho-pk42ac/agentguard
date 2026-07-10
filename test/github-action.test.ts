@@ -131,7 +131,7 @@ test('published and local GitHub Actions reject unsafe artifact paths before fil
   }
 })
 
-test('published and local GitHub Actions execute artifact path validation for dotted and traversal paths', () => {
+test('published and local GitHub Actions execute artifact path validation for dotted and traversal paths', { skip: process.platform === 'win32' ? 'Git-for-Windows/MSYS rewrites path-like bash arguments before validation' : false }, () => {
   const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['action.yml', ['report-path', 'json-path', 'sarif-path']],
     ['.github/actions/agentguard/action.yml', ['report-path', 'json-path']],

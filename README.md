@@ -188,6 +188,7 @@ Verdicts:
 - [AX authorization callback state card](docs/ax-authorization-callback-state-card.md)
 - [AX agent asset inventory card](docs/ax-agent-asset-inventory-card.md)
 - [AX reviewer channel routing card](docs/ax-reviewer-channel-routing-card.md)
+- [AX alert triage queue runbook](docs/ax-alert-triage-queue-runbook.md)
 - [AX executive risk memo](docs/ax-executive-risk-memo.md)
 - [AX real judge demo map](docs/ax-real-judge-demo-map.md)
 - [AX judge handoff packet](docs/ax-judge-handoff-packet.md)

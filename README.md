@@ -207,6 +207,7 @@ Verdicts:
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX public scanner ecosystem triage](docs/ax-public-scanner-ecosystem-triage.md)
 - [AX public scanner gap checklist](docs/ax-public-scanner-gap-checklist.md)
+- [AX public scanner freshness scorecard](docs/ax-public-scanner-freshness-scorecard.md)
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
 - [AX evidence receipt checklist](docs/ax-evidence-receipt-checklist.md)

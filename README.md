@@ -216,6 +216,7 @@ Verdicts:
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
 - [AX smoke evidence manifest handoff card](docs/ax-smoke-evidence-manifest-handoff-card.md)
 - [AX demo evidence freeze checklist](docs/ax-demo-evidence-freeze-checklist.md)
+- [AX evidence freeze sign-off ledger](docs/ax-evidence-freeze-signoff-ledger.md)
 - [AX pilot responsibility card](docs/ax-pilot-responsibility-card.md)
 - [AX incident response evidence card](docs/ax-incident-response-evidence-card.md)
 - [AX timeboxed escalation drill](docs/ax-timeboxed-escalation-drill.md)

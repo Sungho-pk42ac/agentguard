@@ -172,6 +172,8 @@ For a Korean-first evidence bundle manifest that groups exact fixture-backed com
 
 For a Korean-first smoke evidence manifest handoff card that maps `npm run smoke:ax-demo` manifest checks to PR diff, MCP config, transcript/log, and SARIF reviewer artifacts, see [AX smoke evidence manifest handoff card](ax-smoke-evidence-manifest-handoff-card.md).
 
+For a Korean-first 10-minute evidence freeze checklist covering PR diff, MCP config, transcript/log, SARIF/report artifact, and smoke manifest replay, see [AX demo evidence freeze checklist](ax-demo-evidence-freeze-checklist.md).
+
 For a Korean-first final company-problem worksheet with fixture-backed commands and public-reference guardrails, see [AX final company-problem worksheet](ax-final-problem-worksheet.md).
 
 For a Korean-first final submission smoke checklist covering PR diff, MCP config, transcript/log, and SARIF/report artifact checks, see [AX final submission smoke checklist](ax-final-submission-smoke-checklist.md).

@@ -15,6 +15,7 @@
 node dist/index.js scan-diff < examples/risky-pr.diff
 node dist/index.js scan-mcp < examples/risky-mcp.json
 node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log
+node dist/index.js scan-log --policy examples/agent-policy.team.yaml < examples/agent-transcript.log
 node dist/index.js scan-diff --sarif --out .agentguard-demo/agentguard.sarif < examples/risky-pr.diff
 ```
 
@@ -24,6 +25,7 @@ Referenced safe fixture paths:
 - `examples/risky-mcp.json`
 - `examples/agent-transcript.log`
 - `examples/agent-policy.yaml`
+- `examples/agent-policy.team.yaml`
 
 `.agentguard-demo/agentguard.sarif`는 GitHub code scanning handoff를 로컬에서 확인하기 위한 SARIF artifact 경로입니다. risky 입력은 BLOCK으로 non-zero exit가 날 수 있음.
 
@@ -40,6 +42,7 @@ Referenced safe fixture paths:
 현재 boundary는 policy, advisory note, reviewer decision에 있습니다. suppression engine 없음. 새 suppression engine을 제공한다고 말하지 않는다.
 
 - Policy file은 `agentguard scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log`처럼 log 판단에 필요한 승인 문맥을 제공한다.
+- `examples/agent-policy.team.yaml`은 첫날 팀 rollout policy 예시이며, `node dist/index.js scan-log --policy examples/agent-policy.team.yaml < examples/agent-transcript.log`로 같은 transcript fixture에 적용해 본다. `~/.ssh/**`와 `.ssh/**`를 함께 적어 홈 디렉터리와 repo-local SSH 흔적을 모두 사람 검토 대상으로 올리고, command deny 예시는 shell 우회까지 완전히 막는 sandbox가 아니라 reviewer가 즉시 멈춰 볼 최소 경계다.
 - allowlist 판단은 artifact와 reviewer note에 남긴다. 코드가 자동으로 finding을 숨기는 기능으로 설명하지 않는다.
 - false-positive 의심 항목도 rule ID, surface, location, reviewer decision을 함께 남겨 다음 rerun에서 같은 기준으로 비교한다.
 

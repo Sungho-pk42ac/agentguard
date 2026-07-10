@@ -81,8 +81,31 @@ runs:
           esac
         }
 
+        validate_policy_path() {
+          local candidate="$1"
+          local normalized="${candidate//\\//}"
+          if [[ -z "$candidate" ]]; then
+            return 0
+          fi
+          if [[ "$candidate" == *$'\n'* || "$candidate" == *$'\r'* || "$candidate" == *$'\t'* || "$candidate" =~ [[:cntrl:]] ]]; then
+            echo "policy-path: policy paths must not contain control characters" >&2
+            exit 2
+          fi
+          case "$normalized" in
+            /*|[A-Za-z]:*)
+              echo "policy-path: policy paths must be relative and stay inside the workspace" >&2
+              exit 2
+              ;;
+            ../*|*/../*|*/..|..)
+              echo "policy-path: policy paths must be relative and stay inside the workspace" >&2
+              exit 2
+              ;;
+          esac
+        }
+
         validate_artifact_path "$report_path" "report-path"
         validate_artifact_path "$json_path" "json-path"
+        validate_policy_path "$policy_path"
 
         rm -f -- "$report_path" "$json_path"
         mkdir -p -- "$(dirname -- "$report_path")"

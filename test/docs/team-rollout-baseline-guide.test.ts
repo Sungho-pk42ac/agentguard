@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { loadPolicy } from '../../src/policy.js'
 
 const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = findRepoRoot(testDir)
@@ -13,12 +14,14 @@ const requiredFixturePaths = [
   'examples/risky-mcp.json',
   'examples/agent-transcript.log',
   'examples/agent-policy.yaml',
+  'examples/agent-policy.team.yaml',
 ] as const
 
 const exactCommands = [
   'node dist/index.js scan-diff < examples/risky-pr.diff',
   'node dist/index.js scan-mcp < examples/risky-mcp.json',
   'node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log',
+  'node dist/index.js scan-log --policy examples/agent-policy.team.yaml < examples/agent-transcript.log',
   'node dist/index.js scan-diff --sarif --out .agentguard-demo/agentguard.sarif < examples/risky-pr.diff',
 ] as const
 
@@ -86,6 +89,45 @@ test('team rollout baseline guide pins exact fixture-backed evidence commands', 
 
   expectLiteral(guide, '.agentguard-demo/agentguard.sarif')
   assert.match(guide, /risky 입력은 BLOCK으로 non-zero exit가 날 수 있음/)
+})
+
+test('team rollout policy example documents first-day copy-paste safety boundaries', () => {
+  const guide = readGuide()
+  const policyPath = join(repoRoot, 'examples', 'agent-policy.team.yaml')
+  assert.ok(existsSync(policyPath), 'examples/agent-policy.team.yaml should exist')
+  const policy = readFileSync(policyPath, 'utf8')
+
+  for (const entry of [
+    '.env*',
+    '~/.ssh/**',
+    '.ssh/**',
+    'auth.json',
+    'credentials.json',
+    '.aws/**',
+    '.kube/**',
+    'rm -rf',
+    'git push --force',
+    'gh secret view',
+    'npm publish',
+    'deploy',
+    'db:migrate',
+    'vercel --prod',
+    'github.merge_pull_request',
+    'filesystem.write_file',
+  ] as const) {
+    expectLiteral(policy, entry)
+  }
+
+  expectLiteral(guide, 'examples/agent-policy.team.yaml')
+  expectLiteral(guide, '첫날 팀 rollout policy')
+  expectLiteral(guide, 'node dist/index.js scan-log --policy examples/agent-policy.team.yaml < examples/agent-transcript.log')
+
+  const parsedPolicy = loadPolicy(policyPath)
+  assert.ok(parsedPolicy.denyRead.includes('~/.ssh/**'))
+  assert.ok(parsedPolicy.denyRead.includes('.ssh/**'))
+  assert.ok(parsedPolicy.denyCommands.includes('git push --force'))
+  assert.ok(parsedPolicy.requireApproval.includes('vercel --prod'))
+  assert.ok(parsedPolicy.mcp.requireApprovalTools.includes('github.merge_pull_request'))
 })
 
 test('team rollout baseline guide preserves current implementation boundaries', () => {

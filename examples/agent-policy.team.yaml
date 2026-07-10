@@ -1,0 +1,21 @@
+deny_read:
+  - .env*
+  - ~/.ssh/**
+  - .ssh/**
+  - auth.json
+  - credentials.json
+  - .aws/**
+  - .kube/**
+deny_commands:
+  - rm -rf
+  - git push --force
+  - gh secret view
+  - npm publish
+require_approval:
+  - deploy
+  - db:migrate
+  - vercel --prod
+mcp:
+  require_approval_tools:
+    - github.merge_pull_request
+    - filesystem.write_file

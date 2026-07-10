@@ -202,6 +202,7 @@ Verdicts:
 - [AX evidence expiry revalidation card](docs/ax-evidence-expiry-revalidation-card.md)
 - [AX policy exception decision tree](docs/ax-policy-exception-decision-tree.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
+- [AX public scanner ecosystem triage](docs/ax-public-scanner-ecosystem-triage.md)
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)
 - [AX evidence receipt checklist](docs/ax-evidence-receipt-checklist.md)

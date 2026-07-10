@@ -235,6 +235,28 @@ test('legacy local action uses the same risk-score verdict as the CLI', () => {
   assert.doesNotMatch(scanRun, /severity === 'critical'/)
 })
 
+test('local GitHub Action exposes fail-on gate parity with the published action', () => {
+  const action = YAML.parse(readFileSync('.github/actions/agentguard/action.yml', 'utf8'))
+  const scanStep = action.runs.steps.find((step: { id?: string }) => step.id === 'scan')
+  assert.ok(scanStep)
+  const scanRun = scanStep.run as string
+
+  assert.equal(action.inputs['fail-on'].description, 'Gate threshold. Use block to fail only the score-based BLOCK verdict, review to fail any non-pass verdict, or never to report only.')
+  assert.equal(action.inputs['fail-on'].required, false)
+  assert.equal(action.inputs['fail-on'].default, 'block')
+  assert.equal(scanStep.env.FAIL_ON, '${{ inputs.fail-on }}')
+  assert.match(scanRun, /fail_on="\$FAIL_ON"/)
+  assert.match(scanRun, /case "\$fail_on" in\n\s*block\|review\|never\) ;;/)
+  assert.match(scanRun, /fail-on must be one of: block, review, never/)
+  const validationIndex = scanRun.indexOf('case "$fail_on" in')
+  assert.ok(validationIndex >= 0, 'fail-on validation should exist')
+  assert.ok(validationIndex < scanRun.indexOf('git diff --no-ext-diff'), 'fail-on validation should run before reading the PR diff')
+  assert.ok(validationIndex < scanRun.indexOf('node dist/index.js scan-diff'), 'fail-on validation should run before scanner execution')
+  assert.ok(validationIndex < scanRun.indexOf('GITHUB_OUTPUT'), 'fail-on validation should run before output emission')
+  assert.ok(scanRun.includes('[[ "$conclusion" == "block" && "$fail_on" =~ ^(block|review)$ ]]'))
+  assert.ok(scanRun.includes('[[ "$conclusion" == "review" && "$fail_on" == "review" ]]'))
+})
+
 test('team adoption docs provide copy-paste reusable action workflow', () => {
   const docs = readFileSync('docs/github-action.md', 'utf8')
 

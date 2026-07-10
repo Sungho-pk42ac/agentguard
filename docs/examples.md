@@ -136,6 +136,8 @@ For a Korean-first adversarial judge checklist that turns unknown company workfl
 
 For Korean-first POSIX, PowerShell, and GitHub Actions command variants that preserve the same fixture-backed evidence and SARIF artifact path, see [AX cross-shell demo command card](ax-cross-shell-demo-command-card.md).
 
+For a Korean-first quickstart card that maps public CLI benchmark signals to exact AgentGuard evidence commands, see [AX CLI benchmark quickstart card](ax-cli-benchmark-quickstart-card.md).
+
 For a Korean-first competition-rule compliance checklist that separates public facts, current evidence, and gated unknowns, see [AX rule compliance checklist](ax-rule-compliance-checklist.md).
 
 For a tiny Korean before/after MCP rollout approval story, see [AX before/after rollout demo](ax-before-after-rollout-demo.md).

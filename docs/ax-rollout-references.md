@@ -40,6 +40,17 @@ AgentGuard를 AX 인재전쟁 심사 맥락에서 **AX Rollout Guard**로 설명
 | [GitHub SARIF upload docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github) | SARIF upload as reviewer handoff artifact routing into GitHub code scanning | Automatic upload, platform certification, or product substitution claims | `docs/github-action.md`, `docs/ax-ci-reviewer-handoff.md`, and `docs/ax-sarif-reviewer-loop-card.md` show how CI can keep a SARIF artifact, Markdown report, and PR comment together for reviewer approval. |
 | [Tencent AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) and [splx-ai agentic-radar](https://github.com/splx-ai/agentic-radar) | Broad AI infrastructure and agentic workflow-risk vocabulary | Full-stack platform, attack-simulation, or vendor-scale detection parity | AgentGuard stays narrow: deterministic PR diff, MCP config, and transcript/log evidence become approval conditions before rollout. |
 
+## Public reference freshness boundary
+
+아래 공개 reference는 **2026-07-10**에 public/no-auth 경로로 다시 확인한 언어·artifact routing 근거입니다. AgentGuard의 현재 증거는 외부 claim이 아니라 저장소 fixture와 명령 실행 결과로만 말합니다.
+
+| Public reference | Last checked | Public/auth status | Borrow | Avoid | AgentGuard evidence action |
+|---|---|---|---|---|---|
+| [OWASP Agentic AI Threats and Mitigations](https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/) | 2026-07-10 | public; no auth required | agent autonomy, tool use, mitigation vocabulary | OWASP coverage, endorsement, or assurance claim | Map threat language to fixture-backed `transcript/log`, MCP, and PR diff evidence commands below. |
+| [GitHub SARIF upload/code scanning docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github) | 2026-07-10 | public; no auth required | SARIF artifact routing for reviewer handoff | automatic approval, platform assurance, or GitHub product-substitution claim | Keep exact SARIF command `node dist/index.js scan-diff --sarif --out .agentguard-demo/agentguard.sarif < examples/risky-pr.diff` and fixture `examples/risky-pr.diff`. |
+| [Tencent AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) | 2026-07-10 | public GitHub repository; no auth required | AI infra security scanner category language | full-stack platform or vendor-scale detection parity | Keep AgentGuard scoped to `node dist/index.js scan-mcp < examples/risky-mcp.json` with fixture `examples/risky-mcp.json` plus PR diff rollout evidence. |
+| [splx-ai agentic-radar](https://github.com/splx-ai/agentic-radar) | 2026-07-10 | public GitHub repository; no auth required | agentic workflow and attack-surface scanner vocabulary | attack-simulation platform parity | Keep deterministic transcript/log and PR diff approval evidence: `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log` and `node dist/index.js scan-diff < examples/risky-pr.diff`. |
+
 | Reviewer handoff | Exact current evidence command | Fixture-backed artifact |
 |---|---|---|
 | PR diff Markdown report | `node dist/index.js scan-diff < examples/risky-pr.diff` | `examples/risky-pr.diff` becomes stdout Markdown for reviewer handoff or PR comment. |

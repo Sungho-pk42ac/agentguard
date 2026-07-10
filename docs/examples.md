@@ -114,6 +114,8 @@ For a Korean-first SARIF reviewer loop from company problem to evidence command 
 
 For a Korean-first public AI-agent/MCP scanner ecosystem triage table with Borrow/Avoid/AgentGuard action rows, see [AX public scanner ecosystem triage](ax-public-scanner-ecosystem-triage.md).
 
+For a Korean-first public scanner gap-to-demo checklist with exact fixture-backed PR diff, MCP, transcript/log, and SARIF commands, see [AX public scanner gap checklist](ax-public-scanner-gap-checklist.md).
+
 For a Korean-first AX CI evidence handoff from company problem to split CI step, preserved artifact, and reviewer approval condition, see [AX CI evidence handoff card](ax-ci-evidence-handoff-card.md).
 
 For a Korean-first public-reference-to-command routing card with exact fixture-backed evidence commands, see [AX reference command routing card](ax-reference-command-routing-card.md).

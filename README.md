@@ -183,6 +183,7 @@ Verdicts:
 - [AX SARIF reviewer loop card](docs/ax-sarif-reviewer-loop-card.md)
 - [AX reference command routing card](docs/ax-reference-command-routing-card.md)
 - [AX MCP consent/token handoff card](docs/ax-mcp-consent-token-handoff.md)
+- [AX MCP third-party server trust boundary card](docs/ax-mcp-third-party-server-trust-boundary.md)
 - [AX authorization callback state card](docs/ax-authorization-callback-state-card.md)
 - [AX agent asset inventory card](docs/ax-agent-asset-inventory-card.md)
 - [AX reviewer channel routing card](docs/ax-reviewer-channel-routing-card.md)

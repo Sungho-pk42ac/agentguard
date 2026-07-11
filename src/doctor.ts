@@ -30,6 +30,7 @@ interface DoctorJsonOutput {
     readonly passed: number
     readonly failed: number
   }
+  readonly packageVersion: string
   readonly updateCommand: string
 }
 
@@ -49,6 +50,7 @@ export function runDoctor(lang: DoctorLanguage = 'ko', options: DoctorOptions = 
         failed: checks.length - passed,
       },
       updateCommand: UPDATE_COMMAND,
+      packageVersion: readPackageVersion() ?? 'unknown',
     }
     return {
       exitCode,

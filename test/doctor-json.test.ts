@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { test } from 'node:test'
 
@@ -15,6 +16,8 @@ test('CLI doctor --json prints machine-readable readiness with the text doctor e
   assert.ok(parsed['status'] === 'PASS' || parsed['status'] === 'FAIL')
   assert.equal(parsed['status'], jsonResult.status === 0 ? 'PASS' : 'FAIL')
   assert.equal(parsed['updateCommand'], 'npm i -g @pk42ac/agentguard@latest')
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+  assert.equal(parsed['packageVersion'], packageJson.version)
   assert.ok(parsed['checks'].length >= 3)
   assert.equal(parsed['summary'].total, parsed['checks'].length)
   assert.equal(parsed['summary'].passed, parsed['checks'].filter((check) => check.passed).length)
@@ -48,6 +51,7 @@ function assertDoctorJson(value: unknown): asserts value is {
     readonly passed: number
     readonly failed: number
   }
+  readonly packageVersion: string
   readonly updateCommand: string
 } {
   assert.ok(isRecord(value), 'doctor JSON should be an object')
@@ -68,6 +72,7 @@ function assertDoctorJson(value: unknown): asserts value is {
     assert.equal(typeof check['detail'], 'string')
     assert.equal(typeof check['passed'], 'boolean')
   }
+  assert.equal(typeof value['packageVersion'], 'string')
   assert.equal(typeof value['updateCommand'], 'string')
 }
 

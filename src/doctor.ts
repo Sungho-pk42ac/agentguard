@@ -25,6 +25,11 @@ interface DoctorJsonOutput {
   readonly tool: 'agentguard'
   readonly status: 'PASS' | 'FAIL'
   readonly checks: readonly DoctorCheck[]
+  readonly summary: {
+    readonly total: number
+    readonly passed: number
+    readonly failed: number
+  }
   readonly updateCommand: string
 }
 
@@ -32,11 +37,17 @@ export function runDoctor(lang: DoctorLanguage = 'ko', options: DoctorOptions = 
   const checks = [packageVersionCheck(lang), examplesDirectoryCheck(lang), scannerSmokeCheck(lang)]
   const exitCode = checks.every((check) => check.passed) ? 0 : 1
   if (options.json === true) {
+    const passed = checks.filter((check) => check.passed).length
     const jsonOutput: DoctorJsonOutput = {
       schemaVersion: 1,
       tool: 'agentguard',
       status: exitCode === 0 ? 'PASS' : 'FAIL',
       checks,
+      summary: {
+        total: checks.length,
+        passed,
+        failed: checks.length - passed,
+      },
       updateCommand: UPDATE_COMMAND,
     }
     return {

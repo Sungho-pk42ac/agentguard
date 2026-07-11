@@ -20,6 +20,8 @@
 | SARIF/report artifact | `node dist/index.js scan-diff --sarif --out .agentguard-demo/ax-evidence-freeze/agentguard.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | `examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | `.agentguard-demo/ax-evidence-freeze/agentguard.sarif` | Expected verdict: `BLOCK`; SARIF 2.1.0 file은 GitHub code scanning이나 reviewer archive에 넘길 수 있는 handoff artifact다. |
 | smoke manifest | `npm run smoke:ax-demo` | `scripts/ax-demo-smoke.mjs` | `.agentguard-demo/ax-evidence-smoke/manifest.json` | Expected result: manifest includes PR diff, MCP config, transcript/log, and SARIF checks; smoke manifest는 같은 demo surface를 한번에 재생했다는 source-of-record index다. |
 
+Smoke manifest의 top-level `schemaVersion`은 smoke manifest contract version이며 현재 값은 `1.0.0`이다. CLI/SARIF/JSON machine contracts는 English-compatible로 유지한다.
+
 Machine-facing spelling은 바꾸지 않는다: `agentguard scan-diff`, `agentguard scan-mcp`, `agentguard scan-log`, `JSON`, `SARIF`, `rule IDs`, `PASS`, `REVIEW`, `BLOCK`는 CI와 reviewer가 그대로 읽는 contract다.
 
 ## Public reference borrow/avoid/action rows

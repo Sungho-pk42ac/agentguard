@@ -107,6 +107,7 @@ writeFileSync(
   manifestPath,
   `${JSON.stringify(
     {
+      schemaVersion: '1.0.0',
       generatedAt: new Date().toISOString(),
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),

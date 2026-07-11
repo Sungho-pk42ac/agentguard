@@ -85,6 +85,10 @@ runs:
           local candidate="$1"
           local input_name="$2"
           local normalized="${candidate//\\//}"
+          if [[ -z "$candidate" ]]; then
+            echo "$input_name: artifact paths must not be empty" >&2
+            exit 2
+          fi
           if [[ "$candidate" == *$'\n'* || "$candidate" == *$'\r'* || "$candidate" == *$'\t'* || "$candidate" =~ [[:cntrl:]] ]]; then
             echo "$input_name: artifact paths must not contain control characters" >&2
             exit 2

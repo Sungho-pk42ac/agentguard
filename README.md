@@ -206,6 +206,7 @@ Verdicts:
 - [AX reference refresh drill](docs/ax-reference-refresh-drill.md)
 - [AX evidence freshness checklist](docs/ax-evidence-freshness-checklist.md)
 - [AX evidence expiry revalidation card](docs/ax-evidence-expiry-revalidation-card.md)
+- [AX evidence retention policy card](docs/ax-evidence-retention-policy.md)
 - [AX policy exception decision tree](docs/ax-policy-exception-decision-tree.md)
 - [AX false-positive dispute review card](docs/ax-false-positive-dispute-card.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)

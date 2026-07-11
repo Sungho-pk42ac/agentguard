@@ -1,0 +1,2 @@
+{"type":"message","role":"user","content":[{"type":"input_text","text":"Prepare the staging rollout summary and wait for the release owner decision."}]}
+{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Planned next action: deploy the staging service after explicit human approval is recorded."}]}

@@ -7,6 +7,7 @@
 - [AX evidence retention policy card](../docs/ax-evidence-retention-policy.md)
 - [AX critical alert routing card](../docs/ax-critical-alert-routing-card.md)
 - [AX public signal-to-proof queue](../docs/ax-public-signal-to-proof-queue.md)
+- [AX AI judge evidence manifest](../docs/ax-ai-judge-evidence-manifest.md)
 - [AX finding lifecycle approval card](../docs/ax-finding-lifecycle-approval-card.md)
 
 ## Core fixtures

@@ -171,6 +171,7 @@ Verdicts:
 - [AX CLI benchmark quickstart card](docs/ax-cli-benchmark-quickstart-card.md)
 - [AX demo-day command rehearsal](docs/ax-demo-day-command-rehearsal.md)
 - [AX 90-second judge evidence tour](docs/ax-90-second-judge-evidence-tour.md)
+- [AX AI judge evidence manifest](docs/ax-ai-judge-evidence-manifest.md)
 - [AX before/after rollout demo](docs/ax-before-after-rollout-demo.md)
 - [AX agent rollback drill](docs/ax-agent-rollback-drill.md)
 - [AX adversarial judge checklist](docs/ax-adversarial-judge-checklist.md)

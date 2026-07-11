@@ -136,6 +136,8 @@ For a Korean-first 3-minute live demo rehearsal path with exact exits, artifacts
 
 For a Korean-first 90-second judge path from company problem to command, verdict, and approval sentence, see [AX 90-second judge evidence tour](ax-90-second-judge-evidence-tour.md).
 
+For a Korean-first AI/prelim judge evidence manifest with exact fixture-backed commands, public-reference guardrails, and machine-contract boundaries, see [AX AI judge evidence manifest](ax-ai-judge-evidence-manifest.md).
+
 For a Korean-first adversarial judge checklist that turns unknown company workflow questions into exact AgentGuard evidence commands, see [AX adversarial judge checklist](ax-adversarial-judge-checklist.md).
 
 For Korean-first POSIX, PowerShell, and GitHub Actions command variants that preserve the same fixture-backed evidence and SARIF artifact path, see [AX cross-shell demo command card](ax-cross-shell-demo-command-card.md).

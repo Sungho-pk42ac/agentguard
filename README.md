@@ -178,6 +178,7 @@ Verdicts:
 - [AX judge evidence ladder](docs/ax-judge-evidence-ladder.md)
 - [AX judge rubric crosswalk](docs/ax-judge-rubric-crosswalk.md)
 - [AX rollout control map](docs/ax-rollout-control-map.md)
+- [AX rollout acceptance contract card](docs/ax-rollout-acceptance-contract-card.md)
 - [AX boardroom go/no-go brief](docs/ax-boardroom-go-no-go-brief.md)
 - [AX CI reviewer handoff](docs/ax-ci-reviewer-handoff.md)
 - [AX CI evidence handoff card](docs/ax-ci-evidence-handoff-card.md)

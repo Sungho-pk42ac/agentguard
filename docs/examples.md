@@ -150,6 +150,8 @@ For a Korean-first crosswalk from AX judging lenses to current AgentGuard eviden
 
 For a Korean-first control map from public threats to AgentGuard surfaces, exact commands, approval conditions, and residual risks, see [AX rollout control map](ax-rollout-control-map.md).
 
+For a Korean-first acceptance-contract evidence card that maps an unknown company problem to exact rerunnable evidence, approver decision, residual risk, and rerun trigger, see [AX rollout acceptance contract card](ax-rollout-acceptance-contract-card.md).
+
 For a Korean-first REAL PROBLEM / REAL JUDGE / REAL OUTPUT map to current fixture-backed commands, see [AX real judge demo map](ax-real-judge-demo-map.md).
 
 For Korean-first prelim judge Q&A scripts with evidence commands and non-claim guardrails, see [AX prelim judge Q&A](ax-prelim-judge-qa.md).

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,11 +11,13 @@ const evidenceDir = process.env.AGENTGUARD_AX_DEMO_EVIDENCE_DIR
   ? resolve(process.env.AGENTGUARD_AX_DEMO_EVIDENCE_DIR)
   : join(repoRoot, '.agentguard-demo', 'ax-evidence-smoke')
 
+const prDiffInputPath = 'examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff'
+
 const checks = [
   {
     surface: 'pr-diff',
     args: ['scan-diff', '--json'],
-    inputPath: 'examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff',
+    inputPath: prDiffInputPath,
     artifactName: 'pr-diff-findings.json',
     expectedStatus: 1,
     expectedRuleIds: ['generic-secret-assignment', 'denied-command'],
@@ -31,6 +34,7 @@ const checks = [
     surface: 'transcript-log',
     args: ['scan-log', '--json', '--policy', 'examples/agent-policy.yaml'],
     inputPath: 'examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log',
+    policyPath: 'examples/agent-policy.yaml',
     artifactName: 'transcript-log-findings.json',
     expectedStatus: 0,
     expectedRuleIds: ['denied-command'],
@@ -45,6 +49,7 @@ mkdirSync(evidenceDir, { recursive: true })
 
 const manifest = []
 for (const check of checks) {
+  const sourcePath = repoPath(check.inputPath)
   const result = runCli(check.args, check.inputPath)
   const artifactPath = join(evidenceDir, check.artifactName)
   writeFileSync(artifactPath, result.stdout)
@@ -66,6 +71,9 @@ for (const check of checks) {
     exitCode: result.status,
     acceptedNonZero: result.status !== 0,
     artifact: relativeArtifactPath(artifactPath),
+    sourceSha256: sha256File(sourcePath),
+    artifactSha256: sha256File(artifactPath),
+    ...(check.policyPath ? { policySha256: sha256File(repoPath(check.policyPath)) } : {}),
     ruleIds: [...ruleIds].sort(),
   })
 }
@@ -84,6 +92,8 @@ manifest.push({
   exitCode: sarifResult.status,
   acceptedNonZero: true,
   artifact: relativeArtifactPath(sarifPath),
+  sourceSha256: sha256File(repoPath(prDiffInputPath)),
+  artifactSha256: sha256File(sarifPath),
   ruleIds: [...sarifRuleIds].sort(),
 })
 
@@ -96,7 +106,7 @@ for (const item of manifest) {
 }
 
 function runCli(args, inputPath) {
-  const fullInputPath = join(repoRoot, inputPath)
+  const fullInputPath = repoPath(inputPath)
   if (!existsSync(fullInputPath)) {
     fail(`Required fixture input not found at: ${inputPath}`)
   }
@@ -118,6 +128,14 @@ function runCli(args, inputPath) {
     stdout: result.stdout,
     stderr: result.stderr,
   }
+}
+
+function repoPath(path) {
+  return join(repoRoot, path)
+}
+
+function sha256File(path) {
+  return createHash('sha256').update(readFileSync(path)).digest('hex')
 }
 
 function parseFindings(stdout, surface) {

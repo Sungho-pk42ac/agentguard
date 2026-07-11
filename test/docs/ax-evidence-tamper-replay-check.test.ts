@@ -98,11 +98,29 @@ test('AX evidence tamper/replay check maps every surface to replay controls', ()
     /\|\s*Surface\s*\|\s*Source artifact\s*\|\s*Rerun command\s*\|\s*Hash\/freshness cue\s*\|\s*Approver action\s*\|/,
   )
 
-  for (const surface of ['PR diff', 'MCP config', 'transcript/log', 'SARIF/report'] as const) {
+  for (const surface of ['PR diff', 'MCP config', 'transcript/log', 'SARIF/report', 'smoke manifest'] as const) {
     expectLiteral(doc, surface)
     assert.match(doc, new RegExp(`${escapeRegExp(surface)}[\\s\\S]{0,900}(?:hash|freshness|SHA|timestamp)`, 'i'))
     assert.match(doc, new RegExp(`${escapeRegExp(surface)}[\\s\\S]{0,900}(?:approver|reviewer|승인자|재실행)`, 'i'))
   }
+})
+
+test('AX evidence tamper/replay check covers smoke manifest hash-backed freshness', () => {
+  const doc = readDoc()
+
+  for (const requiredTerm of [
+    'smoke manifest',
+    '.agentguard-demo/ax-evidence-smoke/manifest.json',
+    'npm run smoke:ax-demo',
+    'manifest hash',
+    'referenced artifact hashes',
+    'source fixture hashes',
+    'freshness',
+  ] as const) {
+    expectLiteral(doc, requiredTerm)
+  }
+
+  assert.match(doc, /smoke manifest[\s\S]{0,900}(?:mixed-run|stale|freshness)/i)
 })
 
 test('AX evidence tamper/replay check uses exact fixture-backed commands with existing paths', () => {
@@ -154,4 +172,13 @@ test('AX evidence tamper/replay check keeps fake claims out', () => {
   assert.doesNotMatch(doc, /(?:OWASP|MCP|GitHub|SARIF)[^\r\n|.]{0,80}(?:공식\s*검증|검증\s*완료|인증\s*완료|approved|verified|replacement|parity|동등)/i)
   assert.doesNotMatch(doc, /(?:upload|triage|approval)[^\r\n|.]{0,80}(?:automatic|자동)/i)
   assert.doesNotMatch(doc, /(?:CLI commands?|rule IDs?|JSON|SARIF|machine contracts?)[^\r\n]*(?:한국어로|한글로|번역|변경|renamed?)/i)
+  assert.doesNotMatch(
+    doc,
+    /AgentGuard\s+(?:enforces|implements|provides|delivers)[^.\n|]{0,120}(?:runtime authorization|runtime MCP|OAuth|session control|consent UI)/i,
+  )
+  assert.doesNotMatch(doc, /AgentGuard\s+(?:automatically\s+uploads|uploads\s+SARIF|자동\s*업로드)/i)
+  assert.doesNotMatch(
+    doc,
+    /AgentGuard[^\n|.]{0,120}(?:Snyk|agent-scan|GitHub code scanning|public scanner)[^\n|.]{0,120}(?:replacement|parity|대체|동등|equivalence|equivalent)/i,
+  )
 })

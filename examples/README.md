@@ -5,6 +5,7 @@
 ## Evidence operations cards
 
 - [AX evidence retention policy card](../docs/ax-evidence-retention-policy.md)
+- [AX critical alert routing card](../docs/ax-critical-alert-routing-card.md)
 
 ## Core fixtures
 

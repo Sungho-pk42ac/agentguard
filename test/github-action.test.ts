@@ -227,6 +227,9 @@ test('published and local GitHub Actions reject duplicate artifact paths before 
     const scanRun = scanRunFor(actionPath)
     assert.match(scanRun, /validate_distinct_artifact_paths\(\)/)
     assert.match(scanRun, /artifact paths must be distinct/)
+    assert.match(scanRun, /local report_candidate="\$\{1\/\/\\\\\/\/\}"/)
+    assert.match(scanRun, /local json_candidate="\$\{2\/\/\\\\\/\/\}"/)
+    assert.match(scanRun, /local sarif_candidate="\$\{3\/\/\\\\\/\/\}"/)
 
     const validationIndex = scanRun.indexOf('validate_distinct_artifact_paths "$report_path" "$json_path" "$sarif_path"')
     assert.ok(validationIndex >= 0, `${actionPath}: distinctness validation call should exist`)
@@ -241,12 +244,18 @@ test('published and local GitHub Actions reject duplicate artifact paths before 
       `${actionPath}: default distinct artifact paths should pass`,
     )
 
-    for (const [reportPath, jsonPath, sarifPath] of [
+    const duplicateCases: ReadonlyArray<readonly [string, string, string]> = [
       ['same.out', 'same.out', 'agentguard.sarif'],
       ['agent-risk-report.md', 'same.out', 'same.out'],
       ['same.out', 'agent-risk-findings.json', 'same.out'],
-      ['reports\\same.out', 'reports/same.out', 'agentguard.sarif'],
-    ] as const) {
+      // Executed on POSIX where Bash sees the literal backslash. On Windows,
+      // Git-for-Windows/MSYS can rewrite env/path-like values before the
+      // extracted Bash guard sees them; static assertions above still pin the
+      // action-level slash-normalization contract for the Windows runner.
+      ...(process.platform === 'win32' ? [] : ([['reports\\same.out', 'reports/same.out', 'agentguard.sarif']] as const)),
+    ]
+
+    for (const [reportPath, jsonPath, sarifPath] of duplicateCases) {
       const result = artifactPathDistinctnessExit(actionPath, reportPath, jsonPath, sarifPath)
       assert.equal(result.status, 2, `${actionPath}: duplicate artifact path combination should fail`)
       assert.match(result.stderr, /artifact paths must be distinct/)

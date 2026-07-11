@@ -11,6 +11,7 @@ const repoRoot = join(testDir, '..')
 const hexSha256 = /^[0-9a-f]{64}$/
 
 type SmokeManifest = {
+  readonly schemaVersion: string
   readonly cliPath?: string
   readonly cliSha256?: string
   readonly packageVersion?: string
@@ -46,6 +47,7 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     })
 
     const manifest = JSON.parse(readFileSync(join(evidenceDir, 'manifest.json'), 'utf8')) as SmokeManifest
+    assert.equal(manifest.schemaVersion, '1.0.0', 'manifest should record the smoke manifest contract version')
     assert.equal(manifest.cliPath, 'dist/index.js', 'manifest should name the built CLI artifact used for the smoke')
     assert.match(manifest.cliSha256 ?? '', hexSha256, 'manifest cliSha256 should be lowercase SHA-256 hex')
     assert.match(manifest.packageVersion ?? '', /^\d+\.\d+\.\d+/, 'manifest should record package.json version')

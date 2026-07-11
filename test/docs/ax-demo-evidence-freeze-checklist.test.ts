@@ -133,6 +133,8 @@ test('AX demo evidence freeze checklist lists exact fixture-backed commands and 
     'agentguard scan-diff',
     'agentguard scan-mcp',
     'agentguard scan-log',
+    'schemaVersion',
+    'smoke manifest contract version',
     'SARIF',
     'JSON',
     'PASS',

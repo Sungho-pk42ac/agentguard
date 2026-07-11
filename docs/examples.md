@@ -112,6 +112,8 @@ For Korean-first hard objection scripts against public agent-security references
 
 For a Korean-first SARIF reviewer loop from company problem to evidence command and approval condition, see [AX SARIF reviewer loop card](ax-sarif-reviewer-loop-card.md).
 
+For a Korean-first package provenance reviewer handoff that maps fresh clone checks to exact PR diff, MCP config, transcript/log, and SARIF artifact evidence, see [AX package provenance reviewer handoff card](ax-package-provenance-handoff.md).
+
 For a Korean-first public AI-agent/MCP scanner ecosystem triage table with Borrow/Avoid/AgentGuard action rows, see [AX public scanner ecosystem triage](ax-public-scanner-ecosystem-triage.md).
 
 For a Korean-first public scanner gap-to-demo checklist with exact fixture-backed PR diff, MCP, transcript/log, and SARIF commands, see [AX public scanner gap checklist](ax-public-scanner-gap-checklist.md).

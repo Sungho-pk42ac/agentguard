@@ -207,6 +207,7 @@ Verdicts:
 - [AX evidence freshness checklist](docs/ax-evidence-freshness-checklist.md)
 - [AX evidence expiry revalidation card](docs/ax-evidence-expiry-revalidation-card.md)
 - [AX policy exception decision tree](docs/ax-policy-exception-decision-tree.md)
+- [AX false-positive dispute review card](docs/ax-false-positive-dispute-card.md)
 - [AX competitive comparison](docs/ax-competitive-comparison.md)
 - [AX public scanner ecosystem triage](docs/ax-public-scanner-ecosystem-triage.md)
 - [AX public scanner gap checklist](docs/ax-public-scanner-gap-checklist.md)

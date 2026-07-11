@@ -208,6 +208,8 @@ For a Korean-first agent feedback-loop evidence card mapping finding, owner, fix
 
 For a Korean-first timeboxed escalation drill mapping `PASS` / `REVIEW` / `BLOCK` to owner, timebox, exact evidence command/artifact, and rerun trigger, see [AX timeboxed escalation drill](ax-timeboxed-escalation-drill.md).
 
+For a Korean-first reviewer non-response fallback card mapping `PASS` / `REVIEW` / `BLOCK` and reviewer non-response to owner, timeout, fallback artifact, rerun command, and residual-risk decision, see [AX reviewer non-response fallback card](ax-reviewer-nonresponse-fallback-card.md).
+
 For a Korean-first first-run trust path from `agentguard --help` and `agentguard doctor` to fixture-backed PR/MCP/transcript/SARIF evidence, see [AX CLI trust onboarding card](ax-cli-trust-onboarding-card.md).
 
 For a Korean-first change-control evidence card mapping change request to AgentGuard evidence, approver decision, and rollback/rerun, see [AX agent change-control evidence card](ax-agent-change-control-evidence-card.md).

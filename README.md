@@ -234,6 +234,7 @@ Verdicts:
 - [AX finding lifecycle approval card](docs/ax-finding-lifecycle-approval-card.md)
 - [AX agent feedback-loop evidence card](docs/ax-agent-feedback-loop-evidence-card.md)
 - [AX timeboxed escalation drill](docs/ax-timeboxed-escalation-drill.md)
+- [AX reviewer non-response fallback card](docs/ax-reviewer-nonresponse-fallback-card.md)
 - [AX CLI trust onboarding card](docs/ax-cli-trust-onboarding-card.md)
 - [AX agent change-control evidence card](docs/ax-agent-change-control-evidence-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)

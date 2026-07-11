@@ -12,7 +12,21 @@ const publicReferenceUrls = [
   'https://github.com/snyk/agent-scan',
   'https://github.com/Tencent/AI-Infra-Guard',
   'https://github.com/splx-ai/agentic-radar',
-  'https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+] as const
+
+const freshPublicSignalTerms = [
+  'Fresh public-signal rows checked in this run',
+  'agent/MCP/skills scanner category',
+  'MCP execution-consent warning',
+  'does not execute MCP servers',
+  'AI security taxonomy',
+  'release-signal freshness',
+  'no CVE coverage claim',
+  'workflow-oriented agentic security scanner',
+  'local commands',
+  'artifact/reviewer handoff',
+  'no upload/triage automation claim',
 ] as const
 
 const fixtureBackedCommands = [
@@ -105,6 +119,19 @@ test('AX public scanner freshness scorecard cites required public scanner URLs',
 
   for (const publicReferenceUrl of publicReferenceUrls) {
     expectLiteral(scorecardDoc, publicReferenceUrl)
+  }
+})
+
+test('AX public scanner freshness scorecard records fresh public signals checked in this run', () => {
+  const scorecardDoc = readScorecardDoc()
+
+  assert.match(
+    scorecardDoc,
+    /\|\s*Public signal\s*\|\s*Freshness cue checked\s*\|\s*Borrow\s*\|\s*Avoid\s*\|\s*AgentGuard action\s*\|/,
+  )
+
+  for (const freshPublicSignalTerm of freshPublicSignalTerms) {
+    expectLiteral(scorecardDoc, freshPublicSignalTerm)
   }
 })
 

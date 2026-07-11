@@ -198,6 +198,8 @@ For a Korean-first approval owner escalation matrix that maps `PASS` / `REVIEW` 
 
 For a Korean-first incident response evidence card mapping AgentGuard `BLOCK` / `REVIEW` findings to triage, containment owner, fix/policy condition, rerun command, and approval/residual-risk sentence, see [AX incident response evidence card](ax-incident-response-evidence-card.md).
 
+For a Korean-first finding lifecycle approval card mapping finding, source evidence, owner, fix/policy condition, rerun command/artifact, and approval decision, see [AX finding lifecycle approval card](ax-finding-lifecycle-approval-card.md).
+
 For a Korean-first timeboxed escalation drill mapping `PASS` / `REVIEW` / `BLOCK` to owner, timebox, exact evidence command/artifact, and rerun trigger, see [AX timeboxed escalation drill](ax-timeboxed-escalation-drill.md).
 
 For a Korean-first first-run trust path from `agentguard --help` and `agentguard doctor` to fixture-backed PR/MCP/transcript/SARIF evidence, see [AX CLI trust onboarding card](ax-cli-trust-onboarding-card.md).

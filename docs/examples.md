@@ -130,6 +130,8 @@ For a Korean-first MCP consent/token handoff from company problem to exact fixtu
 
 For a Korean-first authorization callback/state evidence card that separates static AgentGuard evidence from runtime OAuth validation, see [AX authorization callback state card](ax-authorization-callback-state-card.md).
 
+For a Korean-first MCP authorization proof queue that routes callback/session risk questions to exact `scan-mcp`, `scan-log`, and SARIF reviewer evidence, see [AX MCP authorization proof queue](ax-mcp-authorization-proof-queue.md).
+
 For a Korean-first stakeholder-to-artifact routing card covering Markdown, SARIF/GitHub code scanning, PR/CI artifacts, local operator review, and security approver memos, see [AX reviewer channel routing card](ax-reviewer-channel-routing-card.md).
 
 For Korean-first live-demo failure-mode handling with exact fixture-backed commands and non-claim guardrails, see [AX demo failure mode register](ax-demo-failure-mode-register.md).

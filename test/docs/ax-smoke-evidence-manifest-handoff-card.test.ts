@@ -135,9 +135,39 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     expectLiteral(card, row.ruleId)
   }
 
-  for (const manifestContract of ['checks[]', 'surface', 'command', 'exitCode', 'acceptedNonZero', 'artifact', 'ruleIds'] as const) {
+  for (const manifestContract of [
+    'checks[]',
+    'surface',
+    'command',
+    'exitCode',
+    'acceptedNonZero',
+    'artifact',
+    'ruleIds',
+    'sourceSha256',
+    'artifactSha256',
+  ] as const) {
     expectLiteral(card, manifestContract)
   }
+})
+
+test('AX smoke evidence manifest handoff card requires hash-backed replay and freshness', () => {
+  const card = readCard()
+
+  for (const requiredTerm of [
+    'Hash-backed replay/freshness for the smoke manifest',
+    'sourceSha256',
+    'artifactSha256',
+    'policySha256',
+    'manifest hash',
+    'referenced JSON/SARIF artifact hash',
+    'source fixture hash',
+    'freshness expires',
+    'npm run smoke:ax-demo',
+  ] as const) {
+    expectLiteral(card, requiredTerm)
+  }
+
+  assert.match(card, /manifest\.json[\s\S]{0,900}same evidence directory and run/i)
 })
 
 test('AX smoke evidence manifest handoff card cites public references with borrow avoid action rows', () => {
@@ -182,4 +212,13 @@ test('AX smoke evidence manifest handoff card preserves machine contracts and ba
   assert.doesNotMatch(card, /(?:SOC\s*2|ISO\s*27001|external certification|공식\s*인증)[^.\n|]{0,80}(?:achieved|complete|보유|획득|완료)/i)
   assert.doesNotMatch(card, /(?:OWASP|MCP|GitHub|SARIF)[^\r\n|.]{0,80}(?:공식\s*검증|검증\s*완료|인증\s*완료|approved|verified|replacement|parity|동등)/i)
   assert.doesNotMatch(card, /(?:CLI commands?|rule IDs?|JSON|SARIF|machine contracts?)[^\r\n]*(?:한국어로|한글로|번역|변경|renamed?)/i)
+  assert.doesNotMatch(
+    card,
+    /AgentGuard\s+(?:enforces|implements|provides|delivers)[^.\n|]{0,120}(?:runtime authorization|runtime MCP|OAuth|session control|consent UI)/i,
+  )
+  assert.doesNotMatch(card, /AgentGuard\s+(?:automatically\s+uploads|uploads\s+SARIF|자동\s*업로드)/i)
+  assert.doesNotMatch(
+    card,
+    /AgentGuard[^\n|.]{0,120}(?:Snyk|agent-scan|GitHub code scanning|public scanner)[^\n|.]{0,120}(?:replacement|parity|대체|동등|equivalence|equivalent)/i,
+  )
 })

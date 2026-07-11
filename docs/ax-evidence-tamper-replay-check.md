@@ -26,6 +26,7 @@
 | MCP config | `examples/risky-mcp.json` synthetic MCP config 또는 host MCP config artifact path | `node dist/index.js scan-mcp < examples/risky-mcp.json` | config artifact hash; server command, root path, env passthrough, approval policy가 바뀌면 freshness가 만료된다. | Agent platform owner가 source path, command, hash를 확인하고 broad permission finding을 승인/수정/차단한다. |
 | transcript/log | `examples/agent-transcript.log` + `examples/agent-policy.yaml` synthetic transcript/log and policy | `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log` | log hash + policy hash; transcript/log 또는 approval-required operation list가 바뀌면 freshness가 만료된다. | Incident reviewer가 same-input rerun으로 unapproved shell evidence를 확인하고 residual-risk note 또는 rerun trigger를 남긴다. |
 | SARIF/report | `.agentguard-demo/agentguard.sarif` generated SARIF path 또는 Markdown stdout report handoff | `node dist/index.js scan-diff --sarif --out .agentguard-demo/agentguard.sarif < examples/risky-pr.diff` | SARIF artifact hash + source diff hash; SARIF command, upload workflow, source diff가 바뀌면 freshness가 만료된다. | CI owner가 same-input regeneration으로 SARIF/report artifact hash를 비교하고 code-scanning handoff 여부를 별도로 승인한다. |
+| smoke manifest | `.agentguard-demo/ax-evidence-smoke/manifest.json` plus the same directory JSON/SARIF artifacts | `npm run smoke:ax-demo` | manifest hash + referenced artifact hashes + source fixture hashes; any fixture, command, build output, manifest row, JSON/SARIF artifact, or evidence directory change expires freshness. | Reviewer reruns the smoke command, compares same-run manifest/artifact/source hashes, and rejects mixed-run or stale handoff evidence. |
 
 ## Exact fixture-backed commands
 
@@ -46,6 +47,7 @@ Fixture-backed evidence rules:
 - `.agentguard-demo/agentguard.sarif` is a generated SARIF/report artifact path, not a committed upload result.
 - Record artifact hash, source hash, freshness, and rerun trigger beside every reviewer handoff.
 - Use same-input regeneration before approval: rerun the exact command with the same fixture/source artifact, then compare the report or SARIF artifact hash.
+- Smoke manifest replay is hash-backed: rerun `npm run smoke:ax-demo`, then compare `.agentguard-demo/ax-evidence-smoke/manifest.json`, referenced JSON/SARIF artifact hashes, and source fixture hashes from the same run.
 
 ## Public reference borrow/avoid/action table
 

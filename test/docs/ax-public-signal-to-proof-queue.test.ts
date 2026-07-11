@@ -29,6 +29,7 @@ const fixtureBackedCommands = [
 
 const publicReferenceUrls = [
   'https://owasp.org/www-project-top-10-for-large-language-model-applications/',
+  'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
   'https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/integrate-with-existing-tools/upload-sarif-file',
   'https://github.com/splx-ai/agentic-radar',
   'https://github.com/Tencent/AI-Infra-Guard',
@@ -121,6 +122,9 @@ test('AX public signal-to-proof queue cites public references with borrow avoid 
   assert.match(doc, /빌릴 점|Borrow/i)
   assert.match(doc, /피할 점|Avoid/i)
   assert.match(doc, /AgentGuard action|조치/i)
+  assert.match(doc, /MCP Authorization spec/i)
+  assert.match(doc, /state mismatch|trusted redirect URI/i)
+  assert.match(doc, /runtime OAuth|state validation|redirect URI validation/i)
 })
 
 test('AX public signal-to-proof queue preserves machine contracts and bans fake claims', () => {

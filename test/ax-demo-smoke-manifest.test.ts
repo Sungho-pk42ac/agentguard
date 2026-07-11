@@ -9,7 +9,6 @@ import { fileURLToPath } from 'node:url'
 const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(testDir, '..')
 const hexSha256 = /^[0-9a-f]{64}$/
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 type SmokeManifest = {
   readonly checks?: readonly SmokeManifestCheck[]
@@ -28,11 +27,15 @@ type SmokeManifestCheck = {
 }
 
 test('AX demo smoke manifest records SHA-256 provenance for source inputs and artifacts', { timeout: 120_000 }, () => {
-  execFileSync(npmCommand, ['run', 'build'], { cwd: repoRoot, stdio: 'pipe', timeout: 120_000 })
+  execFileSync(process.execPath, [join(repoRoot, 'node_modules', 'typescript', 'bin', 'tsc')], {
+    cwd: repoRoot,
+    stdio: 'pipe',
+    timeout: 120_000,
+  })
 
   const evidenceDir = mkdtempSync(join(tmpdir(), 'agentguard-ax-smoke-'))
   try {
-    execFileSync(npmCommand, ['run', 'smoke:ax-demo'], {
+    execFileSync(process.execPath, [join(repoRoot, 'scripts', 'ax-demo-smoke.mjs')], {
       cwd: repoRoot,
       env: { ...process.env, AGENTGUARD_AX_DEMO_EVIDENCE_DIR: evidenceDir },
       stdio: 'pipe',

@@ -11,9 +11,18 @@
 | Public reference | Borrow | Avoid | AgentGuard action |
 |---|---|---|---|
 | [Snyk agent-scan](https://github.com/snyk/agent-scan) | AI agents, MCP servers, agent skills처럼 scanner category를 선명하게 나누는 언어. | Snyk 범위나 대형 scanner coverage를 AgentGuard 범위처럼 말하지 않는다. | AgentGuard는 Korean-first rollout approval/evidence layer로 좁혀 설명하고 PR diff, MCP config, transcript/log evidence를 fixture로 재실행한다. |
-| [Tencent AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) | agent scan, MCP scan, skills scan, infra scan처럼 broad AI red-team platform taxonomy를 구분하는 언어. | infra-wide 분석 suite 범위를 가진다고 말하지 않는다. | broad taxonomy를 AgentGuard의 현재 PR/MCP/transcript/SARIF evidence actions로 축소해 reviewer가 실행할 command로 연결한다. |
+| [Tencent AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) | agent scan, MCP scan, skills scan, infra scan처럼 broad AI security taxonomy를 구분하는 언어. | infra-wide 분석 suite나 CVE coverage를 가진다고 말하지 않는다. | broad taxonomy를 AgentGuard의 현재 PR/MCP/transcript/SARIF evidence actions로 축소해 reviewer가 실행할 command로 연결한다. |
 | [splx-ai agentic-radar](https://github.com/splx-ai/agentic-radar) | workflow-oriented LLM agentic scanner framing과 agentic risk discovery vocabulary. | 추상적인 "agentic security" copy만 쓰거나 runtime discovery breadth를 가진다고 말하지 않는다. | every comparison row 옆에 exact fixture-backed command를 붙여 local proof 없이 claim만 남지 않게 한다. |
-| [GitHub CodeQL/code scanning SARIF overview](https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql) | SARIF/code-scanning evidence handoff vocabulary: artifact, finding, location, reviewer route. | GitHub code scanning parity, external assurance, 또는 upload workflow가 이 문서로 완성된다고 말하지 않는다. | `scan-diff --sarif --out` command로 local SARIF artifact를 만들고 CI/GitHub upload는 별도 owner가 연결할 handoff로 남긴다. |
+| [GitHub SARIF upload docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github) | SARIF/code-scanning evidence handoff vocabulary: artifact, finding, location, reviewer route. | GitHub code scanning parity, external assurance, 또는 upload workflow가 이 문서로 완성된다고 말하지 않는다. | `scan-diff --sarif --out` command로 local SARIF artifact를 만들고 CI/GitHub upload는 별도 owner가 연결할 handoff로 남긴다. |
+
+## Fresh public-signal rows checked in this run
+
+| Public signal | Freshness cue checked | Borrow | Avoid | AgentGuard action |
+|---|---|---|---|---|
+| Snyk agent-scan README | agent/MCP/skills scanner category plus MCP execution-consent warning. | agent, MCP server, and skill scanner category language. | Snyk parity or execution claim; AgentGuard does not execute MCP servers. | Keep the local commands limited to `scan-diff`, `scan-mcp`, and `scan-log` fixture evidence. |
+| Tencent AI-Infra-Guard README | AI security taxonomy plus release-signal freshness. | Broad AI security taxonomy and release freshness language. | infra-wide red-team suite or CVE replacement; keep a no CVE coverage claim. | Map the taxonomy back to exact PR/MCP/transcript/SARIF evidence actions only. |
+| splx-ai agentic-radar README | workflow-oriented agentic security scanner framing. | Workflow-oriented scanner framing for agentic risk review. | vague agentic-security copy without local commands. | Pair each public framing point with the fixture-backed commands below. |
+| GitHub SARIF upload docs | artifact/reviewer handoff vocabulary for SARIF files. | SARIF artifact, upload input, and reviewer handoff terms. | GitHub alert ownership, no upload/triage automation claim, or automatic upload scope. | Produce the local SARIF artifact and leave upload or triage to a repository-owned workflow. |
 
 ## AgentGuard evidence actions
 

@@ -10,11 +10,17 @@ test('CLI doctor --json prints machine-readable readiness with the text doctor e
   assert.equal(jsonResult.stderr, '')
   const parsed: unknown = JSON.parse(jsonResult.stdout)
   assertDoctorJson(parsed)
+  assert.equal(parsed['schemaVersion'], 1)
   assert.equal(parsed['tool'], 'agentguard')
   assert.ok(parsed['status'] === 'PASS' || parsed['status'] === 'FAIL')
   assert.equal(parsed['status'], jsonResult.status === 0 ? 'PASS' : 'FAIL')
   assert.equal(parsed['updateCommand'], 'npm i -g @pk42ac/agentguard@latest')
   assert.ok(parsed['checks'].length >= 3)
+  const checkIds = new Set(parsed['checks'].map((check) => check.id))
+  assert.equal(checkIds.size, parsed['checks'].length, 'doctor check ids should be unique')
+  assert.ok(checkIds.has('package_version'))
+  assert.ok(checkIds.has('examples_directory'))
+  assert.ok(checkIds.has('scanner_smoke'))
 })
 
 function runDoctor(...args: readonly string[]): ReturnType<typeof spawnSync> {
@@ -25,9 +31,11 @@ function runDoctor(...args: readonly string[]): ReturnType<typeof spawnSync> {
 }
 
 function assertDoctorJson(value: unknown): asserts value is {
+  readonly schemaVersion: number
   readonly tool: string
   readonly status: string
   readonly checks: readonly {
+    readonly id: string
     readonly label: string
     readonly detail: string
     readonly passed: boolean
@@ -35,11 +43,15 @@ function assertDoctorJson(value: unknown): asserts value is {
   readonly updateCommand: string
 } {
   assert.ok(isRecord(value), 'doctor JSON should be an object')
+  assert.equal(typeof value['schemaVersion'], 'number')
   assert.equal(typeof value['tool'], 'string')
   assert.equal(typeof value['status'], 'string')
   assert.ok(Array.isArray(value['checks']), 'doctor JSON checks should be an array')
   for (const check of value['checks']) {
     assert.ok(isRecord(check), 'doctor JSON check should be an object')
+    const id = check['id']
+    assert.ok(typeof id === 'string', 'doctor JSON check id should be a string')
+    assert.match(id, /^[a-z][a-z0-9_]*$/)
     assert.equal(typeof check['label'], 'string')
     assert.equal(typeof check['detail'], 'string')
     assert.equal(typeof check['passed'], 'boolean')

@@ -190,6 +190,7 @@ Verdicts:
 - [AX MCP consent/token handoff card](docs/ax-mcp-consent-token-handoff.md)
 - [AX MCP third-party server trust boundary card](docs/ax-mcp-third-party-server-trust-boundary.md)
 - [AX authorization callback state card](docs/ax-authorization-callback-state-card.md)
+- [AX MCP authorization proof queue](docs/ax-mcp-authorization-proof-queue.md)
 - [AX agent asset inventory card](docs/ax-agent-asset-inventory-card.md)
 - [AX reviewer channel routing card](docs/ax-reviewer-channel-routing-card.md)
 - [AX alert triage queue runbook](docs/ax-alert-triage-queue-runbook.md)

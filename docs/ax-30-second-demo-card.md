@@ -9,6 +9,7 @@
 | PR diff | AX 에이전트가 코드 변경에 secret-like 값이나 위험한 shell material을 추가하면 출시 전 PR 승인에서 멈춰야 한다. | `node dist/index.js scan-diff < examples/risky-pr.diff` | Expected verdict: `BLOCK` | 업무 승인 문장: "PR diff에서 agent rollout 위험이 `BLOCK`으로 확인됐으므로, secret-like material 제거 전에는 배포 승인하지 않습니다." |
 | MCP config | MCP filesystem 권한이 넓거나 writable이면 에이전트가 업무 자료와 로컬 파일에 과도하게 접근할 수 있다. | `node dist/index.js scan-mcp < examples/risky-mcp.json` | Expected verdict: `BLOCK` | 업무 승인 문장: "MCP config가 넓은 root와 write-capable 권한을 노출하므로, root 축소와 read-only 전환 전에는 운영 연결을 승인하지 않습니다." |
 | transcript/log | 에이전트 transcript/log에 승인 없는 export, 민감 경로 접근, 삭제성 명령이 보이면 사람 승인 조건으로 낮춰야 한다. | `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log` | Expected verdict: `REVIEW` | 업무 승인 문장: "transcript/log의 tool misuse 가능성이 `REVIEW`로 남아 있으므로, 정책 승인자 확인 후 제한된 rollout만 허용합니다." |
+| approval-only transcript | 차단 명령은 없지만 `deploy` 같은 운영 action은 사람 승인 조건으로 남겨야 한다. | `node dist/index.js scan-log --policy examples/agent-policy.yaml --json < examples/approval-required-review.jsonl` | Expected verdict: `REVIEW` | 업무 승인 문장: "approval-required evidence만 남은 `REVIEW`이므로, release owner가 조건과 범위를 승인한 뒤 진행합니다." |
 
 발표장에서 build 결과와 직접 연결하려면 먼저 `npm run build`를 실행합니다. 위 명령은 POSIX shell(Bash, zsh, Git Bash) 기준의 stdin redirection 예시입니다. CLI가 전역 설치된 환경에서는 같은 입력을 `agentguard scan-diff`, `agentguard scan-mcp`, `agentguard scan-log`로 바꿔 실행할 수 있습니다.
 
@@ -38,6 +39,7 @@ npm run smoke:ax-demo
 - `examples/risky-pr.diff`: PR diff surface를 fixture-backed command로 보여준다.
 - `examples/risky-mcp.json`: MCP config surface를 fixture-backed command로 보여준다.
 - `examples/agent-transcript.log`: transcript/log surface를 fixture-backed command로 보여준다.
+- `examples/approval-required-review.jsonl`: `approval-required`만 남는 REVIEW-only transcript/log surface를 fixture-backed JSON command로 보여준다.
 - `examples/agent-policy.yaml`: transcript/log command의 approval boundary를 fixture 정책으로 보여준다.
 - `docs/github-action.md`와 README의 SARIF workflow는 CI/security-tool friendly evidence handoff를 설명한다.
 

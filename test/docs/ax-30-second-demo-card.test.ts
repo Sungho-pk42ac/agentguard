@@ -12,6 +12,7 @@ const requiredFixturePaths = [
   'examples/risky-pr.diff',
   'examples/risky-mcp.json',
   'examples/agent-transcript.log',
+  'examples/approval-required-review.jsonl',
   'examples/agent-policy.yaml',
 ] as const
 
@@ -19,6 +20,7 @@ const exactCommands = [
   'node dist/index.js scan-diff < examples/risky-pr.diff',
   'node dist/index.js scan-mcp < examples/risky-mcp.json',
   'node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log',
+  'node dist/index.js scan-log --policy examples/agent-policy.yaml --json < examples/approval-required-review.jsonl',
 ] as const
 
 function findRepoRoot(startDir: string): string {

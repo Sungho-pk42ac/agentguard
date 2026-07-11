@@ -156,6 +156,23 @@ test('published and local GitHub Actions reject unsafe artifact paths before fil
   }
 })
 
+test('published and local GitHub Actions reject empty artifact paths', () => {
+  const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
+    ['action.yml', ['report-path', 'json-path', 'sarif-path']],
+    ['.github/actions/agentguard/action.yml', ['report-path', 'json-path', 'sarif-path']],
+  ]
+
+  for (const [actionPath, inputNames] of cases) {
+    assert.equal(artifactPathValidationExit(actionPath, 'reports/agent-risk-report.md').status, 0)
+
+    for (const inputName of inputNames) {
+      const result = artifactPathValidationExit(actionPath, '', inputName)
+      assert.equal(result.status, 2, `${actionPath} ${inputName} should reject empty artifact paths`)
+      assert.match(result.stderr, new RegExp(`${inputName}: artifact paths must not be empty`))
+    }
+  }
+})
+
 test('published and local GitHub Actions execute artifact path validation for dotted and traversal paths', { skip: process.platform === 'win32' ? 'Git-for-Windows/MSYS rewrites path-like bash arguments before validation' : false }, () => {
   const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['action.yml', ['report-path', 'json-path', 'sarif-path']],

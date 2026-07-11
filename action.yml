@@ -101,6 +101,16 @@ runs:
           esac
         }
 
+        validate_distinct_artifact_paths() {
+          local report_candidate="${1//\\//}"
+          local json_candidate="${2//\\//}"
+          local sarif_candidate="${3//\\//}"
+          if [[ "$report_candidate" == "$json_candidate" || "$report_candidate" == "$sarif_candidate" || "$json_candidate" == "$sarif_candidate" ]]; then
+            echo "artifact paths must be distinct" >&2
+            exit 2
+          fi
+        }
+
         validate_policy_path() {
           local candidate="$1"
           local normalized="${candidate//\\//}"
@@ -137,6 +147,7 @@ runs:
         validate_artifact_path "$json_path" "json-path"
         validate_artifact_path "$sarif_path" "sarif-path"
         validate_policy_path "$policy_path"
+        validate_distinct_artifact_paths "$report_path" "$json_path" "$sarif_path"
 
         rm -f -- "$report_path" "$json_path" "$sarif_path"
         mkdir -p -- "$(dirname -- "$report_path")"

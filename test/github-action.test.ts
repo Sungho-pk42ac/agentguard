@@ -62,6 +62,31 @@ function artifactPathValidationExit(
   return { status: result.status, stderr: result.stderr }
 }
 
+function artifactPathDistinctnessExit(
+  actionPath: string,
+  reportPath: string,
+  jsonPath: string,
+  sarifPath: string,
+): { status: number | null; stderr: string } {
+  const scanRun = scanRunFor(actionPath)
+  const match = scanRun.match(/validate_distinct_artifact_paths\(\) \{[\s\S]*?\n[}]/)
+  assert.ok(match, `${actionPath} should define validate_distinct_artifact_paths()`)
+
+  const script = `${match[0]}\nvalidate_distinct_artifact_paths "$AG_REPORT_PATH" "$AG_JSON_PATH" "$AG_SARIF_PATH"`
+  const result = spawnSync('bash', ['-c', script], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      AG_REPORT_PATH: reportPath,
+      AG_JSON_PATH: jsonPath,
+      AG_SARIF_PATH: sarifPath,
+      MSYS2_ARG_CONV_EXCL: '*',
+      MSYS2_ENV_CONV_EXCL: 'AG_REPORT_PATH;AG_JSON_PATH;AG_SARIF_PATH',
+    },
+  })
+  return { status: result.status, stderr: result.stderr }
+}
+
 test('published GitHub Action exposes a team-ready PR gate contract', () => {
   const action = YAML.parse(readFileSync('action.yml', 'utf8'))
 
@@ -191,6 +216,40 @@ test('published and local GitHub Actions reject artifact path control characters
         assert.equal(result.status, 2, `${actionPath} ${inputName} should reject control characters`)
         assert.match(result.stderr, new RegExp(`${inputName}: artifact paths must not contain control characters`))
       }
+    }
+  }
+})
+
+test('published and local GitHub Actions reject duplicate artifact paths before scan work', () => {
+  const cases = ['action.yml', '.github/actions/agentguard/action.yml'] as const
+
+  for (const actionPath of cases) {
+    const scanRun = scanRunFor(actionPath)
+    assert.match(scanRun, /validate_distinct_artifact_paths\(\)/)
+    assert.match(scanRun, /artifact paths must be distinct/)
+
+    const validationIndex = scanRun.indexOf('validate_distinct_artifact_paths "$report_path" "$json_path" "$sarif_path"')
+    assert.ok(validationIndex >= 0, `${actionPath}: distinctness validation call should exist`)
+    assert.ok(validationIndex < scanRun.indexOf('rm -f --'), `${actionPath}: distinctness validation should run before rm`)
+    assert.ok(validationIndex < scanRun.indexOf('mkdir -p --'), `${actionPath}: distinctness validation should run before mkdir`)
+    assert.ok(validationIndex < scanRun.indexOf('git diff --no-ext-diff'), `${actionPath}: distinctness validation should run before git diff`)
+    assert.ok(validationIndex < scanRun.indexOf('GITHUB_OUTPUT'), `${actionPath}: distinctness validation should run before output emission`)
+
+    assert.equal(
+      artifactPathDistinctnessExit(actionPath, 'agent-risk-report.md', 'agent-risk-findings.json', 'agentguard.sarif').status,
+      0,
+      `${actionPath}: default distinct artifact paths should pass`,
+    )
+
+    for (const [reportPath, jsonPath, sarifPath] of [
+      ['same.out', 'same.out', 'agentguard.sarif'],
+      ['agent-risk-report.md', 'same.out', 'same.out'],
+      ['same.out', 'agent-risk-findings.json', 'same.out'],
+      ['reports\\same.out', 'reports/same.out', 'agentguard.sarif'],
+    ] as const) {
+      const result = artifactPathDistinctnessExit(actionPath, reportPath, jsonPath, sarifPath)
+      assert.equal(result.status, 2, `${actionPath}: duplicate artifact path combination should fail`)
+      assert.match(result.stderr, /artifact paths must be distinct/)
     }
   }
 })

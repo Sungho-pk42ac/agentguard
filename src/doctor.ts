@@ -5,6 +5,7 @@ import { UPDATE_COMMAND } from './update-check.js'
 export type DoctorLanguage = 'ko' | 'en'
 
 interface DoctorCheck {
+  readonly id: 'package_version' | 'examples_directory' | 'scanner_smoke'
   readonly label: string
   readonly detail: string
   readonly passed: boolean
@@ -20,6 +21,7 @@ interface DoctorOptions {
 }
 
 interface DoctorJsonOutput {
+  readonly schemaVersion: 1
   readonly tool: 'agentguard'
   readonly status: 'PASS' | 'FAIL'
   readonly checks: readonly DoctorCheck[]
@@ -31,6 +33,7 @@ export function runDoctor(lang: DoctorLanguage = 'ko', options: DoctorOptions = 
   const exitCode = checks.every((check) => check.passed) ? 0 : 1
   if (options.json === true) {
     const jsonOutput: DoctorJsonOutput = {
+      schemaVersion: 1,
       tool: 'agentguard',
       status: exitCode === 0 ? 'PASS' : 'FAIL',
       checks,
@@ -65,12 +68,14 @@ function packageVersionCheck(lang: DoctorLanguage): DoctorCheck {
   const version = readPackageVersion()
   if (version === undefined) {
     return {
+      id: 'package_version',
       label: 'package version',
       detail: lang === 'ko' ? 'package.json 버전을 읽을 수 없음' : 'could not read package.json version',
       passed: false,
     }
   }
   return {
+    id: 'package_version',
     label: 'package version',
     detail: lang === 'ko' ? `${version} 읽기 가능` : `${version} readable`,
     passed: true,
@@ -84,18 +89,21 @@ function examplesDirectoryCheck(lang: DoctorLanguage): DoctorCheck {
 
     if (exists) {
       return {
+        id: 'examples_directory',
         label: 'examples directory',
         detail: lang === 'ko' ? '예제 디렉터리 확인' : 'examples directory found',
         passed: true,
       }
     }
     return {
+      id: 'examples_directory',
       label: 'examples directory',
       detail: lang === 'ko' ? '예제 디렉터리 없음' : 'examples directory missing',
       passed: false,
     }
   } catch (error: unknown) {
     return {
+      id: 'examples_directory',
       label: 'examples directory',
       detail: lang === 'ko' ? `예제 디렉터리 확인 오류: ${errorMessage(error, lang)}` : `examples directory check error: ${errorMessage(error, lang)}`,
       passed: false,
@@ -111,18 +119,21 @@ function scannerSmokeCheck(lang: DoctorLanguage): DoctorCheck {
 
     if (passed) {
       return {
+        id: 'scanner_smoke',
         label: 'scanner smoke',
         detail: lang === 'ko' ? '안전/위험 샘플 감지 확인' : 'safe/risky sample detection ok',
         passed: true,
       }
     }
     return {
+      id: 'scanner_smoke',
       label: 'scanner smoke',
       detail: lang === 'ko' ? '안전/위험 샘플 감지 실패' : 'safe/risky sample detection failed',
       passed: false,
     }
   } catch (error: unknown) {
     return {
+      id: 'scanner_smoke',
       label: 'scanner smoke',
       detail: lang === 'ko' ? `스캐너 실행 오류: ${errorMessage(error, lang)}` : `scanner execution error: ${errorMessage(error, lang)}`,
       passed: false,

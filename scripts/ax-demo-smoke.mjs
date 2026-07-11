@@ -6,7 +6,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const cliPath = join(repoRoot, 'dist', 'index.js')
+const cliRelativePath = 'dist/index.js'
+const cliPath = repoPath(cliRelativePath)
 const evidenceDir = process.env.AGENTGUARD_AX_DEMO_EVIDENCE_DIR
   ? resolve(process.env.AGENTGUARD_AX_DEMO_EVIDENCE_DIR)
   : join(repoRoot, '.agentguard-demo', 'ax-evidence-smoke')
@@ -98,7 +99,24 @@ manifest.push({
 })
 
 const manifestPath = join(evidenceDir, 'manifest.json')
-writeFileSync(manifestPath, `${JSON.stringify({ generatedAt: new Date().toISOString(), checks: manifest }, null, 2)}\n`)
+const packageJson = parseJson(readFileSync(repoPath('package.json'), 'utf8'), 'package.json')
+ensure(isObject(packageJson), 'package.json: root must be an object')
+const packageVersion = packageJson.version
+ensure(typeof packageVersion === 'string' && packageVersion.length > 0, 'package.json: version must be a non-empty string')
+writeFileSync(
+  manifestPath,
+  `${JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      cliPath: cliRelativePath,
+      cliSha256: sha256File(cliPath),
+      packageVersion,
+      checks: manifest,
+    },
+    null,
+    2,
+  )}\n`,
+)
 
 console.log(`AX demo smoke passed: ${relativeArtifactPath(manifestPath)}`)
 for (const item of manifest) {

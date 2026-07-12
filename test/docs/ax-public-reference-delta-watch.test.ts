@@ -15,6 +15,7 @@ const publicReferenceUrls = [
   'https://github.com/snyk/agent-scan',
   'https://github.com/Tencent/AI-Infra-Guard',
   'https://github.com/splx-ai/agentic-radar',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
 ] as const
 
 const fixtureBackedCommands = [
@@ -108,6 +109,8 @@ test('AX public-reference delta watch cites fresh public signals with borrow avo
     'token',
     'authorization',
     'Korean-first rollout approval',
+    'SARIF artifact handoff',
+    'code-scanning reviewer',
     '대상권',
   ] as const) {
     assert.match(deltaWatchDoc, new RegExp(escapeRegExp(term), 'i'))

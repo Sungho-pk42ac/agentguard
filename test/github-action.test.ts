@@ -388,11 +388,23 @@ test('team adoption docs provide copy-paste reusable action workflow', () => {
   assert.match(docs, /fail-on: block/)
   assert.match(docs, /sarif-path: agentguard\.sarif/)
   assert.match(docs, /github\/codeql-action\/upload-sarif@v3/)
+  assert.match(docs, /jobs:\r?\n  agentguard:[\s\S]*?timeout-minutes: 10/)
   assert.match(docs, /- name: Upload AgentGuard SARIF\r?\n        if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) \}\}/)
   assert.match(docs, /- name: Comment AgentGuard report on PR\r?\n        if: \$\{\{ !cancelled\(\) && github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.repo\.full_name == github\.repository \}\}/)
   assert.match(docs, /- name: Upload AgentGuard artifacts\r?\n        if: \$\{\{ !cancelled\(\) \}\}/)
   assert.match(docs, /body-path: agent-risk-report\.md/)
   assert.match(docs, /permissions:[\s\S]*contents: read[\s\S]*pull-requests: write[\s\S]*security-events: write/)
+})
+
+test('team adoption docs explain timeout boundaries for required-check operations', () => {
+  const docs = readFileSync('docs/github-action.md', 'utf8')
+
+  assert.match(docs, /^## Timeout and evidence preservation/m)
+  assert.match(docs, /timeout-minutes: 10/)
+  assert.match(docs, /timeout.*CI operations guardrail/i)
+  assert.match(docs, /does not change `PASS`, `REVIEW`, or `BLOCK` verdict semantics/)
+  assert.match(docs, /artifact upload.*`if: \$\{\{ !cancelled\(\) \}\}`/is)
+  assert.match(docs, /required status check/i)
 })
 
 test('team adoption docs explain fork-safe PR permission fallback', () => {

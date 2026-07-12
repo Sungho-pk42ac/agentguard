@@ -23,6 +23,7 @@ permissions:
 jobs:
   agentguard:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
@@ -74,6 +75,10 @@ What the team gets on every PR:
 - JSON findings for automation and archival evidence.
 - SARIF upload for GitHub code scanning.
 - A default fail-closed gate only for `BLOCK` findings, so lower-risk review items do not break adoption on day one.
+
+## Timeout and evidence preservation
+
+`timeout-minutes: 10` is a CI operations guardrail for the required status check that bounds stalled checkout, npm install, SARIF upload, or scanner execution so a PR gate does not hang indefinitely. The timeout does not change `PASS`, `REVIEW`, or `BLOCK` verdict semantics; scanner execution errors still fail the job. Keep artifact upload guarded with `if: ${{ !cancelled() }}` so completed Markdown, JSON, and SARIF evidence is preserved when AgentGuard reports a blocking finding, while a true timeout/cancellation remains visible as a CI failure that should be rerun or investigated.
 
 ## Fork PR permission boundary
 
@@ -138,6 +143,7 @@ permissions:
 jobs:
   agentguard-sarif:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
@@ -180,6 +186,7 @@ permissions:
 jobs:
   agentguard:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:

@@ -13,6 +13,7 @@
 - [AX finding lifecycle approval card](../docs/ax-finding-lifecycle-approval-card.md)
 - [AX agent skill inventory evidence card](../docs/ax-agent-skill-inventory-evidence-card.md)
 - [AX data egress approval route](../docs/ax-data-egress-approval-route.md)
+- [AX env custody approval route](../docs/ax-env-custody-approval-route.md)
 
 ## Core fixtures
 

@@ -227,6 +227,7 @@ Verdicts:
 - [AX agentic tool-use approval queue](docs/ax-agentic-tool-use-approval-queue.md)
 - [AX evidence acceptance receipt](docs/ax-evidence-acceptance-receipt.md)
 - [AX review artifact acceptance checklist](docs/ax-review-artifact-acceptance-checklist.md)
+- [AX fresh-clone verifier card](docs/ax-fresh-clone-verifier-card.md)
 - [AX public signal-to-proof queue](docs/ax-public-signal-to-proof-queue.md)
 - [AX agent action custody route](docs/ax-agent-action-custody-route.md)
 - [AX official public-signal freshness](docs/ax-official-public-signal-freshness.md)

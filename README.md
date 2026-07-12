@@ -224,6 +224,7 @@ Verdicts:
 - [AX control objective map](docs/ax-control-objective-map.md)
 - [AX control-plane CI gate card](docs/ax-control-plane-ci-gate-card.md)
 - [AX public-reference evidence triage card](docs/ax-public-reference-evidence-triage.md)
+- [AX agentic tool-use approval queue](docs/ax-agentic-tool-use-approval-queue.md)
 - [AX evidence acceptance receipt](docs/ax-evidence-acceptance-receipt.md)
 - [AX public signal-to-proof queue](docs/ax-public-signal-to-proof-queue.md)
 - [AX agent action custody route](docs/ax-agent-action-custody-route.md)

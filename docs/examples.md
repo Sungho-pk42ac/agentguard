@@ -164,6 +164,8 @@ For a Korean-first control-plane CI gate card that maps company problem signals 
 
 For a Korean-first public-reference evidence triage card that turns OWASP/MCP/SARIF reference signals into exact AgentGuard evidence commands, see [AX public-reference evidence triage card](ax-public-reference-evidence-triage.md).
 
+For a Korean-first agentic tool-use approval queue that maps PR/MCP/transcript/SARIF evidence to owner decision and rerun triggers, see [AX agentic tool-use approval queue](ax-agentic-tool-use-approval-queue.md).
+
 For a Korean-first evidence acceptance receipt that maps source evidence to artifact, owner, acceptance condition, and rerun trigger, see [AX evidence acceptance receipt](ax-evidence-acceptance-receipt.md).
 
 For a Korean-first threat-to-control traceability card linking public OWASP/MCP/SARIF signals to exact AgentGuard evidence commands, see [AX threat-control traceability card](ax-threat-control-traceability.md).

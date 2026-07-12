@@ -87,6 +87,45 @@ function artifactPathDistinctnessExit(
   return { status: result.status, stderr: result.stderr }
 }
 
+function actionRunBlocks(actionPath: string): ReadonlyArray<{ name: string; run: string; shell?: string }> {
+  const action = YAML.parse(readFileSync(actionPath, 'utf8'))
+  const steps = action?.runs?.steps
+  assert.ok(Array.isArray(steps), `${actionPath} must be a composite action with steps`)
+  return steps
+    .filter((step: { run?: unknown }) => typeof step.run === 'string')
+    .map((step: { name?: string; run: string; shell?: string }, index: number) => ({
+      name: step.name ?? `${actionPath} step ${index}`,
+      run: step.run,
+      shell: step.shell,
+    }))
+}
+
+function bashSyntaxInput(runBlock: string): string {
+  return runBlock.replace(/\$\{\{[\s\S]*?\}\}/g, 'GITHUB_ACTION_EXPRESSION')
+}
+
+function firstNonCommentCommand(runBlock: string): string | undefined {
+  return runBlock
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line !== '' && !line.startsWith('#'))
+}
+
+test('published and local GitHub Action Bash run blocks use strict mode and pass syntax validation', () => {
+  for (const actionPath of ['action.yml', '.github/actions/agentguard/action.yml'] as const) {
+    for (const block of actionRunBlocks(actionPath)) {
+      assert.equal(block.shell, 'bash', `${actionPath} / ${block.name} must execute with Bash`)
+      assert.equal(firstNonCommentCommand(block.run), 'set -euo pipefail', `${actionPath} / ${block.name} must enable strict Bash mode before commands`)
+
+      const result = spawnSync('bash', ['-n'], {
+        input: bashSyntaxInput(block.run),
+        encoding: 'utf8',
+      })
+      assert.equal(result.status, 0, `${actionPath} / ${block.name} Bash syntax failed: ${result.stderr}`)
+    }
+  }
+})
+
 test('published GitHub Action exposes a team-ready PR gate contract', () => {
   const action = YAML.parse(readFileSync('action.yml', 'utf8'))
 

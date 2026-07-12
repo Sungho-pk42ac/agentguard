@@ -218,6 +218,7 @@ Verdicts:
 - [AX public scanner gap checklist](docs/ax-public-scanner-gap-checklist.md)
 - [AX public scanner freshness scorecard](docs/ax-public-scanner-freshness-scorecard.md)
 - [AX public signal-to-proof queue](docs/ax-public-signal-to-proof-queue.md)
+- [AX agent action custody route](docs/ax-agent-action-custody-route.md)
 - [AX official public-signal freshness](docs/ax-official-public-signal-freshness.md)
 - [AX competitor objection answer card](docs/ax-competitor-objection-answer-card.md)
 - [AX company problem intake kit](docs/ax-company-problem-intake-kit.md)

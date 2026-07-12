@@ -126,6 +126,8 @@ For a Korean-first public-reference-to-command routing card with exact fixture-b
 
 For a Korean-first public signal to exact proof command queue with next artifact decisions, see [AX public signal-to-proof queue](ax-public-signal-to-proof-queue.md).
 
+For a Korean-first agent action custody route mapping source artifacts to exact AgentGuard commands, owners, approval decisions, and rerun triggers, see [AX agent action custody route](ax-agent-action-custody-route.md).
+
 For a Korean-first MCP consent/token handoff from company problem to exact fixture-backed command, expected verdict, and approval question, see [AX MCP consent/token handoff card](ax-mcp-consent-token-handoff.md).
 
 For a Korean-first authorization callback/state evidence card that separates static AgentGuard evidence from runtime OAuth validation, see [AX authorization callback state card](ax-authorization-callback-state-card.md).

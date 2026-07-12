@@ -11,6 +11,7 @@
 - [AX MCP authorization proof queue](../docs/ax-mcp-authorization-proof-queue.md)
 - [AX AI judge evidence manifest](../docs/ax-ai-judge-evidence-manifest.md)
 - [AX finding lifecycle approval card](../docs/ax-finding-lifecycle-approval-card.md)
+- [AX agent skill inventory evidence card](../docs/ax-agent-skill-inventory-evidence-card.md)
 
 ## Core fixtures
 

@@ -21,3 +21,21 @@ jobs:
       - run: npm run test:behavior
       - run: npm run test:docs
       - run: npm run build
+  control-plane:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            control-plane/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: control-plane
+      - run: npm run typecheck
+        working-directory: control-plane
+      - run: npm test
+        working-directory: control-plane

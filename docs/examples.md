@@ -228,6 +228,8 @@ For a Korean-first alert queue runbook mapping finding, queue owner, exact Agent
 
 For a Korean-first control objective map that converts unknown company problem signals into exact AgentGuard evidence commands, approver decisions, and rerun/freshness triggers, see [AX control objective map](ax-control-objective-map.md).
 
+For a Korean-first control-plane CI gate card that maps CLI evidence, CI status, SARIF/report artifacts, and control-plane boundaries to rollout approval decisions, see [AX control-plane CI gate card](ax-control-plane-ci-gate-card.md).
+
 ## SARIF
 
 ```bash

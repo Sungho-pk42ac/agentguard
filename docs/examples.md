@@ -160,6 +160,10 @@ For a Korean-first crosswalk from AX judging lenses to current AgentGuard eviden
 
 For a Korean-first control map from public threats to AgentGuard surfaces, exact commands, approval conditions, and residual risks, see [AX rollout control map](ax-rollout-control-map.md).
 
+For a Korean-first control-plane CI gate card that maps company problem signals to PR/MCP/transcript/SARIF evidence and approval decisions, see [AX control-plane CI gate card](ax-control-plane-ci-gate-card.md).
+
+For a Korean-first public-reference evidence triage card that turns OWASP/MCP/SARIF reference signals into exact AgentGuard evidence commands, see [AX public-reference evidence triage card](ax-public-reference-evidence-triage.md).
+
 For a Korean-first evidence acceptance receipt that maps source evidence to artifact, owner, acceptance condition, and rerun trigger, see [AX evidence acceptance receipt](ax-evidence-acceptance-receipt.md).
 
 For a Korean-first threat-to-control traceability card linking public OWASP/MCP/SARIF signals to exact AgentGuard evidence commands, see [AX threat-control traceability card](ax-threat-control-traceability.md).

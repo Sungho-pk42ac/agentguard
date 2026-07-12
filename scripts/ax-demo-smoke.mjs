@@ -71,6 +71,7 @@ for (const check of checks) {
     command: `node dist/index.js ${check.args.join(' ')} < ${check.inputPath}`,
     exitCode: result.status,
     acceptedNonZero: result.status !== 0,
+    verdict: verdictForFindings(findings),
     artifact: relativeArtifactPath(artifactPath),
     sourceSha256: sha256File(sourcePath),
     artifactSha256: sha256File(artifactPath),
@@ -80,6 +81,7 @@ for (const check of checks) {
 }
 
 const sarifPath = join(evidenceDir, 'agentguard.sarif')
+ensure(checks.length > 0, 'sarif: at least one source check is required')
 const sarifResult = runCli(['scan-diff', '--sarif', '--out', sarifPath], checks[0].inputPath)
 ensure(sarifResult.status === 1, `sarif: expected exit 1 for risky PR diff, got ${sarifResult.status}. stderr=${sarifResult.stderr}`)
 const sarif = parseSarif(readFileSync(sarifPath, 'utf8'))
@@ -92,6 +94,7 @@ manifest.push({
   command: `node dist/index.js scan-diff --sarif --out ${relativeArtifactPath(sarifPath)} < ${checks[0].inputPath}`,
   exitCode: sarifResult.status,
   acceptedNonZero: true,
+  verdict: manifest.find((item) => item.surface === 'pr-diff')?.verdict ?? 'BLOCK',
   artifact: relativeArtifactPath(sarifPath),
   sourceSha256: sha256File(repoPath(prDiffInputPath)),
   artifactSha256: sha256File(sarifPath),
@@ -164,8 +167,23 @@ function parseFindings(stdout, surface) {
     ensure(isObject(item), `${surface}: finding must be an object`)
     const id = item.id
     ensure(typeof id === 'string' && id.length > 0, `${surface}: finding.id must be a non-empty string`)
-    return { id }
+    const severityValue = item.severity
+    ensure(typeof severityValue === 'string' && severityValue.length > 0, `${surface}: finding.severity must be a non-empty string`)
+    const severity = severityValue.toLowerCase()
+    ensure(
+      ['low', 'medium', 'high', 'critical'].includes(severity),
+      `${surface}: finding.severity must be one of low, medium, high, or critical`,
+    )
+    return { id, severity }
   })
+}
+
+function verdictForFindings(findings) {
+  const severityWeight = { low: 1, medium: 2, high: 3, critical: 4 }
+  const score = findings.reduce((sum, finding) => sum + (severityWeight[finding.severity] ?? 0), 0)
+  if (score === 0) return 'PASS'
+  if (score >= 8) return 'BLOCK'
+  return 'REVIEW'
 }
 
 function parseSarif(text) {

@@ -369,6 +369,20 @@ test('team adoption docs explain fork-safe PR permission fallback', () => {
   assert.match(docs, /maintainer can rerun AgentGuard on a same-repository branch/i)
 })
 
+test('team adoption docs explain required status check rollout after trial mode', () => {
+  const docs = readFileSync('docs/github-action.md', 'utf8')
+
+  assert.match(docs, /^## Required status check rollout/m)
+  assert.match(docs, /Start in trial mode with `fail-on: never` or `fail-on: block`/)
+  assert.match(docs, /make the AgentGuard workflow job a required status check/i)
+  assert.match(docs, /Settings → Branches → Branch protection rules → Require status checks/i)
+  assert.match(docs, /Settings → Rules → Rulesets/i)
+  assert.match(docs, /gh api repos\/OWNER\/REPO\/branches\/BRANCH\/protection/)
+  assert.match(docs, /GET request to inspect the current branch-protection contract/i)
+  assert.match(docs, /tighten to `fail-on: review`/)
+  assert.match(docs, /Do not use `pull_request_target` to check out or execute untrusted fork code/)
+})
+
 test('published and local actions compute conclusions from score-based non-advisory risk', () => {
   const cases: ReadonlyArray<readonly [string, readonly Record<string, unknown>[], string]> = [
     ['empty findings pass', [], 'pass'],

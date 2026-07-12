@@ -200,6 +200,10 @@ For a Korean-first source-of-record audit card that separates agent self-report 
 
 For a Korean-first tamper/replay check that maps PR diff, MCP config, transcript/log, and SARIF/report evidence to source artifact, rerun command, hash/freshness cue, and approver action, see [AX evidence tamper/replay check](ax-evidence-tamper-replay-check.md).
 
+For a Korean-first public evidence redaction boundary that maps PR diff/MCP/transcript/SARIF handoff to release/redaction rules and approver actions, see [AX public evidence redaction boundary](ax-public-evidence-redaction-boundary.md).
+
+For a Korean-first evidence-to-approver channel map that routes PR diff, MCP config, transcript/log, and SARIF evidence to owner decisions and rerun triggers, see [AX evidence-to-approver channel map](ax-evidence-to-approver-channel-map.md).
+
 For a Korean-first evidence bundle manifest that groups exact fixture-backed commands, expected artifacts, public-reference borrow/avoid notes, and non-claim guardrails, see [AX evidence bundle manifest](ax-evidence-bundle-manifest.md).
 
 For a Korean-first smoke evidence manifest handoff card that maps `npm run smoke:ax-demo` manifest checks to PR diff, MCP config, transcript/log, and SARIF reviewer artifacts, see [AX smoke evidence manifest handoff card](ax-smoke-evidence-manifest-handoff-card.md).

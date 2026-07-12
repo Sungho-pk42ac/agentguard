@@ -240,6 +240,7 @@ Verdicts:
 - [AX evidence custody chain](docs/ax-evidence-custody-chain.md)
 - [AX evidence tamper/replay check](docs/ax-evidence-tamper-replay-check.md)
 - [AX public evidence redaction boundary](docs/ax-public-evidence-redaction-boundary.md)
+- [AX evidence-to-approver channel map](docs/ax-evidence-to-approver-channel-map.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
 - [AX smoke evidence manifest handoff card](docs/ax-smoke-evidence-manifest-handoff-card.md)
 - [AX demo evidence freeze checklist](docs/ax-demo-evidence-freeze-checklist.md)

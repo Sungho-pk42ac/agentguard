@@ -12,6 +12,7 @@
 - [AX AI judge evidence manifest](../docs/ax-ai-judge-evidence-manifest.md)
 - [AX finding lifecycle approval card](../docs/ax-finding-lifecycle-approval-card.md)
 - [AX agent skill inventory evidence card](../docs/ax-agent-skill-inventory-evidence-card.md)
+- [AX agent runner sandbox boundary](../docs/ax-agent-runner-sandbox-boundary.md)
 - [AX data egress approval route](../docs/ax-data-egress-approval-route.md)
 - [AX env custody approval route](../docs/ax-env-custody-approval-route.md)
 

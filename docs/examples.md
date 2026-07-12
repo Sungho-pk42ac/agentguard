@@ -218,6 +218,8 @@ For a Korean-first change-control evidence card mapping change request to AgentG
 
 For a Korean-first public-reference delta watch that maps fresh public signals to exact fixture-backed evidence commands without unsupported adoption, endorsement, or scope claims, see [AX public-reference delta watch](ax-public-reference-delta-watch.md).
 
+For a Korean-first official public-signal freshness card that separates public AX/security signals from gated portal unknowns and routes them to exact evidence commands, see [AX official public-signal freshness](ax-official-public-signal-freshness.md).
+
 For a Korean-first alert queue runbook mapping finding, queue owner, exact AgentGuard command, expected verdict, decision owner, and rerun trigger, see [AX alert triage queue runbook](ax-alert-triage-queue-runbook.md).
 
 ## SARIF

@@ -170,6 +170,8 @@ For a Korean-first evidence acceptance receipt that maps source evidence to arti
 
 For a Korean-first review artifact acceptance checklist that maps PR/MCP/transcript/SARIF evidence bundles to accept, rerun, or block decisions, see [AX review artifact acceptance checklist](ax-review-artifact-acceptance-checklist.md).
 
+For a Korean-first fresh-clone verifier path from `npm ci && npm run build` to exact PR/MCP/transcript/SARIF proof commands, see [AX fresh-clone verifier card](ax-fresh-clone-verifier-card.md).
+
 For a Korean-first threat-to-control traceability card linking public OWASP/MCP/SARIF signals to exact AgentGuard evidence commands, see [AX threat-control traceability card](ax-threat-control-traceability.md).
 
 For a Korean-first acceptance-contract evidence card that maps an unknown company problem to exact rerunnable evidence, approver decision, residual risk, and rerun trigger, see [AX rollout acceptance contract card](ax-rollout-acceptance-contract-card.md).

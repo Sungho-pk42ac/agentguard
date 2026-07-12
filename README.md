@@ -226,6 +226,7 @@ Verdicts:
 - [AX public-reference evidence triage card](docs/ax-public-reference-evidence-triage.md)
 - [AX agentic tool-use approval queue](docs/ax-agentic-tool-use-approval-queue.md)
 - [AX evidence acceptance receipt](docs/ax-evidence-acceptance-receipt.md)
+- [AX review artifact acceptance checklist](docs/ax-review-artifact-acceptance-checklist.md)
 - [AX public signal-to-proof queue](docs/ax-public-signal-to-proof-queue.md)
 - [AX agent action custody route](docs/ax-agent-action-custody-route.md)
 - [AX official public-signal freshness](docs/ax-official-public-signal-freshness.md)

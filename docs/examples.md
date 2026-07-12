@@ -160,6 +160,8 @@ For a Korean-first crosswalk from AX judging lenses to current AgentGuard eviden
 
 For a Korean-first control map from public threats to AgentGuard surfaces, exact commands, approval conditions, and residual risks, see [AX rollout control map](ax-rollout-control-map.md).
 
+For a Korean-first evidence acceptance receipt that maps source evidence to artifact, owner, acceptance condition, and rerun trigger, see [AX evidence acceptance receipt](ax-evidence-acceptance-receipt.md).
+
 For a Korean-first threat-to-control traceability card linking public OWASP/MCP/SARIF signals to exact AgentGuard evidence commands, see [AX threat-control traceability card](ax-threat-control-traceability.md).
 
 For a Korean-first acceptance-contract evidence card that maps an unknown company problem to exact rerunnable evidence, approver decision, residual risk, and rerun trigger, see [AX rollout acceptance contract card](ax-rollout-acceptance-contract-card.md).

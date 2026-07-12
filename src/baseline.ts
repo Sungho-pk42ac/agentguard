@@ -13,7 +13,7 @@ import type { ResidualCredential } from './residual.js'
 
 export const BASELINE_SCHEMA_VERSION = 1 as const
 
-const baselineEntrySchema = z.object({
+const baselineEntrySchema = z.strictObject({
   id: z.string().min(1),
   surface: z.string().min(1),
   severity: z.enum(['low', 'medium', 'high', 'critical']),
@@ -21,7 +21,7 @@ const baselineEntrySchema = z.object({
   valueHash: z.string().optional(),
 })
 
-export const baselineSchema = z.object({
+export const baselineSchema = z.strictObject({
   schemaVersion: z.literal(BASELINE_SCHEMA_VERSION),
   tool: z.literal('agentguard'),
   scanId: z.string().min(1),

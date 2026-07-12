@@ -23,6 +23,7 @@ type SmokeManifestCheck = {
   readonly command?: string
   readonly exitCode?: number
   readonly acceptedNonZero?: boolean
+  readonly verdict?: string
   readonly artifact?: string
   readonly ruleIds?: readonly string[]
   readonly sourceSha256?: string
@@ -59,6 +60,7 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       assert.equal(typeof check.command, 'string', `${check.surface ?? 'check'} command should stay present`)
       assert.equal(typeof check.exitCode, 'number', `${check.surface ?? 'check'} exitCode should stay present`)
       assert.equal(typeof check.acceptedNonZero, 'boolean', `${check.surface ?? 'check'} acceptedNonZero should stay present`)
+      assert.match(check.verdict ?? '', /^(PASS|REVIEW|BLOCK)$/, `${check.surface ?? 'check'} verdict should be present`)
       assert.equal(typeof check.artifact, 'string', `${check.surface ?? 'check'} artifact should stay present`)
       assert.ok(Array.isArray(check.ruleIds), `${check.surface ?? 'check'} ruleIds should stay present`)
       assert.match(check.sourceSha256 ?? '', hexSha256, `${check.surface ?? 'check'} sourceSha256 should be lowercase SHA-256 hex`)
@@ -71,6 +73,17 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
 
     const transcriptCheck = manifest.checks.find((check) => check.surface === 'transcript-log')
     assert.match(transcriptCheck?.policySha256 ?? '', hexSha256, 'transcript-log policySha256 should be lowercase SHA-256 hex')
+
+    assert.deepEqual(
+      Object.fromEntries(manifest.checks.map((check) => [check.surface, check.verdict])),
+      {
+        'pr-diff': 'REVIEW',
+        'mcp-config': 'BLOCK',
+        'transcript-log': 'REVIEW',
+        'sarif-artifact': 'REVIEW',
+      },
+      'manifest should expose reviewer-ready verdicts for each evidence surface',
+    )
   } finally {
     rmSync(evidenceDir, { recursive: true, force: true })
   }

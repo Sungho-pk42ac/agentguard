@@ -45,11 +45,15 @@ runs:
   steps:
     - name: Install AgentGuard dependencies
       shell: bash
-      run: npm ci
+      run: |
+        set -euo pipefail
+        npm ci
 
     - name: Build AgentGuard CLI
       shell: bash
-      run: npm run build
+      run: |
+        set -euo pipefail
+        npm run build
 
     - name: Scan PR diff
       id: scan

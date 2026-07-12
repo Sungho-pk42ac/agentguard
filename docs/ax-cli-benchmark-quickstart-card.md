@@ -42,6 +42,16 @@ npm/global install 환경에서는 같은 subcommands를 `agentguard doctor`, `a
 | transcript/log | `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log` | `examples/agent-policy.yaml`, `examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log` | policy-backed agent behavior evidence for approval-required operations | `REVIEW` policy evidence |
 | SARIF handoff | `node dist/index.js scan-diff --sarif --out .agentguard-demo/ax-cli-benchmark-quickstart.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | `examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | same PR diff evidence as machine-readable reviewer artifact | SARIF artifact path exists for handoff; scan may still exit non-zero on risky input |
 
+## Agentic guardrail evidence ladder
+
+Agentic guardrail reference는 이 quickstart의 evidence ladder를 `doctor → scan-diff → scan-mcp → scan-log → SARIF` 순서로 읽게 만드는 근거입니다. `doctor`는 fresh-clone readiness를 확인하고, `scan-diff`는 agent가 만든 PR change evidence를 확인하며, `scan-mcp`는 MCP config의 permission boundary를 static pre-rollout evidence로 확인하고, `scan-log`는 agent transcript/log의 승인 필요 행동을 reviewer에게 넘깁니다. 마지막 SARIF handoff는 같은 point-in-time evidence를 reviewer channel에 전달하는 artifact일 뿐, 자동 승인이나 runtime enforcement가 아닙니다.
+
+| Public agentic guardrail reference | Borrow | Avoid | AgentGuard evidence action |
+|---|---|---|---|
+| OWASP Agentic AI threats and mitigations — https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/ | Borrow: tool misuse, excessive agency, human control, mitigation vocabulary. | Avoid: OWASP endorsement, complete threat coverage, external assurance, or live runtime control claim. | Tie `scan-diff`, `scan-mcp`, and `scan-log` output to reviewer-owned stop/fix/approve decisions. |
+| MCP Authorization guidance — https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization | Borrow: authorization, token, session, permission boundary, and consent vocabulary for MCP rollout questions. | Avoid: MCP standard-compliance claim, runtime OAuth/session enforcement, consent UI, or live MCP server control claim. | Keep `scan-mcp` as static pre-rollout config evidence for broad filesystem, writable path, and credential-boundary review. |
+| GitHub SARIF support — https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning | Borrow: SARIF result/artifact/channel framing that reviewers can inspect. | Avoid: automatic upload, native GitHub code scanning integration, or alert triage/remediation workflow claim. | Use `.agentguard-demo/ax-cli-benchmark-quickstart.sarif` as a local reviewer handoff artifact with command and fixture path. |
+
 ## SARIF handoff contract
 
 SARIF는 reviewer가 다시 열 수 있는 artifact evidence입니다. `--sarif --out .agentguard-demo/ax-cli-benchmark-quickstart.sarif`는 파일을 만드는 handoff path를 보여주지만, GitHub upload, alert triage, remediation closure를 자동 수행한다고 말하지 않는다.

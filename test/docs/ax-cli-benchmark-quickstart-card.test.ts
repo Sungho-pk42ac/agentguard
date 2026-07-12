@@ -14,6 +14,7 @@ const requiredHeadings = [
   '## Fresh clone quickstart',
   '## Benchmark signal map',
   '## Fixture-backed AgentGuard commands',
+  '## Agentic guardrail evidence ladder',
   '## SARIF handoff contract',
   '## Machine contracts',
   '## Non-claim guardrails',
@@ -25,6 +26,12 @@ const publicReferenceUrls = [
   'https://raw.githubusercontent.com/stripe/stripe-cli/master/README.md',
   'https://docs.sentry.io/cli/',
   'https://docs.snyk.io/snyk-cli',
+] as const
+
+const publicAgenticGuardrailUrls = [
+  'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
+  'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
 ] as const
 
 const fixtureBackedCommands = [
@@ -127,6 +134,22 @@ test('AX CLI benchmark quickstart card maps five public CLI benchmarks to borrow
   ] as const) {
     expectLiteral(card, borrowedSignal)
   }
+})
+
+test('AX CLI benchmark quickstart card connects agentic guardrail references to a first-minute evidence ladder', () => {
+  const card = readCard()
+
+  assert.match(card, /\|\s*Public agentic guardrail reference\s*\|\s*Borrow\s*\|\s*Avoid\s*\|\s*AgentGuard evidence action\s*\|/)
+  for (const referenceUrl of publicAgenticGuardrailUrls) {
+    expectLiteral(card, referenceUrl)
+    assert.match(card, new RegExp(`${escapeRegExp(referenceUrl)}[\\s\\S]{0,900}Borrow:`))
+    assert.match(card, new RegExp(`${escapeRegExp(referenceUrl)}[\\s\\S]{0,900}Avoid:`))
+  }
+
+  assert.match(card, /doctor[^\n]{0,160}scan-diff[^\n]{0,160}scan-mcp[^\n]{0,160}scan-log[^\n]{0,160}SARIF/i)
+  assert.match(card, /tool misuse|excessive agency|human control|mitigation/i)
+  assert.match(card, /authorization|token|session|permission boundary/i)
+  assert.match(card, /static pre-rollout|point-in-time/i)
 })
 
 test('AX CLI benchmark quickstart card uses exact fresh-clone commands backed by existing fixtures', () => {

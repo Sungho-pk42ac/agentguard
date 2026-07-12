@@ -19,7 +19,7 @@ import { openInEditor } from './open-in-editor.js'
 import { login, logout, enroll, AuthError } from './auth-client.js'
 import { readSession, writeSession, clearSession } from './session.js'
 import { enrollmentPath } from './enrollment.js'
-import { installHook, uninstallHook, type HookIo } from './hook.js'
+import { installHook, uninstallHook, inspectHookStatus, type HookIo } from './hook.js'
 import { createInterface } from 'node:readline'
 
 interface CliArgs {
@@ -65,7 +65,7 @@ function usage(exitCode = 2): never {
   agentguard login --endpoint <url> --email <e>
   agentguard logout
   agentguard enroll --endpoint <url> --org <id> --code <c> [--label <l>]
-  agentguard hook install|uninstall
+  agentguard hook install|uninstall|status
 
 AI 에이전트 보안 감사 — diff, 로그, MCP 설정, 파일을 검사해 위험 행동을 탐지합니다.
 
@@ -466,7 +466,7 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
   }
 } else if (rawArgs[0] === 'hook') {
   const sub = rawArgs[1]
-  if (sub !== 'install' && sub !== 'uninstall') usage()
+  if (sub !== 'install' && sub !== 'uninstall' && sub !== 'status') usage()
   const gitDirResult = spawnSync('git', ['rev-parse', '--git-dir'], { encoding: 'utf8' })
   if (gitDirResult.status !== 0) {
     console.error('agentguard hook: not inside a git repository')
@@ -492,6 +492,15 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
         (result.backedUp ? ` (previous hook backed up to ${result.backedUp})` : ''),
     )
     process.exit(0)
+  } else if (sub === 'status') {
+    const result = inspectHookStatus(io)
+    console.error(
+      result.installed
+        ? `agentguard: pre-commit hook installed at ${result.path}`
+        : `agentguard: pre-commit hook not installed at ${result.path}` +
+            (result.reason === 'foreign' ? ' (foreign hook present)' : ''),
+    )
+    process.exit(result.installed ? 0 : 1)
   } else {
     const result = uninstallHook(io)
     console.error(

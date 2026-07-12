@@ -83,6 +83,12 @@ export interface UninstallHookResult {
   readonly restored?: boolean
 }
 
+export interface HookStatusResult {
+  readonly installed: boolean
+  readonly path: string
+  readonly reason: 'managed' | 'missing' | 'foreign'
+}
+
 /** Resolves the pre-commit hook path, honoring `core.hooksPath` when set. */
 export function resolveHookPath(gitDir: string, hooksPath?: string): string {
   const dir = hooksPath && hooksPath.length > 0 ? hooksPath : `${gitDir}/hooks`
@@ -91,6 +97,16 @@ export function resolveHookPath(gitDir: string, hooksPath?: string): string {
 
 function isAgentguardManaged(contents: string): boolean {
   return contents.includes(HOOK_SENTINEL)
+}
+
+export function inspectHookStatus(io: HookIo): HookStatusResult {
+  const path = resolveHookPath(io.gitDir, io.hooksPath)
+  if (!io.existsSync(path)) return { installed: false, path, reason: 'missing' }
+
+  const existing = io.readFile(path)
+  if (isAgentguardManaged(existing)) return { installed: true, path, reason: 'managed' }
+
+  return { installed: false, path, reason: 'foreign' }
 }
 
 export function installHook(io: HookIo): InstallHookResult {

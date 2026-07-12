@@ -94,3 +94,14 @@ test('baselineSchema rejects a tampered schema version', () => {
   const baseline = buildBaseline([residual('a')])
   assert.throws(() => baselineSchema.parse({ ...baseline, schemaVersion: 42 }))
 })
+
+test('baselineSchema rejects unknown root and entry fields', () => {
+  const baseline = buildBaseline([residual('a')])
+  assert.throws(() => baselineSchema.parse({ ...baseline, evidence: 'should not be accepted' }))
+  assert.throws(() =>
+    baselineSchema.parse({
+      ...baseline,
+      entries: [{ ...baseline.entries[0], evidence: 'should not be accepted' }],
+    }),
+  )
+})

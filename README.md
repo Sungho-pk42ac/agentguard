@@ -217,6 +217,7 @@ Verdicts:
 - [AX public scanner ecosystem triage](docs/ax-public-scanner-ecosystem-triage.md)
 - [AX public scanner gap checklist](docs/ax-public-scanner-gap-checklist.md)
 - [AX public scanner freshness scorecard](docs/ax-public-scanner-freshness-scorecard.md)
+- [AX control objective map](docs/ax-control-objective-map.md)
 - [AX public signal-to-proof queue](docs/ax-public-signal-to-proof-queue.md)
 - [AX agent action custody route](docs/ax-agent-action-custody-route.md)
 - [AX official public-signal freshness](docs/ax-official-public-signal-freshness.md)

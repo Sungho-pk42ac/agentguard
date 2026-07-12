@@ -224,6 +224,8 @@ For a Korean-first official public-signal freshness card that separates public A
 
 For a Korean-first alert queue runbook mapping finding, queue owner, exact AgentGuard command, expected verdict, decision owner, and rerun trigger, see [AX alert triage queue runbook](ax-alert-triage-queue-runbook.md).
 
+For a Korean-first control objective map that converts unknown company problem signals into exact AgentGuard evidence commands, approver decisions, and rerun/freshness triggers, see [AX control objective map](ax-control-objective-map.md).
+
 ## SARIF
 
 ```bash

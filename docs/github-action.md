@@ -81,6 +81,25 @@ Public fork PRs usually run with a read-only `GITHUB_TOKEN`. Keep the recommende
 
 Do not switch this workflow to `pull_request_target` just to comment on forks or upload code-scanning results. If a team uses `pull_request_target` for a separate maintainer-owned workflow, do not check out or execute untrusted fork code with write permissions. Safer fork flow: let the fork PR produce artifacts with read-only permissions, then a maintainer can rerun AgentGuard on a same-repository branch if a write-token PR comment or code-scanning upload is required for review.
 
+## Required status check rollout
+
+Start in trial mode with `fail-on: never` or `fail-on: block` so the team can learn the report shape, baseline noise, and fork-permission behavior before blocking delivery. After the workflow has produced stable artifacts on several PRs, make the AgentGuard workflow job a required status check for the protected branch.
+
+Manual rollout path:
+
+1. Keep the workflow on the `pull_request` event and keep artifact upload enabled with `if: ${{ !cancelled() }}` so evidence is preserved even when AgentGuard blocks.
+2. In GitHub, go to Settings → Branches → Branch protection rules → Require status checks, then select the AgentGuard job name (for example `agentguard`). Repositories that already use the newer rules UI can do the same under Settings → Rules → Rulesets by adding a required status check rule for the AgentGuard job.
+3. Keep `fail-on: block` while teams are still triaging expected `REVIEW` findings.
+4. After the baseline/noise process is documented, tighten to `fail-on: review` for repositories that want any non-pass verdict to block merge.
+
+API-oriented teams can review or update branch protection through GitHub's REST endpoint. This example is a GET request to inspect the current branch-protection contract; updating protection requires an explicit PUT/PATCH-style API call with the required contexts payload for your repository policy.
+
+```bash
+gh api repos/OWNER/REPO/branches/BRANCH/protection
+```
+
+Do not use `pull_request_target` to check out or execute untrusted fork code when making AgentGuard a required check. For public fork PRs, the required check should rely on the read-only `pull_request` run plus uploaded artifacts, or on a maintainer rerun from a same-repository branch when a write-token comment/SARIF handoff is required.
+
 ## Action inputs
 
 | Input | Default | Purpose |

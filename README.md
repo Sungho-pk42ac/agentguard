@@ -239,6 +239,7 @@ Verdicts:
 - [AX fork PR artifact fallback card](docs/ax-fork-pr-artifact-fallback-card.md)
 - [AX evidence custody chain](docs/ax-evidence-custody-chain.md)
 - [AX evidence tamper/replay check](docs/ax-evidence-tamper-replay-check.md)
+- [AX public evidence redaction boundary](docs/ax-public-evidence-redaction-boundary.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
 - [AX smoke evidence manifest handoff card](docs/ax-smoke-evidence-manifest-handoff-card.md)
 - [AX demo evidence freeze checklist](docs/ax-demo-evidence-freeze-checklist.md)

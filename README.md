@@ -200,6 +200,7 @@ Verdicts:
 - [AX judge handoff packet](docs/ax-judge-handoff-packet.md)
 - [AX agent permission review packet](docs/ax-agent-permission-review-packet.md)
 - [AX agent skill inventory evidence card](docs/ax-agent-skill-inventory-evidence-card.md)
+- [AX agent runner sandbox boundary](docs/ax-agent-runner-sandbox-boundary.md)
 - [AX data egress approval route](docs/ax-data-egress-approval-route.md)
 - [AX env custody approval route](docs/ax-env-custody-approval-route.md)
 - [AX approval owner escalation matrix](docs/ax-approval-owner-escalation-matrix.md)

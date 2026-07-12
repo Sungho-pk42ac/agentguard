@@ -5,6 +5,7 @@ import {
   HOOK_SENTINEL,
   hookScriptContents,
   installHook,
+  inspectHookStatus,
   resolveHookPath,
   uninstallHook,
   type HookIo,
@@ -160,6 +161,52 @@ test('uninstallHook is a no-op when no hook file exists', () => {
   assert.deepEqual(uninstallHook(io), { removed: false })
 })
 
+// ── inspectHookStatus ─────────────────────────────────────────────────────────
+
+test('inspectHookStatus reports installed for an agentguard-managed hook', () => {
+  const { io } = fakeFs({ '/repo/.git/hooks/pre-commit': hookScriptContents() })
+  assert.deepEqual(inspectHookStatus(io), {
+    installed: true,
+    path: '/repo/.git/hooks/pre-commit',
+    reason: 'managed',
+  })
+})
+
+test('inspectHookStatus reports not installed when the hook is missing', () => {
+  const { io } = fakeFs()
+  assert.deepEqual(inspectHookStatus(io), {
+    installed: false,
+    path: '/repo/.git/hooks/pre-commit',
+    reason: 'missing',
+  })
+})
+
+test('inspectHookStatus reports not installed for a foreign hook and stays read-only', () => {
+  const writes: string[] = []
+  const chmodCalls: Array<{ path: string; mode: number }> = []
+  const unlinkCalls: string[] = []
+  const { io } = fakeFs({ '/repo/.githooks/pre-commit': '#!/bin/sh\necho custom\n' })
+  const wrapped: HookIo = {
+    ...io,
+    hooksPath: '/repo/.githooks',
+    writeFile: (path, contents) => {
+      writes.push(path)
+      io.writeFile(path, contents)
+    },
+    chmod: (path, mode) => chmodCalls.push({ path, mode }),
+    unlink: (path) => unlinkCalls.push(path),
+  }
+
+  assert.deepEqual(inspectHookStatus(wrapped), {
+    installed: false,
+    path: '/repo/.githooks/pre-commit',
+    reason: 'foreign',
+  })
+  assert.deepEqual(writes, [])
+  assert.deepEqual(chmodCalls, [])
+  assert.deepEqual(unlinkCalls, [])
+})
+
 // ── E2E: the exit-code contract the hook relies on ────────────────────────────
 // The hook defers entirely to `agentguard scan-diff`'s exit code. These tests
 // execute the REAL CLI against unified diffs so the block/allow behavior of the
@@ -212,5 +259,25 @@ test('CLI "hook" with an unknown subcommand exits 2 with usage on stderr', () =>
 
 test('CLI usage text documents the hook verb', () => {
   const result = runCli(['--help'])
-  assert.match(result.stdout, /agentguard hook install\|uninstall/)
+  assert.match(result.stdout, /agentguard hook install\|uninstall\|status/)
+})
+
+test('CLI "hook status" exits 0 for an installed agentguard hook and writes no stdout', () => {
+  const install = runCli(['hook', 'install'])
+  assert.equal(install.status, 0, install.stderr)
+  const result = runCli(['hook', 'status'])
+  assert.equal(result.status, 0)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /installed/)
+  assert.match(result.stderr, /pre-commit/)
+})
+
+test('CLI "hook status" exits 1 when no agentguard hook is installed', () => {
+  const uninstall = runCli(['hook', 'uninstall'])
+  assert.equal(uninstall.status, 0, uninstall.stderr)
+  const result = runCli(['hook', 'status'])
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /not installed/)
+  assert.match(result.stderr, /pre-commit/)
 })

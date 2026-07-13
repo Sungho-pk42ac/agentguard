@@ -36,7 +36,11 @@ test('CLI doctor --json prints machine-readable readiness with the text doctor e
   assert.match(actionCheck.detail, /base-sha/)
   assert.match(actionCheck.detail, /head-sha/)
   assert.match(actionCheck.detail, /fail-on/)
+  assert.match(actionCheck.detail, /package-version/)
+  assert.match(actionCheck.detail, /report-path/)
+  assert.match(actionCheck.detail, /json-path/)
   assert.match(actionCheck.detail, /sarif-path/)
+  assert.match(actionCheck.detail, /artifact/i)
 })
 
 test('CLI doctor text output includes reusable GitHub Action contract readiness', () => {

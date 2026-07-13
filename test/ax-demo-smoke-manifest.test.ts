@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -10,11 +10,25 @@ const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(testDir, '..')
 const hexSha256 = /^[0-9a-f]{64}$/
 
+function normalizeManifestPath(path: string): string {
+  return path.replace(/\\/g, '/')
+}
+
+function resolveManifestPath(path: string): string {
+  return isAbsolute(path) ? resolve(path) : resolve(repoRoot, path)
+}
+
+function isPathInside(basePath: string, candidatePath: string): boolean {
+  const relativePath = relative(basePath, candidatePath)
+  return relativePath.length > 0 && !relativePath.startsWith('..') && !isAbsolute(relativePath)
+}
+
 type SmokeManifest = {
   readonly schemaVersion: string
   readonly runId?: string
   readonly generatedBy: string
   readonly evidencePurpose: string
+  readonly evidenceDirectory?: string
   readonly cliPath?: string
   readonly cliSha256?: string
   readonly packageVersion?: string
@@ -85,6 +99,19 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.evidencePurpose,
       'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
       'manifest should explain the reviewer-facing purpose without parsing prose docs',
+    )
+    assert.ok(manifest.evidenceDirectory, 'manifest.evidenceDirectory should be present')
+    assert.equal(
+      normalizeManifestPath(manifest.evidenceDirectory),
+      normalizeManifestPath(evidenceDir),
+      'manifest should record the evidence directory that contains manifest.json and same-run artifacts',
+    )
+    const resolvedEvidenceDirectory = resolveManifestPath(manifest.evidenceDirectory)
+    assert.ok(
+      (manifest.checks ?? []).every(
+        (check) => !check.artifact || isPathInside(resolvedEvidenceDirectory, resolveManifestPath(check.artifact)),
+      ),
+      'manifest artifact paths should live under the manifest evidenceDirectory source-of-record',
     )
     assert.equal(manifest.cliPath, 'dist/index.js', 'manifest should name the built CLI artifact used for the smoke')
     assert.match(manifest.cliSha256 ?? '', hexSha256, 'manifest cliSha256 should be lowercase SHA-256 hex')

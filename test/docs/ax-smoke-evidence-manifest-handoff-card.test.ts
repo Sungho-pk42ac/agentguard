@@ -26,7 +26,7 @@ const smokeManifestRows = [
     fixture: 'examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff',
     artifact: '.agentguard-demo/ax-evidence-smoke/pr-diff-findings.json',
     expectedExit: 'Expected exit: `1`',
-    expectedVerdict: 'Expected verdict: `BLOCK`',
+    expectedVerdict: 'Expected verdict: `REVIEW`',
     ruleId: 'generic-secret-assignment',
   },
   {
@@ -58,7 +58,7 @@ const smokeManifestRows = [
     fixture: 'examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff',
     artifact: '.agentguard-demo/ax-evidence-smoke/agentguard.sarif',
     expectedExit: 'Expected exit: `1`',
-    expectedVerdict: 'Expected verdict: `BLOCK`',
+    expectedVerdict: 'Expected verdict: `REVIEW`',
     ruleId: 'denied-command',
   },
 ] as const

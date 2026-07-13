@@ -151,6 +151,7 @@ runs:
         validate_artifact_path "$json_path" "json-path"
         validate_artifact_path "$sarif_path" "sarif-path"
         validate_policy_path "$policy_path"
+        validate_package_version "$package_version"
         validate_distinct_artifact_paths "$report_path" "$json_path" "$sarif_path"
 
         rm -f -- "$report_path" "$json_path" "$sarif_path"
@@ -164,7 +165,6 @@ runs:
         if [[ -n "$policy_path" ]]; then
           policy_args=(--policy "$policy_path")
         fi
-        validate_package_version "$package_version"
         agentguard_cmd=(npx --yes "@pk42ac/agentguard@${package_version}")
 
         set +e

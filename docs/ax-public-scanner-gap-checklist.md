@@ -24,6 +24,7 @@
 | [snyk/agent-scan](https://github.com/snyk/agent-scan) | AI-agent scanner category language: agent components, MCP servers, tools, prompts, resources. | Snyk product breadth나 installed-agent inventory scope를 가진다고 말하지 않는다. | AgentGuard gap은 "installed inventory"가 아니라 "rollout evidence commands"로 설명한다. |
 | [splx-ai/agentic-radar](https://github.com/splx-ai/agentic-radar) | Agentic system analysis, operational insight, vulnerability discovery vocabulary. | workflow visualization breadth를 가진다고 말하지 않는다. | discovery story 대신 PR/MCP/log/SARIF surface별 rerunnable proof를 제시한다. |
 | [affaan-m/agentshield](https://github.com/affaan-m/agentshield) | Agent configuration, MCP server, tool permission scanner category language. | CLI, GitHub Action, app workflow breadth를 가진다고 말하지 않는다. | AgentGuard의 현재 proof는 local CLI fixture와 Korean operator handoff라고 선을 긋는다. |
+| [`agent-security-scanner-mcp` npm package](https://www.npmjs.com/package/agent-security-scanner-mcp) | npm registry에서도 agent/MCP security scanner category가 생기고 있다는 packaging/discoverability pressure를 빌린다. | npm 생태계 breadth, package popularity, vendor endorsement, or comparable scanner coverage를 주장하지 않는다. | AgentGuard action은 새 package claim이 아니라 기존 `scan-diff`/`scan-mcp`/`scan-log`/SARIF fixture-backed proof를 한국어 rollout approval evidence로 라우팅하는 것이다. |
 
 ## Gap-to-demo checklist
 
@@ -50,6 +51,7 @@ Fresh clone에서는 먼저 `npm ci && npm run build && mkdir -p .agentguard-dem
 
 - AgentGuard does not claim 운영 도입 실적, public reference endorsement, or external audit status.
 - AgentGuard does not claim the same scanner breadth as `snyk/agent-scan`, `splx-ai/agentic-radar`, or `affaan-m/agentshield`.
+- AgentGuard does not claim npm ecosystem breadth, package popularity, vendor endorsement, or registry-scale scanner coverage from `agent-security-scanner-mcp`.
 - AgentGuard does not claim to control live MCP server calls. It records static/local MCP evidence and approval questions.
 - AgentGuard does not claim GitHub will triage alerts automatically. It emits SARIF; the upload workflow and reviewer process remain separate.
 - AgentGuard does not rename CLI commands, rule IDs, JSON, SARIF, API, or machine fields for Korean copy.

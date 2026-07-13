@@ -16,6 +16,7 @@ const publicReferenceUrls = [
   'https://github.com/snyk/agent-scan',
   'https://github.com/splx-ai/agentic-radar',
   'https://github.com/affaan-m/agentshield',
+  'https://www.npmjs.com/package/agent-security-scanner-mcp',
 ] as const
 
 const fixtureBackedCommands = [
@@ -46,7 +47,8 @@ const forbiddenClaimPatterns = [
   /(?:실제\s*)?고객(?:사)?|실고객|도입\s*(?:완료|사례)|레퍼런스\s*고객|real customer adoption|customer adoption/i,
   /SOC\s*2|ISO\s*27001|공식\s*인증|official\s+public\s+approval|certified|certification|conformance/i,
   /(?:OWASP|MCP|GitHub|Snyk|splx-ai|AgentShield|agentshield)[^\n|.]{0,90}(?:검증\s*완료|인증\s*완료|approved|verified|endorsed|replacement|대체)/i,
-  /(?:agent-scan|agentic-radar|agentshield|public scanner|scanner)[^\n|.]{0,90}(?:parity|동등|equivalence|equivalent)/i,
+  /(?:agent-scan|agentic-radar|agentshield|agent-security-scanner-mcp|public scanner|scanner)[^\n|.]{0,90}(?:parity|동등|equivalence|equivalent|same[\s-]+scope)/i,
+  /(?:same[\s-]+scope|parity|동등|equivalence|equivalent)[^\n|.]{0,90}(?:agent-scan|agentic-radar|agentshield|agent-security-scanner-mcp|public scanner|scanner)/i,
   /(?:runtime|실시간)[^\n|.]{0,90}(?:MCP\s*)?(?:enforcement|차단|강제)/i,
   /(?:full|complete|전체)\s+(?:AI\s+)?(?:(?:red[-\s]?team|security|보안)\s+)?(?:platform|coverage|플랫폼|커버리지)/i,
 ] as const
@@ -112,6 +114,21 @@ test('AX public scanner gap checklist cites required public URLs', () => {
   }
 })
 
+test('AX public scanner gap checklist maps npm scanner signal to honest rollout evidence action', () => {
+  const checklistDoc = readChecklistDoc()
+
+  expectLiteral(checklistDoc, '`agent-security-scanner-mcp` npm package')
+  assert.match(checklistDoc, /npm registry에서도 agent\/MCP security scanner category/)
+  assert.match(checklistDoc, /packaging\/discoverability pressure/)
+  assert.match(checklistDoc, /comparable scanner coverage를 주장하지 않는다/)
+  expectLiteral(
+    checklistDoc,
+    'AgentGuard does not claim npm ecosystem breadth, package popularity, vendor endorsement, or registry-scale scanner coverage from `agent-security-scanner-mcp`.',
+  )
+  assert.match(checklistDoc, /기존 `scan-diff`\/`scan-mcp`\/`scan-log`\/SARIF fixture-backed proof/)
+  assert.match(checklistDoc, /한국어 rollout approval evidence/)
+})
+
 test('AX public scanner gap checklist uses exact fixture-backed commands with existing inputs', () => {
   const checklistDoc = readChecklistDoc()
 
@@ -164,6 +181,8 @@ test('AX public scanner gap checklist rejects unsupported adoption certification
     'AgentGuard has official public approval from GitHub.',
     'AgentGuard는 Snyk agent-scan 대체 parity 도구입니다.',
     'AgentGuard provides scanner equivalence with agentic-radar.',
+    'AgentGuard has same scope as agent-security-scanner-mcp.',
+    'AgentGuard has same-scope scanner coverage as agent-security-scanner-mcp.',
     'AgentGuard는 runtime MCP enforcement를 제공합니다.',
     'AgentGuard offers complete security platform coverage.',
   ] as const

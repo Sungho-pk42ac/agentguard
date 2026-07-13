@@ -22,7 +22,16 @@ type SmokeManifest = {
   readonly nodeVersion: string
   readonly platform: string
   readonly arch: string
+  readonly summary?: SmokeManifestSummary
   readonly checks?: readonly SmokeManifestCheck[]
+}
+
+type SmokeManifestSummary = {
+  readonly total?: number
+  readonly pass?: number
+  readonly review?: number
+  readonly block?: number
+  readonly acceptedNonZero?: number
 }
 
 type SmokeManifestCheck = {
@@ -89,6 +98,17 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     assert.ok((manifest.arch ?? '').length > 0, 'manifest arch should be non-empty')
     assert.ok(Array.isArray(manifest.checks), 'manifest.checks should be an array')
     assert.equal(manifest.checks.length, 4, 'manifest should cover PR diff, MCP config, transcript/log, and SARIF')
+    assert.deepEqual(
+      manifest.summary,
+      {
+        total: manifest.checks.length,
+        pass: manifest.checks.filter((check) => check.verdict === 'PASS').length,
+        review: manifest.checks.filter((check) => check.verdict === 'REVIEW').length,
+        block: manifest.checks.filter((check) => check.verdict === 'BLOCK').length,
+        acceptedNonZero: manifest.checks.filter((check) => check.acceptedNonZero === true).length,
+      },
+      'manifest summary should be derived from checks for reviewer/CI source-of-record use',
+    )
 
     for (const check of manifest.checks) {
       assert.equal(typeof check.surface, 'string', 'surface should stay present')

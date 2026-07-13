@@ -12,6 +12,7 @@ const hexSha256 = /^[0-9a-f]{64}$/
 
 type SmokeManifest = {
   readonly schemaVersion: string
+  readonly runId?: string
   readonly generatedBy: string
   readonly evidencePurpose: string
   readonly cliPath?: string
@@ -58,6 +59,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
 
     const manifest = JSON.parse(readFileSync(join(evidenceDir, 'manifest.json'), 'utf8')) as SmokeManifest
     assert.equal(manifest.schemaVersion, '1.0.0', 'manifest should record the smoke manifest contract version')
+    assert.match(
+      manifest.runId ?? '',
+      /^ax-smoke-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[0-9a-f-]{36}$/,
+      'manifest should record a generated safe runId when AGENTGUARD_AX_DEMO_RUN_ID is not set',
+    )
     assert.equal(
       manifest.generatedBy,
       'agentguard ax-demo-smoke',
@@ -121,6 +127,31 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       },
       'manifest should expose reviewer-ready verdicts for each evidence surface',
     )
+
+    const explicitRunEvidenceDir = mkdtempSync(join(tmpdir(), 'agentguard-ax-smoke-runid-'))
+    try {
+      execFileSync(process.execPath, [join(repoRoot, 'scripts', 'ax-demo-smoke.mjs')], {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          AGENTGUARD_AX_DEMO_EVIDENCE_DIR: explicitRunEvidenceDir,
+          AGENTGUARD_AX_DEMO_RUN_ID: 'cron:20260713T130000Z.issue-537',
+        },
+        stdio: 'pipe',
+        timeout: 120_000,
+      })
+
+      const explicitRunManifest = JSON.parse(
+        readFileSync(join(explicitRunEvidenceDir, 'manifest.json'), 'utf8'),
+      ) as SmokeManifest
+      assert.equal(
+        explicitRunManifest.runId,
+        'cron:20260713T130000Z.issue-537',
+        'manifest should preserve caller-provided AGENTGUARD_AX_DEMO_RUN_ID exactly',
+      )
+    } finally {
+      rmSync(explicitRunEvidenceDir, { recursive: true, force: true })
+    }
   } finally {
     rmSync(evidenceDir, { recursive: true, force: true })
   }

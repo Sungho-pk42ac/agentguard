@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { type Finding, severityScore } from './rules.js'
 
 type SarifLevel = 'note' | 'warning' | 'error'
@@ -32,6 +33,9 @@ type SarifResult = {
   readonly level: SarifLevel
   readonly message: {
     readonly text: string
+  }
+  readonly partialFingerprints: {
+    readonly 'agentguard.v1': string
   }
   readonly locations: readonly [
     {
@@ -229,6 +233,9 @@ function toSarifResult(finding: Finding): SarifResult {
     message: {
       text: `${finding.title}: ${finding.recommendation} Evidence: ${finding.evidence}`,
     },
+    partialFingerprints: {
+      'agentguard.v1': sarifPartialFingerprint(finding),
+    },
     locations: [
       {
         physicalLocation: {
@@ -240,6 +247,15 @@ function toSarifResult(finding: Finding): SarifResult {
       },
     ],
   }
+}
+
+function sarifPartialFingerprint(finding: Finding): string {
+  const components = [
+    finding.id,
+    finding.file ?? 'stdin',
+    finding.evidence,
+  ]
+  return createHash('sha256').update(components.join('\0')).digest('hex')
 }
 
 function sarifLevel(finding: Finding): SarifLevel {

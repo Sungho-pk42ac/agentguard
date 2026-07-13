@@ -250,6 +250,8 @@ For a Korean-first control-plane CI gate card that maps CLI evidence, CI status,
 
 For a Korean-first public scanner signal refresh ledger that turns current public scanner/reference cues into Borrow/Avoid/AgentGuard-action rows and exact evidence commands, see [AX public scanner signal refresh ledger](ax-public-scanner-signal-refresh-ledger.md).
 
+For a Korean-first emergency stop runbook that maps `BLOCK`/`REVIEW` evidence to rollout pause, recovery action, exact rerun command, and resume condition, see [AX emergency stop runbook](ax-emergency-stop-runbook.md).
+
 ## SARIF
 
 ```bash

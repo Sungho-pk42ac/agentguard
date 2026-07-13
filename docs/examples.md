@@ -210,6 +210,8 @@ For a Korean-first evidence-to-approver channel map that routes PR diff, MCP con
 
 For a Korean-first evidence command failure triage card that separates expected risky nonzero exits from build, fixture, stale-artifact, SARIF, and reviewer non-response failures, see [AX evidence command failure triage card](ax-evidence-command-failure-triage.md).
 
+For a Korean-first evidence freshness SLA card that maps PR diff, MCP config, transcript/log, SARIF, and smoke manifest evidence to rerun windows, source-of-record checks, and approval-owner actions, see [AX evidence freshness SLA card](ax-evidence-freshness-sla-card.md).
+
 For a Korean-first judging-lens trace card that maps AX 대상권 scoring questions to exact current AgentGuard evidence commands and public-reference guardrails, see [AX judging lens trace card](ax-judging-lens-trace-card.md).
 
 For a Korean-first evidence bundle manifest that groups exact fixture-backed commands, expected artifacts, public-reference borrow/avoid notes, and non-claim guardrails, see [AX evidence bundle manifest](ax-evidence-bundle-manifest.md).

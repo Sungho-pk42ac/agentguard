@@ -156,7 +156,7 @@ function scannerSmokeCheck(lang: DoctorLanguage): DoctorCheck {
 }
 
 function githubActionContractCheck(lang: DoctorLanguage): DoctorCheck {
-  const requiredInputs = ['base-sha', 'head-sha', 'fail-on', 'sarif-path'] as const
+  const requiredInputs = ['base-sha', 'head-sha', 'fail-on', 'package-version', 'report-path', 'json-path', 'sarif-path'] as const
   try {
     const actionText = readFileSync(new URL('../action.yml', import.meta.url), 'utf8')
     // The TypeScript build emits a flat dist/ layout, so ../action.yml points
@@ -167,16 +167,22 @@ function githubActionContractCheck(lang: DoctorLanguage): DoctorCheck {
     const steps = Array.isArray(runs['steps']) ? runs['steps'] : []
     const missing = requiredInputs.filter((field) => !isRecord(inputs[field]))
     const hasCompositeRun = runs['using'] === 'composite'
-    const hasScanStep = steps.some((step) => isRecord(step) && step['id'] === 'scan' && typeof step['run'] === 'string' && step['run'].includes('scan-diff'))
+    const scanStep = steps.find((step) => isRecord(step) && step['id'] === 'scan' && typeof step['run'] === 'string' && step['run'].includes('scan-diff'))
+    const scanRun = isRecord(scanStep) && typeof scanStep['run'] === 'string' ? scanStep['run'] : ''
+    const hasScanStep = scanRun.length > 0
+    const hasPackageVersionGuard = scanRun.includes('validate_package_version "$package_version"')
+    const hasArtifactPathGuard = ['report_path', 'json_path', 'sarif_path'].every((name) =>
+      scanRun.includes(`validate_artifact_path "$${name}"`),
+    )
 
-    if (missing.length === 0 && hasCompositeRun && hasScanStep) {
+    if (missing.length === 0 && hasCompositeRun && hasScanStep && hasPackageVersionGuard && hasArtifactPathGuard) {
       return {
         id: 'github_action_contract',
         label: 'GitHub Action contract',
         detail:
           lang === 'ko'
-            ? 'action.yml 재사용 PR gate 확인: base-sha, head-sha, fail-on, sarif-path, scan step'
-            : 'action.yml reusable PR gate ok: base-sha, head-sha, fail-on, sarif-path, scan step',
+            ? 'action.yml 재사용 PR gate 확인: base-sha, head-sha, fail-on, package-version, report-path, json-path, sarif-path, artifact path guard, scan step'
+            : 'action.yml reusable PR gate ok: base-sha, head-sha, fail-on, package-version, report-path, json-path, sarif-path, artifact path guard, scan step',
         passed: true,
       }
     }
@@ -185,6 +191,8 @@ function githubActionContractCheck(lang: DoctorLanguage): DoctorCheck {
       ...missing.map((field) => `missing ${field}`),
       ...(hasCompositeRun ? [] : ['missing composite runs contract']),
       ...(hasScanStep ? [] : ['missing scan step']),
+      ...(hasPackageVersionGuard ? [] : ['missing package-version guard']),
+      ...(hasArtifactPathGuard ? [] : ['missing artifact path guard']),
     ]
     return {
       id: 'github_action_contract',

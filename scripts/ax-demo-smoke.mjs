@@ -69,6 +69,9 @@ for (const check of checks) {
   manifest.push({
     surface: check.surface,
     command: `node dist/index.js ${check.args.join(' ')} < ${check.inputPath}`,
+    commandArgs: ['node', cliRelativePath, ...check.args],
+    inputPath: check.inputPath,
+    ...(check.policyPath ? { policyPath: check.policyPath } : {}),
     exitCode: result.status,
     acceptedNonZero: result.status !== 0,
     verdict: verdictForFindings(findings),
@@ -92,6 +95,8 @@ ensure(sarifRuleIds.has('denied-command'), 'sarif: missing denied-command result
 manifest.push({
   surface: 'sarif-artifact',
   command: `node dist/index.js scan-diff --sarif --out ${relativeArtifactPath(sarifPath)} < ${checks[0].inputPath}`,
+  commandArgs: ['node', cliRelativePath, 'scan-diff', '--sarif', '--out', relativeArtifactPath(sarifPath)],
+  inputPath: checks[0].inputPath,
   exitCode: sarifResult.status,
   acceptedNonZero: true,
   verdict: manifest.find((item) => item.surface === 'pr-diff')?.verdict ?? 'BLOCK',

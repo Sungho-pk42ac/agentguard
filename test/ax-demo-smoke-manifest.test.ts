@@ -22,6 +22,9 @@ type SmokeManifest = {
 type SmokeManifestCheck = {
   readonly surface?: string
   readonly command?: string
+  readonly commandArgs?: readonly string[]
+  readonly inputPath?: string
+  readonly policyPath?: string
   readonly exitCode?: number
   readonly acceptedNonZero?: boolean
   readonly verdict?: string
@@ -60,6 +63,10 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     for (const check of manifest.checks) {
       assert.equal(typeof check.surface, 'string', 'surface should stay present')
       assert.equal(typeof check.command, 'string', `${check.surface ?? 'check'} command should stay present`)
+      assert.ok(Array.isArray(check.commandArgs), `${check.surface ?? 'check'} commandArgs should stay present`)
+      assert.equal(check.commandArgs?.[0], 'node', `${check.surface ?? 'check'} commandArgs should describe the node CLI runner`)
+      assert.equal(check.commandArgs?.[1], 'dist/index.js', `${check.surface ?? 'check'} commandArgs should name the built CLI`)
+      assert.equal(typeof check.inputPath, 'string', `${check.surface ?? 'check'} inputPath should stay present`)
       assert.equal(typeof check.exitCode, 'number', `${check.surface ?? 'check'} exitCode should stay present`)
       assert.equal(typeof check.acceptedNonZero, 'boolean', `${check.surface ?? 'check'} acceptedNonZero should stay present`)
       assert.match(check.verdict ?? '', /^(PASS|REVIEW|BLOCK)$/, `${check.surface ?? 'check'} verdict should be present`)
@@ -74,6 +81,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     }
 
     const transcriptCheck = manifest.checks.find((check) => check.surface === 'transcript-log')
+    assert.equal(
+      transcriptCheck?.policyPath,
+      'examples/agent-policy.yaml',
+      'transcript-log should expose the policy fixture path without parsing command text',
+    )
     assert.match(transcriptCheck?.policySha256 ?? '', hexSha256, 'transcript-log policySha256 should be lowercase SHA-256 hex')
 
     assert.deepEqual(

@@ -16,7 +16,7 @@
 4. 격리된 evidence directory가 필요하면 `AGENTGUARD_AX_DEMO_EVIDENCE_DIR=/tmp/agentguard-ax-smoke npm run smoke:ax-demo`처럼 override한다.
 5. reviewer에게 manifest와 같은 directory의 JSON/SARIF artifact를 함께 넘긴다.
 
-`manifest.json`의 machine contract는 기존 `checks[]`, `surface`, `command`, `exitCode`, `acceptedNonZero`, `artifact`, `ruleIds`를 그대로 두고, provenance-only `sourceSha256`, `artifactSha256`, 필요 시 `policySha256`를 additive field로 더한다. 한국어 설명은 사람 handoff용이고, machine-facing keys와 CLI spelling은 English-compatible 상태를 유지한다.
+`manifest.json`의 machine contract는 기존 `checks[]`, `surface`, `command`, `exitCode`, `acceptedNonZero`, `artifact`, `ruleIds`를 그대로 두고, provenance-only `sourceSha256`, `artifactSha256`, 필요 시 `policySha256`를 additive field로 더한다. 각 row는 사람이 복사하는 `command` 문자열과 별도로 파싱 없이 재실행 범위를 확인하는 `commandArgs`, `inputPath`, 필요 시 `policyPath`를 함께 제공한다. 한국어 설명은 사람 handoff용이고, machine-facing keys와 CLI spelling은 English-compatible 상태를 유지한다.
 
 Hash-backed replay/freshness for the smoke manifest: treat `.agentguard-demo/ax-evidence-smoke/manifest.json` as fresh only when the reviewer can rerun `npm run smoke:ax-demo`, record the manifest hash plus each referenced JSON/SARIF artifact hash and source fixture hash, and confirm the hashes come from the same evidence directory and run. If any fixture, command, build output, manifest row, JSON/SARIF artifact, or `AGENTGUARD_AX_DEMO_EVIDENCE_DIR` changes, freshness expires and the smoke command must be rerun before handoff.
 
@@ -35,7 +35,7 @@ Hash-backed replay/freshness for the smoke manifest: treat `.agentguard-demo/ax-
 - MCP config row: compare `mcp-config` manifest row with `.agentguard-demo/ax-evidence-smoke/mcp-config-findings.json`; confirm broad filesystem and env-token rule IDs are present.
 - transcript/log row: compare `transcript-log` manifest row with `.agentguard-demo/ax-evidence-smoke/transcript-log-findings.json`; confirm policy-backed `denied-command` evidence remains a reviewer approval item.
 - SARIF row: compare `sarif-artifact` manifest row with `.agentguard-demo/ax-evidence-smoke/agentguard.sarif`; confirm SARIF carries the same PR diff finding set for reviewer or CI handoff.
-- Manifest row: keep `.agentguard-demo/ax-evidence-smoke/manifest.json` with the artifacts from the same run. Do not mix artifacts from a previous build or a different `AGENTGUARD_AX_DEMO_EVIDENCE_DIR`.
+- Manifest row: keep `.agentguard-demo/ax-evidence-smoke/manifest.json` with the artifacts from the same run. Confirm each row has both human-readable `command` and machine-readable `commandArgs`/`inputPath`, and confirm transcript/log rows keep `policyPath` with `policySha256`. Do not mix artifacts from a previous build or a different `AGENTGUARD_AX_DEMO_EVIDENCE_DIR`.
 - Hash-backed replay/freshness row: rerun `npm run smoke:ax-demo`, compare the manifest hash plus referenced JSON/SARIF artifact hashes and source fixture hashes, and reject handoff packages that mix directories, builds, or previous runs.
 
 ## Public reference borrow/avoid/action table

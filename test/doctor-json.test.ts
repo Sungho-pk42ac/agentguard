@@ -27,6 +27,27 @@ test('CLI doctor --json prints machine-readable readiness with the text doctor e
   assert.ok(checkIds.has('package_version'))
   assert.ok(checkIds.has('examples_directory'))
   assert.ok(checkIds.has('scanner_smoke'))
+  assert.ok(checkIds.has('github_action_contract'))
+
+  const actionCheck = parsed['checks'].find((check) => check.id === 'github_action_contract')
+  assert.ok(actionCheck, 'doctor JSON should include reusable GitHub Action contract readiness')
+  assert.equal(actionCheck.passed, true)
+  assert.match(actionCheck.detail, /action\.yml/)
+  assert.match(actionCheck.detail, /base-sha/)
+  assert.match(actionCheck.detail, /head-sha/)
+  assert.match(actionCheck.detail, /fail-on/)
+  assert.match(actionCheck.detail, /sarif-path/)
+})
+
+test('CLI doctor text output includes reusable GitHub Action contract readiness', () => {
+  const koResult = runDoctor('--lang', 'ko')
+  const enResult = runDoctor('--lang', 'en')
+
+  assert.equal(koResult.status, 0, koResult.stderr)
+  assert.match(koResult.stdout, /GitHub Action/)
+  assert.match(koResult.stdout, /action\.yml/)
+  assert.match(enResult.stdout, /GitHub Action/)
+  assert.match(enResult.stdout, /action\.yml/)
 })
 
 function runDoctor(...args: readonly string[]): ReturnType<typeof spawnSync> {

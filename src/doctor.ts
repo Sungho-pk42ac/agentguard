@@ -1,11 +1,12 @@
 import { readFileSync, statSync } from 'node:fs'
+import YAML from 'yaml'
 import { scanInput } from './core.js'
 import { UPDATE_COMMAND } from './update-check.js'
 
 export type DoctorLanguage = 'ko' | 'en'
 
 interface DoctorCheck {
-  readonly id: 'package_version' | 'examples_directory' | 'scanner_smoke'
+  readonly id: 'package_version' | 'examples_directory' | 'scanner_smoke' | 'github_action_contract'
   readonly label: string
   readonly detail: string
   readonly passed: boolean
@@ -35,7 +36,7 @@ interface DoctorJsonOutput {
 }
 
 export function runDoctor(lang: DoctorLanguage = 'ko', options: DoctorOptions = {}): DoctorResult {
-  const checks = [packageVersionCheck(lang), examplesDirectoryCheck(lang), scannerSmokeCheck(lang)]
+  const checks = [packageVersionCheck(lang), examplesDirectoryCheck(lang), scannerSmokeCheck(lang), githubActionContractCheck(lang)]
   const exitCode = checks.every((check) => check.passed) ? 0 : 1
   if (options.json === true) {
     const passed = checks.filter((check) => check.passed).length
@@ -154,6 +155,53 @@ function scannerSmokeCheck(lang: DoctorLanguage): DoctorCheck {
   }
 }
 
+function githubActionContractCheck(lang: DoctorLanguage): DoctorCheck {
+  const requiredInputs = ['base-sha', 'head-sha', 'fail-on', 'sarif-path'] as const
+  try {
+    const actionText = readFileSync(new URL('../action.yml', import.meta.url), 'utf8')
+    // The TypeScript build emits a flat dist/ layout, so ../action.yml points
+    // at the package/repo root both in tsx tests and installed npm tarballs.
+    const action = YAML.parse(actionText) as unknown
+    const inputs = isRecord(action) && isRecord(action['inputs']) ? action['inputs'] : {}
+    const runs = isRecord(action) && isRecord(action['runs']) ? action['runs'] : {}
+    const steps = Array.isArray(runs['steps']) ? runs['steps'] : []
+    const missing = requiredInputs.filter((field) => !isRecord(inputs[field]))
+    const hasCompositeRun = runs['using'] === 'composite'
+    const hasScanStep = steps.some((step) => isRecord(step) && step['id'] === 'scan' && typeof step['run'] === 'string' && step['run'].includes('scan-diff'))
+
+    if (missing.length === 0 && hasCompositeRun && hasScanStep) {
+      return {
+        id: 'github_action_contract',
+        label: 'GitHub Action contract',
+        detail:
+          lang === 'ko'
+            ? 'action.yml 재사용 PR gate 확인: base-sha, head-sha, fail-on, sarif-path, scan step'
+            : 'action.yml reusable PR gate ok: base-sha, head-sha, fail-on, sarif-path, scan step',
+        passed: true,
+      }
+    }
+
+    const reasons = [
+      ...missing.map((field) => `missing ${field}`),
+      ...(hasCompositeRun ? [] : ['missing composite runs contract']),
+      ...(hasScanStep ? [] : ['missing scan step']),
+    ]
+    return {
+      id: 'github_action_contract',
+      label: 'GitHub Action contract',
+      detail: lang === 'ko' ? `action.yml 재사용 PR gate 불완전: ${reasons.join(', ')}` : `action.yml reusable PR gate incomplete: ${reasons.join(', ')}`,
+      passed: false,
+    }
+  } catch (error: unknown) {
+    return {
+      id: 'github_action_contract',
+      label: 'GitHub Action contract',
+      detail: lang === 'ko' ? `action.yml 확인 오류: ${errorMessage(error, lang)}` : `action.yml check error: ${errorMessage(error, lang)}`,
+      passed: false,
+    }
+  }
+}
+
 function readPackageVersion(): string | undefined {
   let packageJson: unknown
   try {
@@ -162,8 +210,8 @@ function readPackageVersion(): string | undefined {
     return undefined
   }
 
-  if (isRecord(packageJson) && typeof packageJson.version === 'string' && packageJson.version.length > 0) {
-    return packageJson.version
+  if (isRecord(packageJson) && typeof packageJson['version'] === 'string' && packageJson['version'].length > 0) {
+    return packageJson['version']
   }
   return undefined
 }
@@ -173,6 +221,6 @@ function errorMessage(error: unknown, lang: DoctorLanguage): string {
   return lang === 'ko' ? '알 수 없는 오류' : 'unknown error'
 }
 
-function isRecord(value: unknown): value is { readonly version?: unknown } {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }

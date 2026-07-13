@@ -388,6 +388,7 @@ test('team adoption docs provide copy-paste reusable action workflow', () => {
   assert.match(docs, /fail-on: block/)
   assert.match(docs, /sarif-path: agentguard\.sarif/)
   assert.match(docs, /github\/codeql-action\/upload-sarif@v3/)
+  assert.match(docs, /sarif_file: agentguard\.sarif\r?\n\s+category: agentguard-pr-diff/)
   assert.match(docs, /jobs:\r?\n  agentguard:[\s\S]*?timeout-minutes: 10/)
   assert.match(docs, /- name: Upload AgentGuard SARIF\r?\n        if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) \}\}/)
   assert.match(docs, /- name: Comment AgentGuard report on PR\r?\n        if: \$\{\{ !cancelled\(\) && github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.repo\.full_name == github\.repository \}\}/)
@@ -532,7 +533,7 @@ test('README documents SARIF upload workflow and sample output', () => {
 
   assert.match(readme, /node dist\/index\.js scan-diff --sarif --out agentguard\.sarif/)
   assert.match(readme, /github\/codeql-action\/upload-sarif@v3/)
-  assert.match(readme, /sarif_file: agentguard\.sarif/)
+  assert.match(readme, /sarif_file: agentguard\.sarif\r?\n\s+category: agentguard-pr-diff/)
   assert.match(readme, /examples\/agentguard\.sarif/)
 
   const sample = JSON.parse(readFileSync('examples/agentguard.sarif', 'utf8'))

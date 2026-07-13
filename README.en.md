@@ -177,6 +177,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: agentguard.sarif
+          category: agentguard-pr-diff
 ```
 
 ## GitHub PR comment workflow

@@ -135,6 +135,7 @@ writeFileSync(
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
+      summary: summarizeChecks(manifest),
       checks: manifest,
     },
     null,
@@ -178,6 +179,20 @@ function repoPath(path) {
 
 function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
+}
+
+function summarizeChecks(checks) {
+  return checks.reduce(
+    (summary, check) => {
+      summary.total += 1
+      if (check.verdict === 'PASS') summary.pass += 1
+      if (check.verdict === 'REVIEW') summary.review += 1
+      if (check.verdict === 'BLOCK') summary.block += 1
+      if (check.acceptedNonZero === true) summary.acceptedNonZero += 1
+      return summary
+    },
+    { total: 0, pass: 0, review: 0, block: 0, acceptedNonZero: 0 },
+  )
 }
 
 function smokeRunId() {

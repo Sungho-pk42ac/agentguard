@@ -139,6 +139,11 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
 
   for (const manifestContract of [
     'checks[]',
+    'summary',
+    'total',
+    'pass',
+    'review',
+    'block',
     'runId',
     'surface',
     'command',

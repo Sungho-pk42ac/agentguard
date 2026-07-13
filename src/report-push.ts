@@ -131,7 +131,7 @@ export interface FetchResponse {
   readonly status: number
   text(): Promise<string>
 }
-export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body?: string }) => Promise<FetchResponse>
+export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body?: string; signal?: AbortSignal }) => Promise<FetchResponse>
 
 export interface PushResult {
   readonly status: number
@@ -141,6 +141,22 @@ export interface PushResult {
 export interface PushOptions {
   readonly fetchImpl?: FetchLike
   readonly now?: number
+  readonly timeoutMs?: number
+}
+
+export const DEFAULT_REPORT_PUSH_TIMEOUT_MS = 15_000
+
+function reportPushTimeoutError(timeoutMs: number): ReportPushError {
+  return new ReportPushError(`report push timeout after ${timeoutMs}ms`)
+}
+
+function rejectOnAbort<T>(operation: Promise<T>, signal: AbortSignal, timeoutMs: number): Promise<T> {
+  if (signal.aborted) return Promise.reject(reportPushTimeoutError(timeoutMs))
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(reportPushTimeoutError(timeoutMs))
+    signal.addEventListener('abort', onAbort, { once: true })
+    operation.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
+  })
 }
 
 /**
@@ -152,26 +168,27 @@ export interface PushOptions {
  * advertises [1], or /v1/meta is missing/errors) the agent falls back to
  * omitting the advisory findings and sending schemaVersion 1.
  */
-async function negotiateSchemaVersion(endpoint: string, payload: ReportPayload, fetchImpl: FetchLike): Promise<ReportPayload> {
+async function negotiateSchemaVersion(endpoint: string, payload: ReportPayload, fetchImpl: FetchLike, signal: AbortSignal): Promise<ReportPayload> {
   const hasAdvisory = payload.findings.some((f) => f.advisory === true)
   if (!hasAdvisory) return payload
-  const serverVersions = await fetchSchemaVersions(endpoint, fetchImpl)
+  const serverVersions = await fetchSchemaVersions(endpoint, fetchImpl, signal)
   if (serverVersions?.includes(2)) {
     return { ...payload, schemaVersion: 2 }
   }
   return { ...payload, schemaVersion: 1, findings: payload.findings.filter((f) => f.advisory !== true) }
 }
 
-async function fetchSchemaVersions(endpoint: string, fetchImpl: FetchLike): Promise<number[] | undefined> {
+async function fetchSchemaVersions(endpoint: string, fetchImpl: FetchLike, signal: AbortSignal): Promise<number[] | undefined> {
   try {
-    const response = await fetchImpl(`${endpoint}/v1/meta`, { method: 'GET', headers: {} })
+    const response = await fetchImpl(`${endpoint}/v1/meta`, { method: 'GET', headers: {}, signal })
     if (response.status !== 200) return undefined
     const parsed: unknown = JSON.parse(await response.text())
     if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { schemaVersions?: unknown }).schemaVersions)) {
       return (parsed as { schemaVersions: unknown[] }).schemaVersions.filter((v): v is number => typeof v === 'number')
     }
     return undefined
-  } catch {
+  } catch (error) {
+    if (signal.aborted) throw error
     return undefined
   }
 }
@@ -199,29 +216,37 @@ export async function pushReport(
     throw new ReportPushError('no fetch implementation available (Node >=20 required)')
   }
   const normalizedEndpoint = endpoint.replace(/\/+$/, '')
-  const negotiated = await negotiateSchemaVersion(normalizedEndpoint, payload, fetchImpl)
-  const body = JSON.stringify(negotiated)
-  const timestamp = Math.floor((options.now ?? Date.now()) / 1000)
-  const headers: Record<string, string> = {
-    'content-type': 'application/json',
-    'x-agentguard-timestamp': String(timestamp),
-    'x-agentguard-asset': identity.assetId,
-  }
-  if (identity.credential.kind === 'device-token') {
-    headers['x-agentguard-signature'] = `v1=${signBody(body, timestamp, identity.credential.secret)}`
-  } else {
-    headers['authorization'] = `Bearer ${identity.credential.token}`
-  }
+  const timeoutMs = Math.max(1, options.timeoutMs ?? DEFAULT_REPORT_PUSH_TIMEOUT_MS)
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   const url = `${normalizedEndpoint}/v1/reports`
-  let response: FetchResponse
   try {
-    response = await fetchImpl(url, { method: 'POST', headers, body })
+    return await rejectOnAbort((async () => {
+      const negotiated = await negotiateSchemaVersion(normalizedEndpoint, payload, fetchImpl, controller.signal)
+      const body = JSON.stringify(negotiated)
+      const timestamp = Math.floor((options.now ?? Date.now()) / 1000)
+      const headers: Record<string, string> = {
+        'content-type': 'application/json',
+        'x-agentguard-timestamp': String(timestamp),
+        'x-agentguard-asset': identity.assetId,
+      }
+      if (identity.credential.kind === 'device-token') {
+        headers['x-agentguard-signature'] = `v1=${signBody(body, timestamp, identity.credential.secret)}`
+      } else {
+        headers['authorization'] = `Bearer ${identity.credential.token}`
+      }
+      const response = await fetchImpl(url, { method: 'POST', headers, body, signal: controller.signal })
+      const text = await response.text()
+      if (response.status !== 202) {
+        throw new ReportPushError(`ingest rejected the report (HTTP ${response.status})`, response.status, text)
+      }
+      return { status: response.status, body: text }
+    })(), controller.signal, timeoutMs)
   } catch (error) {
+    if (controller.signal.aborted) throw reportPushTimeoutError(timeoutMs)
+    if (error instanceof ReportPushError) throw error
     throw new ReportPushError(`could not reach ${url}: ${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    clearTimeout(timeout)
   }
-  const text = await response.text()
-  if (response.status !== 202) {
-    throw new ReportPushError(`ingest rejected the report (HTTP ${response.status})`, response.status, text)
-  }
-  return { status: response.status, body: text }
 }

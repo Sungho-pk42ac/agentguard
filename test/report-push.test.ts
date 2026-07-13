@@ -209,6 +209,65 @@ test('pushReport surfaces a non-202 response as ReportPushError', async () => {
   await assert.rejects(() => pushReport('https://cp.example', payload, deviceIdentity, { fetchImpl }), ReportPushError)
 })
 
+test('pushReport timeout passes an AbortSignal to fetch', async () => {
+  const payload = buildReportPayload([finding()], {
+    orgId: 'org_acme',
+    assetId: 'asset_pc1',
+    actor: { type: 'device-token', subject: 'dana' },
+    home: HOME,
+    username: USER,
+  })
+  let sawSignal = false
+  const fetchImpl: FetchLike = async (_url, init) => {
+    sawSignal = init.signal instanceof AbortSignal
+    return { status: 202, text: async () => '{}' }
+  }
+
+  await pushReport('https://cp.example', payload, deviceIdentity, { fetchImpl, timeoutMs: 50 })
+
+  assert.equal(sawSignal, true)
+})
+
+test('pushReport timeout rejects as ReportPushError without leaking raw token', async () => {
+  const payload = buildReportPayload([finding()], {
+    orgId: 'org_acme',
+    assetId: 'asset_pc1',
+    actor: { type: 'device-token', subject: 'dana' },
+    home: HOME,
+    username: USER,
+  })
+  const fetchImpl: FetchLike = async (_url, init) =>
+    new Promise((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => reject(new DOMException('operation aborted', 'AbortError')), { once: true })
+    })
+
+  await assert.rejects(
+    () => pushReport('https://cp.example', payload, deviceIdentity, { fetchImpl, timeoutMs: 1 }),
+    (err: unknown) =>
+      err instanceof ReportPushError && /timeout/i.test(err.message) && !err.message.includes('dev-secret-123'),
+  )
+})
+
+test('pushReport timeout is bounded even if fetch ignores AbortSignal', async () => {
+  const payload = buildReportPayload([finding()], {
+    orgId: 'org_acme',
+    assetId: 'asset_pc1',
+    actor: { type: 'device-token', subject: 'dana' },
+    home: HOME,
+    username: USER,
+  })
+  const fetchImpl: FetchLike = async () => new Promise(() => {})
+
+  const result = await Promise.race([
+    pushReport('https://cp.example', payload, deviceIdentity, { fetchImpl, timeoutMs: 1 }).catch((error: unknown) => error),
+    new Promise((resolve) => setTimeout(() => resolve('still-pending'), 200)),
+  ])
+
+  assert.ok(result instanceof ReportPushError)
+  assert.match(result.message, /timeout/i)
+  assert.doesNotMatch(result.message, /dev-secret-123/)
+})
+
 test('assertRedacted passes for a normal redacted payload', () => {
   const payload = buildReportPayload([finding(), finding({ id: 'email', category: 'pii', severity: 'medium', evidence: 'voc-…test' })], {
     orgId: 'o',

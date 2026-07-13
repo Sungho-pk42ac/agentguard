@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -116,6 +116,7 @@ writeFileSync(
   `${JSON.stringify(
     {
       schemaVersion: '1.0.0',
+      runId: smokeRunId(),
       generatedBy: 'agentguard ax-demo-smoke',
       evidencePurpose:
         'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
@@ -170,6 +171,18 @@ function repoPath(path) {
 
 function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
+}
+
+function smokeRunId() {
+  const configuredRunId = process.env.AGENTGUARD_AX_DEMO_RUN_ID?.trim()
+  if (configuredRunId) {
+    ensure(
+      /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(configuredRunId),
+      'AGENTGUARD_AX_DEMO_RUN_ID must be 1-128 characters and use only letters, numbers, dot, underscore, colon, or dash',
+    )
+    return configuredRunId
+  }
+  return `ax-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID()}`
 }
 
 function currentGitCommitSha() {

@@ -52,9 +52,11 @@ mkdirSync(evidenceDir, { recursive: true })
 const manifest = []
 for (const check of checks) {
   const sourcePath = repoPath(check.inputPath)
+  const startedAt = new Date().toISOString()
   const startedAtMs = performance.now()
   const result = runCli(check.args, check.inputPath)
   const durationMs = Math.round(performance.now() - startedAtMs)
+  const completedAt = new Date().toISOString()
   const artifactPath = join(evidenceDir, check.artifactName)
   writeFileSync(artifactPath, result.stdout)
 
@@ -78,6 +80,8 @@ for (const check of checks) {
     exitCode: result.status,
     acceptedNonZero: result.status !== 0,
     verdict: verdictForFindings(findings),
+    startedAt,
+    completedAt,
     durationMs,
     artifact: relativeArtifactPath(artifactPath),
     sourceSha256: sha256File(sourcePath),
@@ -89,9 +93,11 @@ for (const check of checks) {
 
 const sarifPath = join(evidenceDir, 'agentguard.sarif')
 ensure(checks.length > 0, 'sarif: at least one source check is required')
+const sarifStartedAt = new Date().toISOString()
 const sarifStartedAtMs = performance.now()
 const sarifResult = runCli(['scan-diff', '--sarif', '--out', sarifPath], checks[0].inputPath)
 const sarifDurationMs = Math.round(performance.now() - sarifStartedAtMs)
+const sarifCompletedAt = new Date().toISOString()
 ensure(sarifResult.status === 1, `sarif: expected exit 1 for risky PR diff, got ${sarifResult.status}. stderr=${sarifResult.stderr}`)
 const sarif = parseSarif(readFileSync(sarifPath, 'utf8'))
 const sarifRuleIds = new Set(sarif.runs.flatMap((run) => run.results.map((result) => result.ruleId)))
@@ -106,6 +112,8 @@ manifest.push({
   exitCode: sarifResult.status,
   acceptedNonZero: true,
   verdict: manifest.find((item) => item.surface === 'pr-diff')?.verdict ?? 'BLOCK',
+  startedAt: sarifStartedAt,
+  completedAt: sarifCompletedAt,
   durationMs: sarifDurationMs,
   artifact: relativeArtifactPath(sarifPath),
   sourceSha256: sha256File(repoPath(prDiffInputPath)),

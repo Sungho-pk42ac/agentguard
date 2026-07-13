@@ -43,6 +43,8 @@ type SmokeManifestCheck = {
   readonly exitCode?: number
   readonly acceptedNonZero?: boolean
   readonly verdict?: string
+  readonly startedAt?: string
+  readonly completedAt?: string
   readonly durationMs?: number
   readonly artifact?: string
   readonly ruleIds?: readonly string[]
@@ -120,6 +122,20 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       assert.equal(typeof check.exitCode, 'number', `${check.surface ?? 'check'} exitCode should stay present`)
       assert.equal(typeof check.acceptedNonZero, 'boolean', `${check.surface ?? 'check'} acceptedNonZero should stay present`)
       assert.match(check.verdict ?? '', /^(PASS|REVIEW|BLOCK)$/, `${check.surface ?? 'check'} verdict should be present`)
+      assert.match(
+        check.startedAt ?? '',
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+        `${check.surface ?? 'check'} startedAt should be an ISO-8601 UTC timestamp`,
+      )
+      assert.match(
+        check.completedAt ?? '',
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+        `${check.surface ?? 'check'} completedAt should be an ISO-8601 UTC timestamp`,
+      )
+      assert.ok(
+        Date.parse(check.completedAt ?? '') >= Date.parse(check.startedAt ?? ''),
+        `${check.surface ?? 'check'} completedAt should not be earlier than startedAt`,
+      )
       assert.equal(typeof check.durationMs, 'number', `${check.surface ?? 'check'} durationMs should stay present`)
       assert.ok(Number.isInteger(check.durationMs), `${check.surface ?? 'check'} durationMs should be an integer`)
       assert.ok((check.durationMs ?? -1) >= 0, `${check.surface ?? 'check'} durationMs should be non-negative`)

@@ -221,6 +221,7 @@ Verdicts:
 - [AX public scanner ecosystem triage](docs/ax-public-scanner-ecosystem-triage.md)
 - [AX public scanner gap checklist](docs/ax-public-scanner-gap-checklist.md)
 - [AX public scanner freshness scorecard](docs/ax-public-scanner-freshness-scorecard.md)
+- [AX public scanner signal refresh ledger](docs/ax-public-scanner-signal-refresh-ledger.md)
 - [AX control objective map](docs/ax-control-objective-map.md)
 - [AX control-plane CI gate card](docs/ax-control-plane-ci-gate-card.md)
 - [AX public-reference evidence triage card](docs/ax-public-reference-evidence-triage.md)

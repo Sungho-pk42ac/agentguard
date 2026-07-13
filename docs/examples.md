@@ -248,6 +248,8 @@ For a Korean-first control objective map that converts unknown company problem s
 
 For a Korean-first control-plane CI gate card that maps CLI evidence, CI status, SARIF/report artifacts, and control-plane boundaries to rollout approval decisions, see [AX control-plane CI gate card](ax-control-plane-ci-gate-card.md).
 
+For a Korean-first public scanner signal refresh ledger that turns current public scanner/reference cues into Borrow/Avoid/AgentGuard-action rows and exact evidence commands, see [AX public scanner signal refresh ledger](ax-public-scanner-signal-refresh-ledger.md).
+
 ## SARIF
 
 ```bash

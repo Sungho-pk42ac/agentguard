@@ -247,6 +247,7 @@ Verdicts:
 - [AX public evidence redaction boundary](docs/ax-public-evidence-redaction-boundary.md)
 - [AX evidence-to-approver channel map](docs/ax-evidence-to-approver-channel-map.md)
 - [AX evidence command failure triage card](docs/ax-evidence-command-failure-triage.md)
+- [AX evidence freshness SLA card](docs/ax-evidence-freshness-sla-card.md)
 - [AX judging lens trace card](docs/ax-judging-lens-trace-card.md)
 - [AX evidence bundle manifest](docs/ax-evidence-bundle-manifest.md)
 - [AX smoke evidence manifest handoff card](docs/ax-smoke-evidence-manifest-handoff-card.md)

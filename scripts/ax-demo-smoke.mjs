@@ -135,6 +135,7 @@ writeFileSync(
       generatedBy: 'agentguard ax-demo-smoke',
       evidencePurpose:
         'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
+      evidenceDirectory: relativeArtifactPath(evidenceDir),
       generatedAt: new Date().toISOString(),
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),

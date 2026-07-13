@@ -190,6 +190,8 @@ For a Korean-first first-minute evidence priority card that tells operators whic
 
 For a Korean-first guardrail/tripwire evidence card that maps public agent guardrail concepts to exact AgentGuard approval evidence, see [AX guardrail tripwire evidence card](ax-guardrail-tripwire-evidence-card.md).
 
+For a Korean-first agent/tool onboarding readiness card that maps `doctor`, MCP config, transcript/log, PR diff, and SARIF handoff evidence to rollout approval decisions, see [AX agent tool onboarding readiness](ax-agent-tool-onboarding-readiness.md).
+
 ## AX company problem intake kit
 
 [AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.

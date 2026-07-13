@@ -115,6 +115,7 @@ writeFileSync(
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),
       packageVersion,
+      gitCommitSha: currentGitCommitSha(),
       checks: manifest,
     },
     null,
@@ -158,6 +159,23 @@ function repoPath(path) {
 
 function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
+}
+
+function currentGitCommitSha() {
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  })
+  if (result.error) {
+    const message = result.error instanceof Error ? result.error.message : String(result.error)
+    fail(`git commit SHA could not be read: ${message}`)
+  }
+  if (result.status !== 0) {
+    fail(`git commit SHA could not be read. stderr=${result.stderr}`)
+  }
+  const sha = result.stdout.trim()
+  ensure(/^[0-9a-f]{40}$/.test(sha), `git commit SHA must be a 40-character lowercase hex SHA, got: ${sha}`)
+  return sha
 }
 
 function parseFindings(stdout, surface) {

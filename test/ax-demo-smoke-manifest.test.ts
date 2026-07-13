@@ -15,6 +15,7 @@ type SmokeManifest = {
   readonly cliPath?: string
   readonly cliSha256?: string
   readonly packageVersion?: string
+  readonly gitCommitSha: string
   readonly checks?: readonly SmokeManifestCheck[]
 }
 
@@ -52,6 +53,7 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     assert.equal(manifest.cliPath, 'dist/index.js', 'manifest should name the built CLI artifact used for the smoke')
     assert.match(manifest.cliSha256 ?? '', hexSha256, 'manifest cliSha256 should be lowercase SHA-256 hex')
     assert.match(manifest.packageVersion ?? '', /^\d+\.\d+\.\d+/, 'manifest should record package.json version')
+    assert.match(manifest.gitCommitSha ?? '', /^[0-9a-f]{40}$/, 'manifest should record the git commit SHA used for smoke evidence')
     assert.ok(Array.isArray(manifest.checks), 'manifest.checks should be an array')
     assert.equal(manifest.checks.length, 4, 'manifest should cover PR diff, MCP config, transcript/log, and SARIF')
 

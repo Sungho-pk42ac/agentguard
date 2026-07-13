@@ -332,6 +332,10 @@ test('published GitHub Action validates package-version before constructing npx 
   const commandIndex = scanRun.indexOf('agentguard_cmd=(npx --yes "@pk42ac/agentguard@${package_version}")')
   assert.ok(validationIndex >= 0, 'package-version validation call should exist')
   assert.ok(commandIndex >= 0, 'npx package command should still be constructed')
+  assert.ok(validationIndex < scanRun.indexOf('rm -f --'), 'package-version validation should run before artifact cleanup')
+  assert.ok(validationIndex < scanRun.indexOf('mkdir -p --'), 'package-version validation should run before artifact directory creation')
+  assert.ok(validationIndex < scanRun.indexOf('git diff --no-ext-diff'), 'package-version validation should run before reading the PR diff')
+  assert.ok(validationIndex < scanRun.indexOf('GITHUB_OUTPUT'), 'package-version validation should run before output emission')
   assert.ok(validationIndex < commandIndex, 'package-version validation should run before constructing npx package spec')
 })
 

@@ -152,6 +152,8 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'policyPath',
     'exitCode',
     'acceptedNonZero',
+    'startedAt',
+    'completedAt',
     'durationMs',
     'artifact',
     'ruleIds',

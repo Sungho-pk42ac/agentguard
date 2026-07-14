@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { test } from 'node:test'
+import { tmpdir } from 'node:os'
+import { pathToFileURL } from 'node:url'
 import {
   HOOK_SENTINEL,
   hookScriptContents,
@@ -11,9 +15,10 @@ import {
   type HookIo,
 } from '../src/hook.js'
 
-function runCli(args: string[], input?: string) {
-  return spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', ...args], {
-    cwd: process.cwd(),
+function runCli(args: string[], input?: string, cwd = process.cwd()) {
+  const tsxLoader = pathToFileURL(resolve('node_modules/tsx/dist/loader.mjs')).href
+  return spawnSync(process.execPath, ['--import', tsxLoader, resolve('src/index.ts'), ...args], {
+    cwd,
     input,
     encoding: 'utf8',
   })
@@ -280,4 +285,44 @@ test('CLI "hook status" exits 1 when no agentguard hook is installed', () => {
   assert.equal(result.stdout, '')
   assert.match(result.stderr, /not installed/)
   assert.match(result.stderr, /pre-commit/)
+})
+
+test('CLI "hook status --json" exits 1 and prints missing-hook JSON when no hook is installed', () => {
+  const repoDir = mkdtempSync(join(tmpdir(), 'agentguard-hook-json-'))
+  try {
+    const init = spawnSync('git', ['init'], { cwd: repoDir, encoding: 'utf8' })
+    assert.equal(init.status, 0, init.stderr)
+
+    const result = runCli(['hook', 'status', '--json'], undefined, repoDir)
+    assert.equal(result.status, 1)
+    assert.equal(result.stderr, '')
+    assert.deepEqual(JSON.parse(result.stdout), {
+      installed: false,
+      path: '.git/hooks/pre-commit',
+      reason: 'missing',
+    })
+  } finally {
+    rmSync(repoDir, { recursive: true, force: true })
+  }
+})
+
+test('CLI "hook status --json" exits 0 and prints installed-hook JSON when managed hook exists', () => {
+  const repoDir = mkdtempSync(join(tmpdir(), 'agentguard-hook-json-installed-'))
+  try {
+    const init = spawnSync('git', ['init'], { cwd: repoDir, encoding: 'utf8' })
+    assert.equal(init.status, 0, init.stderr)
+    const install = runCli(['hook', 'install'], undefined, repoDir)
+    assert.equal(install.status, 0, install.stderr)
+
+    const result = runCli(['hook', 'status', '--json'], undefined, repoDir)
+    assert.equal(result.status, 0)
+    assert.equal(result.stderr, '')
+    assert.deepEqual(JSON.parse(result.stdout), {
+      installed: true,
+      path: '.git/hooks/pre-commit',
+      reason: 'managed',
+    })
+  } finally {
+    rmSync(repoDir, { recursive: true, force: true })
+  }
 })

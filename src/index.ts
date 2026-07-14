@@ -467,6 +467,7 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
 } else if (rawArgs[0] === 'hook') {
   const sub = rawArgs[1]
   if (sub !== 'install' && sub !== 'uninstall' && sub !== 'status') usage()
+  const json = sub === 'status' && rawArgs[2] === '--json'
   const gitDirResult = spawnSync('git', ['rev-parse', '--git-dir'], { encoding: 'utf8' })
   if (gitDirResult.status !== 0) {
     console.error('agentguard hook: not inside a git repository')
@@ -494,6 +495,10 @@ if (shouldLaunchRepl(rawArgs, Boolean(process.stdin.isTTY), Boolean(process.stdo
     process.exit(0)
   } else if (sub === 'status') {
     const result = inspectHookStatus(io)
+    if (json) {
+      console.log(JSON.stringify(result))
+      process.exit(result.installed ? 0 : 1)
+    }
     console.error(
       result.installed
         ? `agentguard: pre-commit hook installed at ${result.path}`

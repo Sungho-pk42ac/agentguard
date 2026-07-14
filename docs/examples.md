@@ -264,6 +264,8 @@ For a Korean-first third-party agent scanner due-diligence card that explains co
 
 For a Korean-first emergency stop runbook that maps `BLOCK`/`REVIEW` evidence to rollout pause, recovery action, exact rerun command, and resume condition, see [AX emergency stop runbook](ax-emergency-stop-runbook.md).
 
+For a Korean-first permission-mode exception queue that maps Codex/Claude Code/Cursor/MCP tool permission requests to exact AgentGuard evidence commands and approval owners, see [AX agent permission exception queue](ax-agent-permission-exception-queue.md).
+
 ## SARIF
 
 ```bash

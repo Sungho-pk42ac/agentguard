@@ -18,6 +18,7 @@ const publicReferenceUrls = [
   'https://www.proof-layer.com/',
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
+  'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
 ] as const
 
@@ -124,6 +125,10 @@ test('AX public scanner signal refresh ledger is Korean-first and maps source si
     'state mismatch',
     'trusted redirect URI',
     'authorization',
+    'least privilege',
+    'explicit user consent',
+    'token passthrough',
+    'Security Best Practices',
     'SARIF artifact',
     'source-of-record',
     'approval gate',

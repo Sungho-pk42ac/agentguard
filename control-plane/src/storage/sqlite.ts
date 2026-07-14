@@ -136,6 +136,7 @@ interface McpCatalogRow {
 
 export class SqliteStorage implements StoragePort {
   private readonly db: DatabaseSync
+  private nextIngestNoncePruneAt = 0
 
   constructor(path = ':memory:') {
     this.db = new DatabaseSync(path)
@@ -162,6 +163,11 @@ export class SqliteStorage implements StoragePort {
         id INTEGER PRIMARY KEY AUTOINCREMENT, org_id TEXT NOT NULL, asset_id TEXT NOT NULL,
         received_at INTEGER NOT NULL, finding_count INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS ingest_nonces (
+        org_id TEXT NOT NULL, asset_id TEXT NOT NULL, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL,
+        PRIMARY KEY (org_id, asset_id, nonce)
+      );
+      CREATE INDEX IF NOT EXISTS ingest_nonces_expires_at_idx ON ingest_nonces (expires_at);
       CREATE TABLE IF NOT EXISTS enrollment_codes (
         org_id TEXT NOT NULL, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL,
         PRIMARY KEY (org_id, code_hash)
@@ -316,6 +322,18 @@ export class SqliteStorage implements StoragePort {
     this.db
       .prepare(`INSERT INTO ingest_events (org_id, asset_id, received_at, finding_count) VALUES (?, ?, ?, ?)`)
       .run(event.orgId, event.assetId, event.receivedAt, event.findingCount)
+  }
+
+  async consumeIngestNonce(orgId: string, assetId: string, nonce: string, expiresAt: number, now: number): Promise<boolean> {
+    if (now >= this.nextIngestNoncePruneAt) {
+      this.nextIngestNoncePruneAt = now + 60_000
+      this.db.prepare(`DELETE FROM ingest_nonces WHERE expires_at <= ?`).run(now)
+    }
+    this.db.prepare(`DELETE FROM ingest_nonces WHERE org_id = ? AND asset_id = ? AND nonce = ? AND expires_at <= ?`).run(orgId, assetId, nonce, now)
+    const result = this.db
+      .prepare(`INSERT OR IGNORE INTO ingest_nonces (org_id, asset_id, nonce, expires_at) VALUES (?, ?, ?, ?)`)
+      .run(orgId, assetId, nonce, expiresAt) as unknown as { changes?: number }
+    return (result.changes ?? 0) > 0
   }
 
   async alertExists(orgId: string, fingerprint: string): Promise<boolean> {

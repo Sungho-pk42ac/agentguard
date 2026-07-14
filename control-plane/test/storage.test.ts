@@ -85,6 +85,16 @@ for (const [name, make] of impls) {
     await s.close()
   })
 
+  test(`${name}: ingest nonce is single-use per org+asset and expiry-pruned`, async () => {
+    const s = await make()
+    assert.equal(await s.consumeIngestNonce('orgA', 'a1', 'nonce-1', 1000, 500), true)
+    assert.equal(await s.consumeIngestNonce('orgA', 'a1', 'nonce-1', 1000, 500), false, 'same org+asset+nonce is single-use')
+    assert.equal(await s.consumeIngestNonce('orgA', 'a2', 'nonce-1', 1000, 500), true, 'asset scope is isolated')
+    assert.equal(await s.consumeIngestNonce('orgB', 'a1', 'nonce-1', 1000, 500), true, 'org scope is isolated')
+    assert.equal(await s.consumeIngestNonce('orgA', 'a1', 'nonce-1', 2000, 1500), true, 'expired nonce entry is pruned and can be reused')
+    await s.close()
+  })
+
   test(`${name}: enrollment code is single-use and expiry-checked`, async () => {
     const s = await make()
     const hash = createHash('sha256').update('CODE-123').digest('hex')

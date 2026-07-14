@@ -38,6 +38,16 @@ function timingSafeStringEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB)
 }
 
+function ingestNonce(headers: Record<string, string>): { nonce?: string; malformed: boolean } {
+  const rawValue = (headers as Record<string, unknown>)['x-agentguard-nonce'] ?? (headers as Record<string, unknown>)['x-agentguard-jti']
+  if (rawValue === undefined) return { malformed: false }
+  if (typeof rawValue !== 'string') return { malformed: true }
+  const value = rawValue
+  const trimmed = value.trim()
+  if (trimmed.length === 0 || trimmed.length > 256) return { malformed: true }
+  return { nonce: trimmed, malformed: false }
+}
+
 /** Verify the request is from the bound asset (device-token HMAC or OIDC bearer). */
 function authenticate(asset: AssetRecord, headers: Record<string, string>, rawBody: string, ts: number, oidc: OidcVerifier): boolean {
   const signature = headers['x-agentguard-signature']
@@ -106,6 +116,13 @@ export async function handleReport(rawBody: string, headers: Record<string, stri
   if (redaction.leak) {
     // Loud reject; nothing is stored.
     return { status: 422, json: { error: 'server redaction check failed', field: redaction.field } }
+  }
+
+  const { nonce, malformed: malformedNonce } = ingestNonce(headers)
+  if (malformedNonce) return { status: 400, json: { error: 'invalid replay nonce' } }
+  if (nonce !== undefined) {
+    const consumed = await deps.storage.consumeIngestNonce(orgId, headerAsset, nonce, now + windowSec * 1000, now)
+    if (!consumed) return { status: 409, json: { error: 'replay nonce already used' } }
   }
 
   for (const finding of payload.findings) {

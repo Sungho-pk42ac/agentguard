@@ -124,6 +124,8 @@ For a Korean-first public scanner freshness scorecard that maps current public s
 
 For a Korean-first AX CI evidence handoff from company problem to split CI step, preserved artifact, and reviewer approval condition, see [AX CI evidence handoff card](ax-ci-evidence-handoff-card.md).
 
+For a Korean-first GitHub Action output routing contract that maps `finding-count`, `review-count`, and `block-count` to AX approval owners and branch-protection decisions, see [AX GitHub Action output routing](github-action.md#ax-approval-output-routing).
+
 For a Korean-first public-reference-to-command routing card with exact fixture-backed evidence commands, see [AX reference command routing card](ax-reference-command-routing-card.md).
 
 For a Korean-first public signal to exact proof command queue with next artifact decisions, see [AX public signal-to-proof queue](ax-public-signal-to-proof-queue.md).

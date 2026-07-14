@@ -47,6 +47,7 @@ export interface StoragePort {
 
   // ── ingest audit ──
   recordIngest(event: IngestEventRecord): Promise<void>
+  consumeIngestNonce(orgId: string, assetId: string, nonce: string, expiresAt: number, now: number): Promise<boolean>
 
   // ── alerts (dedup keyed on (orgId, fingerprint)) ──
   alertExists(orgId: string, fingerprint: string): Promise<boolean>

@@ -30,6 +30,7 @@ export class MemoryStorage implements StoragePort {
   private readonly findings = new Map<string, FindingRecord>()
   private readonly alerts = new Map<string, AlertRecord>()
   private readonly ingests: IngestEventRecord[] = []
+  private readonly ingestNonces = new Map<string, number>()
   private readonly codes = new Map<string, number>()
   private readonly oidcGrants = new Set<string>()
   private readonly orgs = new Map<string, OrgRecord>()
@@ -47,6 +48,7 @@ export class MemoryStorage implements StoragePort {
   private readonly cveCache = new Map<string, CveCacheRecord>()
   private readonly mcpCatalog = new Map<string, McpCatalogEntry[]>()
   private readonly mcpStrictMode = new Map<string, boolean>()
+  private nextIngestNoncePruneAt = 0
 
   private assetKey(orgId: string, assetId: string): string {
     return `${orgId}\u0000${assetId}`
@@ -56,6 +58,9 @@ export class MemoryStorage implements StoragePort {
   }
   private alertKey(orgId: string, fingerprint: string): string {
     return `${orgId}\u0000${fingerprint}`
+  }
+  private ingestNonceKey(orgId: string, assetId: string, nonce: string): string {
+    return `${orgId}\u0000${assetId}\u0000${nonce}`
   }
 
   async createAsset(asset: AssetRecord): Promise<void> {
@@ -100,6 +105,20 @@ export class MemoryStorage implements StoragePort {
 
   async recordIngest(event: IngestEventRecord): Promise<void> {
     this.ingests.push({ ...event })
+  }
+
+  async consumeIngestNonce(orgId: string, assetId: string, nonce: string, expiresAt: number, now: number): Promise<boolean> {
+    if (now >= this.nextIngestNoncePruneAt) {
+      this.nextIngestNoncePruneAt = now + 60_000
+      for (const [key, expiry] of this.ingestNonces) {
+        if (expiry <= now) this.ingestNonces.delete(key)
+      }
+    }
+    const key = this.ingestNonceKey(orgId, assetId, nonce)
+    const existingExpiry = this.ingestNonces.get(key)
+    if (existingExpiry !== undefined && existingExpiry > now) return false
+    this.ingestNonces.set(key, expiresAt)
+    return true
   }
 
   async alertExists(orgId: string, fingerprint: string): Promise<boolean> {

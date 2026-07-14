@@ -48,6 +48,7 @@ import type { StoragePort, UpsertFindingResult } from './port.js'
 
 export interface PgQueryResult<T> {
   readonly rows: T[]
+  readonly rowCount?: number | null
 }
 
 export interface PgQueryable {
@@ -131,6 +132,11 @@ CREATE TABLE IF NOT EXISTS findings.ingest_events (
   id BIGSERIAL PRIMARY KEY, org_id TEXT NOT NULL, asset_id TEXT NOT NULL,
   received_at BIGINT NOT NULL, finding_count INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS findings.ingest_nonces (
+  org_id TEXT NOT NULL, asset_id TEXT NOT NULL, nonce TEXT NOT NULL, expires_at BIGINT NOT NULL,
+  PRIMARY KEY (org_id, asset_id, nonce)
+);
+CREATE INDEX IF NOT EXISTS ingest_nonces_expires_at_idx ON findings.ingest_nonces (expires_at);
 CREATE TABLE IF NOT EXISTS findings.policies (
   org_id TEXT PRIMARY KEY, rules_version INTEGER NOT NULL, rules TEXT NOT NULL, exceptions_version INTEGER NOT NULL
 );
@@ -179,11 +185,9 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA auth, findings TO agentguard_api;
 `
 
 export class PostgresStorage implements StoragePort {
-  private readonly db: PgQueryable
+  private nextIngestNoncePruneAt = 0
 
-  constructor(db: PgQueryable) {
-    this.db = db
-  }
+  constructor(private readonly db: PgQueryable) {}
 
   /** Idempotent: creates both schemas + all tables if they do not exist yet. */
   async migrate(): Promise<void> {
@@ -275,6 +279,28 @@ export class PostgresStorage implements StoragePort {
       event.receivedAt,
       event.findingCount,
     ])
+  }
+
+  async consumeIngestNonce(orgId: string, assetId: string, nonce: string, expiresAt: number, now: number): Promise<boolean> {
+    if (now >= this.nextIngestNoncePruneAt) {
+      this.nextIngestNoncePruneAt = now + 60_000
+      await this.exec(`DELETE FROM findings.ingest_nonces WHERE expires_at <= $1`, [now])
+    }
+    await this.exec(
+      `DELETE FROM findings.ingest_nonces WHERE org_id = $1 AND asset_id = $2 AND nonce = $3 AND expires_at <= $4`,
+      [orgId, assetId, nonce, now],
+    )
+    try {
+      await this.exec(
+        `INSERT INTO findings.ingest_nonces (org_id, asset_id, nonce, expires_at) VALUES ($1,$2,$3,$4)`,
+        [orgId, assetId, nonce, expiresAt],
+      )
+      return true
+    } catch (error) {
+      const err = error as { code?: string; message?: string }
+      if (err.code === '23505' || /duplicate|unique/i.test(err.message ?? '')) return false
+      throw error
+    }
   }
 
   // ── alerts ──

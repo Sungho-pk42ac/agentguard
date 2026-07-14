@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { performance } from 'node:perf_hooks'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -86,7 +86,9 @@ for (const check of checks) {
     artifact: relativeArtifactPath(artifactPath),
     sourceSha256: sha256File(sourcePath),
     artifactSha256: sha256File(artifactPath),
-    ...(check.policyPath ? { policySha256: sha256File(repoPath(check.policyPath)) } : {}),
+    sourceBytes: byteSize(sourcePath),
+    artifactBytes: byteSize(artifactPath),
+    ...(check.policyPath ? { policySha256: sha256File(repoPath(check.policyPath)), policyBytes: byteSize(repoPath(check.policyPath)) } : {}),
     ruleIds: [...ruleIds].sort(),
   })
 }
@@ -118,6 +120,8 @@ manifest.push({
   artifact: relativeArtifactPath(sarifPath),
   sourceSha256: sha256File(repoPath(prDiffInputPath)),
   artifactSha256: sha256File(sarifPath),
+  sourceBytes: byteSize(repoPath(prDiffInputPath)),
+  artifactBytes: byteSize(sarifPath),
   ruleIds: [...sarifRuleIds].sort(),
 })
 
@@ -188,6 +192,14 @@ function repoPath(path) {
 
 function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
+}
+
+function byteSize(path) {
+  const stat = statSync(path)
+  if (!stat.isFile()) {
+    fail(`Expected a regular file for byte-size provenance: ${path}`)
+  }
+  return stat.size
 }
 
 function summarizeChecks(checks) {

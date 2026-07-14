@@ -46,6 +46,18 @@ node dist/index.js scan-diff --sarif --out .agentguard-demo/public-scanner-signa
 npm run smoke:ax-demo
 ```
 
+## Smoke expectation contract
+
+이 표는 public reference refresh가 말로 끝나지 않고, reviewer가 fresh clone에서 같은 evidence lane을 재생할 때 기대해야 하는 최소 smoke 계약입니다. Expected exit가 non-zero인 row는 위험 fixture를 의도적으로 재생하는 것이며, 실패가 아니라 `BLOCK`/`REVIEW` evidence를 보존하는 조건입니다.
+
+| Evidence lane | Smoke expectation | Source fixture | Reviewer artifact |
+|---|---|---|---|
+| PR diff | Expected exit: `1`; Expected verdict: `REVIEW`; Expected command: `node dist/index.js scan-diff < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff`; expected rules include `generic-secret-assignment`, `denied-command`. | `examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | Markdown/JSON stdout captured by reviewer or by `npm run smoke:ax-demo`. |
+| MCP config | Expected exit: `1`; Expected verdict: `BLOCK`; Expected command: `node dist/index.js scan-mcp < examples/enterprise-scenarios/commerce-voc-agent/risky-mcp.json`; expected rules include `mcp-filesystem-wide-root`, `mcp-env-token`. | `examples/enterprise-scenarios/commerce-voc-agent/risky-mcp.json` | Static config evidence only; no runtime MCP compatibility or OAuth/session claim. |
+| transcript/log | Expected exit: `0`; Expected verdict: `REVIEW`; Expected command: `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log`; expected policy evidence includes `denied-command`. | `examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log` plus `examples/agent-policy.yaml` | Reviewer approval note that a human owner must resolve the risky operation. |
+| SARIF artifact | Expected exit: `1`; Expected verdict: `REVIEW`; Expected artifact: `.agentguard-demo/public-scanner-signal-refresh.sarif`; Expected command: `node dist/index.js scan-diff --sarif --out .agentguard-demo/public-scanner-signal-refresh.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff`. | `examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | SARIF `2.1.0` handoff file for reviewer-owned upload/archive, not automatic GitHub upload. |
+| smoke manifest | Expected command: `npm run smoke:ax-demo`; Expected artifact: `.agentguard-demo/ax-evidence-smoke/manifest.json`; Expected manifest fields: `schemaVersion`, `gitCommitSha`, `sourceSha256`, `artifactSha256`, `summary`, `checks[]`. | `scripts/ax-demo-smoke.mjs` plus the fixture paths above | Expected source-of-record rule: rerun before handoff if source fixture, artifact, build output, or evidence directory changes. |
+
 Fixture paths protected by this ledger:
 
 - `examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff`

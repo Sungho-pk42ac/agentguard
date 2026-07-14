@@ -168,6 +168,32 @@ test('AX public scanner signal refresh ledger uses exact fixture-backed commands
   }
 })
 
+test('AX public scanner signal refresh ledger states smoke expectations for each evidence lane', () => {
+  const ledgerDoc = readLedgerDoc()
+
+  assert.match(ledgerDoc, /^## Smoke expectation contract$/m)
+  for (const expectation of [
+    'Expected exit: `1`',
+    'Expected exit: `0`',
+    'Expected verdict: `REVIEW`',
+    'Expected verdict: `BLOCK`',
+    'Expected artifact: `.agentguard-demo/public-scanner-signal-refresh.sarif`',
+    'Expected artifact: `.agentguard-demo/ax-evidence-smoke/manifest.json`',
+    'Expected manifest fields: `schemaVersion`, `gitCommitSha`, `sourceSha256`, `artifactSha256`, `summary`, `checks[]`',
+    'Expected source-of-record rule: rerun before handoff if source fixture, artifact, build output, or evidence directory changes',
+  ] as const) {
+    expectLiteral(ledgerDoc, expectation)
+  }
+
+  for (const rowLabel of ['PR diff', 'MCP config', 'transcript/log', 'SARIF artifact', 'smoke manifest'] as const) {
+    assert.match(
+      ledgerDoc,
+      new RegExp(`\\|\\s*${escapeRegExp(rowLabel)}\\s*\\|[^\\n]+Expected (?:exit|command)`),
+      `${rowLabel} should have a smoke expectation table row`,
+    )
+  }
+})
+
 test('AX public scanner signal refresh ledger preserves English-compatible machine contracts', () => {
   const ledgerDoc = readLedgerDoc()
 

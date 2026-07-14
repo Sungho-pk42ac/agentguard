@@ -150,6 +150,7 @@ writeFileSync(
       packageVersion,
       repositoryUrl: repositoryOriginUrl(),
       gitCommitSha: currentGitCommitSha(),
+      gitBranch: currentGitBranch(),
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
@@ -284,6 +285,29 @@ function currentGitCommitSha() {
   const sha = result.stdout.trim()
   ensure(/^[0-9a-f]{40}$/.test(sha), `git commit SHA must be a 40-character lowercase hex SHA, got: ${sha}`)
   return sha
+}
+
+function currentGitBranch() {
+  const result = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  })
+  if (result.error) {
+    const message = result.error instanceof Error ? result.error.message : String(result.error)
+    fail(`git branch could not be read: ${message}`)
+  }
+  if (result.status !== 0) {
+    fail(`git branch could not be read. stderr=${result.stderr}`)
+  }
+
+  const branch = result.stdout.trim()
+  const branchOrRef = branch && branch !== 'HEAD' ? branch : process.env.GITHUB_REF_NAME?.trim()
+  ensure(typeof branchOrRef === 'string' && branchOrRef.length > 0, 'git branch/ref name must be non-empty')
+  ensure(
+    /^[A-Za-z0-9._\/-]+$/.test(branchOrRef),
+    `git branch/ref name must contain only safe reviewer-handoff characters, got: ${branchOrRef}`,
+  )
+  return branchOrRef
 }
 
 function parseFindings(stdout, surface) {

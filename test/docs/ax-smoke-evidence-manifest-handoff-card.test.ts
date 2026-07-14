@@ -143,6 +143,7 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'summary',
     'evidenceDirectory',
     'repositoryUrl',
+    'gitBranch',
     'total',
     'pass',
     'review',

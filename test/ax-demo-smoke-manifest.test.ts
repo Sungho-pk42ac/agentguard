@@ -47,6 +47,19 @@ function expectedRepositoryUrl(): string {
   }
 }
 
+function expectedGitBranch(): string {
+  const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    timeout: 10_000,
+  }).trim()
+  if (branch && branch !== 'HEAD') return branch
+
+  const refName = process.env.GITHUB_REF_NAME?.trim()
+  assert.ok(refName, 'detached HEAD smoke evidence should provide GITHUB_REF_NAME')
+  return refName
+}
+
 type SmokeManifest = {
   readonly schemaVersion: string
   readonly runId?: string
@@ -61,6 +74,7 @@ type SmokeManifest = {
   readonly packageVersion?: string
   readonly repositoryUrl?: string
   readonly gitCommitSha: string
+  readonly gitBranch?: string
   readonly nodeVersion: string
   readonly platform: string
   readonly arch: string
@@ -185,6 +199,16 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       'manifest repositoryUrl should point at a GitHub AgentGuard repository origin without parsing prose docs',
     )
     assert.match(manifest.gitCommitSha ?? '', /^[0-9a-f]{40}$/, 'manifest should record the git commit SHA used for smoke evidence')
+    assert.equal(
+      manifest.gitBranch,
+      expectedGitBranch(),
+      'manifest should record the git branch/ref that produced the smoke evidence',
+    )
+    assert.match(
+      manifest.gitBranch ?? '',
+      /^[A-Za-z0-9._\/-]+$/,
+      'manifest gitBranch should be a safe branch/ref string for reviewer handoff',
+    )
     assert.equal(manifest.nodeVersion, process.version, 'manifest should record the exact Node.js runtime version')
     assert.match(manifest.nodeVersion ?? '', /^v\d+\.\d+\.\d+/, 'manifest nodeVersion should be a safe Node semver string')
     assert.equal(manifest.platform, process.platform, 'manifest should record the exact Node.js platform')

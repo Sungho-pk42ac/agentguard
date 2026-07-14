@@ -60,6 +60,15 @@ function expectedGitBranch(): string {
   return refName
 }
 
+function expectedGitTreeState(): 'clean' | 'dirty' {
+  const porcelain = execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    timeout: 10_000,
+  }).trim()
+  return porcelain.length === 0 ? 'clean' : 'dirty'
+}
+
 type SmokeManifest = {
   readonly schemaVersion: string
   readonly runId?: string
@@ -75,6 +84,7 @@ type SmokeManifest = {
   readonly repositoryUrl?: string
   readonly gitCommitSha: string
   readonly gitBranch?: string
+  readonly gitTreeState?: 'clean' | 'dirty'
   readonly nodeVersion: string
   readonly platform: string
   readonly arch: string
@@ -209,6 +219,12 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       /^[A-Za-z0-9._\/-]+$/,
       'manifest gitBranch should be a safe branch/ref string for reviewer handoff',
     )
+    assert.equal(
+      manifest.gitTreeState,
+      expectedGitTreeState(),
+      'manifest should record whether tracked source files were clean or dirty when smoke evidence was produced',
+    )
+    assert.match(manifest.gitTreeState ?? '', /^(clean|dirty)$/, 'manifest gitTreeState should be clean or dirty')
     assert.equal(manifest.nodeVersion, process.version, 'manifest should record the exact Node.js runtime version')
     assert.match(manifest.nodeVersion ?? '', /^v\d+\.\d+\.\d+/, 'manifest nodeVersion should be a safe Node semver string')
     assert.equal(manifest.platform, process.platform, 'manifest should record the exact Node.js platform')

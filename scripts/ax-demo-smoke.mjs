@@ -151,6 +151,7 @@ writeFileSync(
       repositoryUrl: repositoryOriginUrl(),
       gitCommitSha: currentGitCommitSha(),
       gitBranch: currentGitBranch(),
+      gitTreeState: currentGitTreeState(),
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
@@ -308,6 +309,21 @@ function currentGitBranch() {
     `git branch/ref name must contain only safe reviewer-handoff characters, got: ${branchOrRef}`,
   )
   return branchOrRef
+}
+
+function currentGitTreeState() {
+  const result = spawnSync('git', ['status', '--porcelain', '--untracked-files=no'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  })
+  if (result.error) {
+    const message = result.error instanceof Error ? result.error.message : String(result.error)
+    fail(`git tree state could not be read: ${message}`)
+  }
+  if (result.status !== 0) {
+    fail(`git tree state could not be read. stderr=${result.stderr}`)
+  }
+  return result.stdout.trim().length === 0 ? 'clean' : 'dirty'
 }
 
 function parseFindings(stdout, surface) {

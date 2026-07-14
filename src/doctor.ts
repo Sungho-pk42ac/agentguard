@@ -25,6 +25,7 @@ interface DoctorJsonOutput {
   readonly schemaVersion: 1
   readonly tool: 'agentguard'
   readonly status: 'PASS' | 'FAIL'
+  readonly generatedAt: string
   readonly checks: readonly DoctorCheck[]
   readonly summary: {
     readonly total: number
@@ -44,6 +45,7 @@ export function runDoctor(lang: DoctorLanguage = 'ko', options: DoctorOptions = 
       schemaVersion: 1,
       tool: 'agentguard',
       status: exitCode === 0 ? 'PASS' : 'FAIL',
+      generatedAt: new Date().toISOString(),
       checks,
       summary: {
         total: checks.length,

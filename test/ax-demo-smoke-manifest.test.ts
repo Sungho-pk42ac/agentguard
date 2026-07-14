@@ -23,6 +23,30 @@ function isPathInside(basePath: string, candidatePath: string): boolean {
   return relativePath.length > 0 && !relativePath.startsWith('..') && !isAbsolute(relativePath)
 }
 
+function expectedRepositoryUrl(): string {
+  try {
+    return execFileSync('git', ['config', '--get', 'remote.origin.url'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      timeout: 10_000,
+    }).trim()
+  } catch {
+    const remoteConfig = execFileSync('git', ['config', '--get-regexp', '^remote\\..*\\.url$'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      timeout: 10_000,
+    })
+    const firstRemoteLine = remoteConfig
+      .split('\n')
+      .map((line) => line.trim())
+      .find(Boolean)
+    assert.ok(firstRemoteLine, 'test repository should have at least one git remote URL')
+    const url = firstRemoteLine.slice(firstRemoteLine.indexOf(' ') + 1).trim()
+    assert.ok(url && url !== firstRemoteLine, 'test repository remote URL should be non-empty')
+    return url
+  }
+}
+
 type SmokeManifest = {
   readonly schemaVersion: string
   readonly runId?: string
@@ -32,6 +56,7 @@ type SmokeManifest = {
   readonly cliPath?: string
   readonly cliSha256?: string
   readonly packageVersion?: string
+  readonly repositoryUrl?: string
   readonly gitCommitSha: string
   readonly nodeVersion: string
   readonly platform: string
@@ -119,6 +144,17 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     assert.equal(manifest.cliPath, 'dist/index.js', 'manifest should name the built CLI artifact used for the smoke')
     assert.match(manifest.cliSha256 ?? '', hexSha256, 'manifest cliSha256 should be lowercase SHA-256 hex')
     assert.match(manifest.packageVersion ?? '', /^\d+\.\d+\.\d+/, 'manifest should record package.json version')
+    const expectedRemoteUrl = expectedRepositoryUrl()
+    assert.equal(
+      manifest.repositoryUrl,
+      expectedRemoteUrl,
+      'manifest should record the repository remote URL that produced this evidence bundle',
+    )
+    assert.match(
+      manifest.repositoryUrl ?? '',
+      /^(?:https:\/\/github\.com\/[^/\s]+\/agentguard(?:\.git)?\/?|git@github\.com:[^/\s]+\/agentguard(?:\.git)?|ssh:\/\/git@github\.com\/[^/\s]+\/agentguard(?:\.git)?\/?)$/,
+      'manifest repositoryUrl should point at a GitHub AgentGuard repository origin without parsing prose docs',
+    )
     assert.match(manifest.gitCommitSha ?? '', /^[0-9a-f]{40}$/, 'manifest should record the git commit SHA used for smoke evidence')
     assert.equal(manifest.nodeVersion, process.version, 'manifest should record the exact Node.js runtime version')
     assert.match(manifest.nodeVersion ?? '', /^v\d+\.\d+\.\d+/, 'manifest nodeVersion should be a safe Node semver string')

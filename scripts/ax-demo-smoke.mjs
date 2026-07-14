@@ -144,6 +144,7 @@ writeFileSync(
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),
       packageVersion,
+      repositoryUrl: repositoryOriginUrl(),
       gitCommitSha: currentGitCommitSha(),
       nodeVersion: process.version,
       platform: process.platform,
@@ -226,6 +227,42 @@ function smokeRunId() {
     return configuredRunId
   }
   return `ax-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID()}`
+}
+
+function repositoryOriginUrl() {
+  const originResult = spawnSync('git', ['config', '--get', 'remote.origin.url'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  })
+  if (originResult.error) {
+    const message = originResult.error instanceof Error ? originResult.error.message : String(originResult.error)
+    fail(`repository URL could not be read: ${message}`)
+  }
+  if (originResult.status === 0) {
+    const originUrl = originResult.stdout.trim()
+    ensure(originUrl.length > 0, 'repository origin URL must be non-empty')
+    return originUrl
+  }
+
+  const remotesResult = spawnSync('git', ['config', '--get-regexp', '^remote\\..*\\.url$'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  })
+  if (remotesResult.error) {
+    const message = remotesResult.error instanceof Error ? remotesResult.error.message : String(remotesResult.error)
+    fail(`repository URL could not be read: ${message}`)
+  }
+  if (remotesResult.status !== 0) {
+    fail(`repository URL could not be read. stderr=${originResult.stderr || remotesResult.stderr}`)
+  }
+  const firstRemoteLine = remotesResult.stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean)
+  ensure(firstRemoteLine, 'repository URL must include at least one configured git remote')
+  const url = firstRemoteLine.slice(firstRemoteLine.indexOf(' ') + 1).trim()
+  ensure(url.length > 0 && url !== firstRemoteLine, 'repository URL must be non-empty')
+  return url
 }
 
 function currentGitCommitSha() {

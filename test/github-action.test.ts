@@ -13,19 +13,35 @@ function scanRunFor(actionPath: string): string {
   return scanStep.run as string
 }
 
-function actionConclusion(actionPath: string, findings: readonly Record<string, unknown>[]): string {
+function actionComputedOutputs(actionPath: string, findings: readonly Record<string, unknown>[]): Readonly<Record<string, string>> {
   const scanRun = scanRunFor(actionPath)
-  const match = scanRun.match(/conclusion=\$\(node --input-type=module -e "([\s\S]*?)" -- "\$json_path"\)/)
-  assert.ok(match, 'action should compute conclusion from JSON findings with node -e')
+  const match = scanRun.match(/(?:conclusion|action_outputs)=\$\(node --input-type=module -e "([\s\S]*?)" -- "\$json_path"\)/)
+  assert.ok(match, 'action should compute outputs from JSON findings with node -e')
 
   const dir = mkdtempSync(join(tmpdir(), 'agentguard-action-verdict-'))
   try {
     const jsonPath = join(dir, 'findings.json')
     writeFileSync(jsonPath, JSON.stringify(findings), 'utf8')
-    return execFileSync(process.execPath, ['--input-type=module', '-e', match[1], '--', jsonPath], { encoding: 'utf8' }).trim()
+    const stdout = execFileSync(process.execPath, ['--input-type=module', '-e', match[1], '--', jsonPath], { encoding: 'utf8' }).trim()
+    const outputs: Record<string, string> = {}
+    for (const line of stdout.split(/\r?\n/)) {
+      const separator = line.indexOf('=')
+      if (separator === -1) {
+        outputs.conclusion = line
+      } else {
+        outputs[line.slice(0, separator)] = line.slice(separator + 1)
+      }
+    }
+    return outputs
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+}
+
+function actionConclusion(actionPath: string, findings: readonly Record<string, unknown>[]): string {
+  const conclusion = actionComputedOutputs(actionPath, findings).conclusion
+  assert.ok(conclusion, `${actionPath} should emit a conclusion`)
+  return conclusion
 }
 
 function packageVersionValidationExit(candidate: string): { status: number | null; stderr: string } {
@@ -137,6 +153,9 @@ test('published GitHub Action exposes a team-ready PR gate contract', () => {
   assert.equal(action.outputs['conclusion'].value, '${{ steps.scan.outputs.conclusion }}')
   assert.equal(action.outputs['report-path'].value, '${{ steps.scan.outputs.report-path }}')
   assert.equal(action.outputs['sarif-path'].value, '${{ steps.scan.outputs.sarif-path }}')
+  assert.equal(action.outputs['finding-count'].value, '${{ steps.scan.outputs.finding-count }}')
+  assert.equal(action.outputs['review-count'].value, '${{ steps.scan.outputs.review-count }}')
+  assert.equal(action.outputs['block-count'].value, '${{ steps.scan.outputs.block-count }}')
 
   const stepText = JSON.stringify(action.runs.steps)
   const scanStep = action.runs.steps.find((step: { id?: string }) => step.id === 'scan')
@@ -159,6 +178,23 @@ test('published GitHub Action exposes a team-ready PR gate contract', () => {
   assert.doesNotMatch(scanRun, /severity === 'critical'/)
   assert.ok(scanRun.includes('[[ "$conclusion" == "block" && "$fail_on" =~ ^(block|review)$ ]]'))
   assert.doesNotMatch(scanRun, /node dist\/index\.js/)
+})
+
+test('published GitHub Action computes machine-readable finding count outputs from JSON findings', () => {
+  const outputs = actionComputedOutputs('action.yml', [
+    { severity: 'low' },
+    { severity: 'medium' },
+    { severity: 'high' },
+    { severity: 'critical' },
+    { severity: 'critical', advisory: true },
+  ])
+
+  assert.deepEqual(outputs, {
+    conclusion: 'block',
+    'finding-count': '4',
+    'review-count': '2',
+    'block-count': '10',
+  })
 })
 
 test('published and local GitHub Actions reject unsafe artifact paths before file operations', () => {

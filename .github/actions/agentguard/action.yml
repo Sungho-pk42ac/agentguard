@@ -222,7 +222,9 @@ runs:
           printf '%s\n' "$action_outputs"
         } >> "$GITHUB_OUTPUT"
 
-        cat "$report_path" >> "$GITHUB_STEP_SUMMARY"
+        if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+          cat "$report_path" >> "$GITHUB_STEP_SUMMARY"
+        fi
 
         if [[ "$conclusion" == "block" && "$fail_on" =~ ^(block|review)$ ]]; then
           echo "AgentGuard found BLOCK findings; failing this check." >&2

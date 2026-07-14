@@ -30,7 +30,7 @@ test('GitHub Action docs include AX output routing contract', () => {
   }
 
   assert.match(doc, /finding-count[\s\S]*total non-advisory/i)
-  assert.match(doc, /review-count[\s\S]*medium\/high/i)
+  assert.match(doc, /review-count[\s\S]*medium\/high\/critical/i)
   assert.match(doc, /block-count[\s\S]*weighted/i)
   assert.match(doc, /fail-on: block[\s\S]*does not change/i)
   assert.match(doc, /branch protection|required status check/i)

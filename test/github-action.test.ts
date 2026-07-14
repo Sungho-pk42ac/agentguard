@@ -172,10 +172,10 @@ test('published GitHub Action exposes a team-ready PR gate contract', () => {
   assert.match(scanRun, /"\$\{agentguard_cmd\[@\]\}" scan-diff "\$\{policy_args\[@\]\}" --sarif --out "\$sarif_path"/)
   assert.match(scanRun, /GITHUB_STEP_SUMMARY/)
   assert.match(scanRun, /fail_on/)
-  assert.match(scanRun, /const weight = \{ low: 1, medium: 2, high: 3, critical: 4 \}/)
+  assert.match(scanRun, /Object\.assign\(Object\.create\(null\), \{ low: 1, medium: 2, high: 3, critical: 4 \}\)/)
   assert.match(scanRun, /filter\(\(finding\) => !finding\.advisory\)/)
   assert.match(scanRun, /score >= 8/)
-  assert.doesNotMatch(scanRun, /severity === 'critical'/)
+  assert.match(scanRun, /finding\.severity === 'medium' \|\| finding\.severity === 'high' \|\| finding\.severity === 'critical'/)
   assert.ok(scanRun.includes('[[ "$conclusion" == "block" && "$fail_on" =~ ^(block|review)$ ]]'))
   assert.doesNotMatch(scanRun, /node dist\/index\.js/)
 })
@@ -192,9 +192,44 @@ test('published GitHub Action computes machine-readable finding count outputs fr
   assert.deepEqual(outputs, {
     conclusion: 'block',
     'finding-count': '4',
-    'review-count': '2',
+    'review-count': '3',
     'block-count': '10',
   })
+})
+
+test('local GitHub Action computes machine-readable finding count outputs from JSON findings', () => {
+  const outputs = actionComputedOutputs('.github/actions/agentguard/action.yml', [
+    { severity: 'low' },
+    { severity: 'medium' },
+    { severity: 'high' },
+    { severity: 'critical' },
+    { severity: 'critical', advisory: true },
+  ])
+
+  assert.deepEqual(outputs, {
+    conclusion: 'block',
+    'finding-count': '4',
+    'review-count': '3',
+    'block-count': '10',
+  })
+})
+
+test('published and local GitHub Actions ignore prototype severity names in count outputs', () => {
+  const findings = [
+    { severity: 'constructor' },
+    { severity: 'toString' },
+    { severity: '__proto__' },
+    { severity: 'medium' },
+  ]
+
+  for (const actionPath of ['action.yml', '.github/actions/agentguard/action.yml'] as const) {
+    assert.deepEqual(actionComputedOutputs(actionPath, findings), {
+      conclusion: 'review',
+      'finding-count': '4',
+      'review-count': '1',
+      'block-count': '2',
+    })
+  }
 })
 
 test('published and local GitHub Actions reject unsafe artifact paths before file operations', () => {
@@ -393,10 +428,10 @@ test('legacy local action uses the same risk-score verdict as the CLI', () => {
   assert.ok(scanStep)
   const scanRun = scanStep.run as string
 
-  assert.match(scanRun, /const weight = \{ low: 1, medium: 2, high: 3, critical: 4 \}/)
+  assert.match(scanRun, /Object\.assign\(Object\.create\(null\), \{ low: 1, medium: 2, high: 3, critical: 4 \}\)/)
   assert.match(scanRun, /filter\(\(finding\) => !finding\.advisory\)/)
   assert.match(scanRun, /score >= 8/)
-  assert.doesNotMatch(scanRun, /severity === 'critical'/)
+  assert.match(scanRun, /finding\.severity === 'medium' \|\| finding\.severity === 'high' \|\| finding\.severity === 'critical'/)
 })
 
 test('local GitHub Action exposes fail-on gate parity with the published action', () => {
@@ -408,6 +443,9 @@ test('local GitHub Action exposes fail-on gate parity with the published action'
   assert.equal(action.inputs['fail-on'].description, 'Gate threshold. Use block to fail only the score-based BLOCK verdict, review to fail any non-pass verdict, or never to report only.')
   assert.equal(action.inputs['fail-on'].required, false)
   assert.equal(action.inputs['fail-on'].default, 'block')
+  assert.equal(action.outputs['finding-count'].value, '${{ steps.scan.outputs.finding-count }}')
+  assert.equal(action.outputs['review-count'].value, '${{ steps.scan.outputs.review-count }}')
+  assert.equal(action.outputs['block-count'].value, '${{ steps.scan.outputs.block-count }}')
   assert.equal(scanStep.env.FAIL_ON, '${{ inputs.fail-on }}')
   assert.match(scanRun, /fail_on="\$FAIL_ON"/)
   assert.match(scanRun, /case "\$fail_on" in\n\s*block\|review\|never\) ;;/)
@@ -509,7 +547,7 @@ test('GitHub Action exposes PR diff report artifact/comment contract', () => {
   assert.match(stepText, /git diff/)
   assert.match(stepText, /agent-risk-report\.md/)
   assert.match(stepText, /GITHUB_STEP_SUMMARY/)
-  assert.match(stepText, /const weight = \{ low: 1, medium: 2, high: 3, critical: 4 \}/)
+  assert.match(stepText, /Object\.assign\(Object\.create\(null\), \{ low: 1, medium: 2, high: 3, critical: 4 \}\)/)
   assert.match(stepText, /filter\(\(finding\) => !finding\.advisory\)/)
   assert.ok(scanRun.includes('if [[ ! "$BASE_SHA" =~ ^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$ ]]'))
   assert.match(scanRun, /base-sha must be a 40 or 64-character commit SHA/)

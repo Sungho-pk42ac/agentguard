@@ -85,7 +85,7 @@ The reusable action exposes four machine-readable outputs so an AX Rollout Guard
 |---|---|---|
 | `conclusion` | `pass`, `review`, or `block` from the same score-based logic used by the job summary. | Use it as the required status check signal and first reviewer triage label. |
 | `finding-count` | Total non-advisory findings count. | Use it to show whether the PR still has agent/MCP/secret evidence that needs a human look before rollout. |
-| `review-count` | Medium/high non-advisory findings count. | Route these to the service owner or security reviewer for conditional approval and policy/fix notes. |
+| `review-count` | Medium/high/critical non-advisory findings count. | Route these to the service owner or security reviewer for conditional approval and policy/fix notes. |
 | `block-count` | Weighted non-advisory risk score used to decide `BLOCK`. | Route high aggregate risk to a rollout stop / remediation owner before branch protection can pass. |
 
 `fail-on: block` does not change the output meanings: it only decides whether the GitHub Action job fails. In trial mode, teams can preserve the same Markdown, JSON, SARIF, `finding-count`, `review-count`, and `block-count` artifacts while tuning branch protection or required status check policy separately. Treat the outputs as routing metadata for artifacts and reviewer decisions, not as a replacement for security review or source-of-record evidence.

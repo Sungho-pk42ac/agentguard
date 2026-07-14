@@ -48,7 +48,7 @@ outputs:
     description: Total non-advisory AgentGuard findings count.
     value: ${{ steps.scan.outputs.finding-count }}
   review-count:
-    description: Non-advisory medium/high findings count for workflow routing; conclusion remains score-based.
+    description: Non-advisory medium/high/critical findings count for workflow routing; conclusion remains score-based.
     value: ${{ steps.scan.outputs.review-count }}
   block-count:
     description: Weighted non-advisory finding score used for BLOCK routing.
@@ -206,10 +206,10 @@ runs:
         action_outputs=$(node --input-type=module -e "
           import { readFileSync } from 'node:fs'
           const findings = JSON.parse(readFileSync(process.argv[1], 'utf8'))
-          const weight = { low: 1, medium: 2, high: 3, critical: 4 }
+          const weight = Object.assign(Object.create(null), { low: 1, medium: 2, high: 3, critical: 4 })
           const nonAdvisoryFindings = findings.filter((finding) => !finding.advisory)
           const score = nonAdvisoryFindings.reduce((sum, finding) => sum + (weight[finding.severity] ?? 0), 0)
-          const reviewCount = nonAdvisoryFindings.filter((finding) => finding.severity === 'medium' || finding.severity === 'high').length
+          const reviewCount = nonAdvisoryFindings.filter((finding) => finding.severity === 'medium' || finding.severity === 'high' || finding.severity === 'critical').length
           const conclusion = score === 0 ? 'pass' : score >= 8 ? 'block' : 'review'
           console.log('conclusion=' + conclusion)
           console.log('finding-count=' + nonAdvisoryFindings.length)

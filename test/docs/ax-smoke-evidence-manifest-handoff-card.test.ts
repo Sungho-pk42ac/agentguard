@@ -151,6 +151,7 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'surface',
     'command',
     'commandArgs',
+    'cwd',
     'inputPath',
     'policyPath',
     'exitCode',

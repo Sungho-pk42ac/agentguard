@@ -55,6 +55,7 @@ type SmokeManifest = {
   readonly replayCommand: string
   readonly freshCloneSetup: readonly string[]
   readonly evidenceDirectory?: string
+  readonly generatedAt?: string
   readonly cliPath?: string
   readonly cliSha256?: string
   readonly packageVersion?: string
@@ -152,6 +153,21 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
         (check) => !check.artifact || isPathInside(resolvedEvidenceDirectory, resolveManifestPath(check.artifact)),
       ),
       'manifest artifact paths should live under the manifest evidenceDirectory source-of-record',
+    )
+    assert.match(
+      manifest.generatedAt ?? '',
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      'manifest generatedAt should record bundle-level ISO-8601 UTC freshness',
+    )
+    const manifestGeneratedAtMs = Date.parse(manifest.generatedAt ?? '')
+    assert.ok(Number.isFinite(manifestGeneratedAtMs), 'manifest generatedAt should be parseable')
+    assert.ok(
+      (manifest.checks ?? []).every((check) => Date.parse(check.startedAt ?? '') <= manifestGeneratedAtMs),
+      'manifest generatedAt should not precede per-check startedAt timestamps',
+    )
+    assert.ok(
+      (manifest.checks ?? []).every((check) => Date.parse(check.completedAt ?? '') <= manifestGeneratedAtMs),
+      'manifest generatedAt should not precede per-check completedAt timestamps',
     )
     assert.equal(manifest.cliPath, 'dist/index.js', 'manifest should name the built CLI artifact used for the smoke')
     assert.match(manifest.cliSha256 ?? '', hexSha256, 'manifest cliSha256 should be lowercase SHA-256 hex')

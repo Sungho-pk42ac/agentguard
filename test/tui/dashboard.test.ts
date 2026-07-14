@@ -5,7 +5,7 @@ import { render } from 'ink-testing-library'
 import { Dashboard } from '../../src/tui/dashboard.js'
 import { buildDashboardData, type LoadDashboardOptions, QUICK_SCOPE, PROJECT_SCOPE } from '../../src/tui/dashboard-data.js'
 import type { ResidualCredential } from '../../src/residual.js'
-import { mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -120,6 +120,24 @@ test('Baseline tab: navigate, save a snapshot, then show no drift', async () => 
   stdin.write('s') // save current scan as baseline
   assert.ok(await waitFor(lastFrame, /Saved baseline/), 'baseline should be saved')
   assert.match(lastFrame() ?? '', /No drift since the last baseline/)
+  unmount()
+})
+
+test('Baseline tab: malformed saved snapshot fails soft instead of crashing', async () => {
+  const home = mkdtempSync(join(tmpdir(), 'agentguard-dash-corrupt-baseline-'))
+  const baselineDir = join(home, '.agentguard', 'baselines')
+  mkdirSync(baselineDir, { recursive: true })
+  writeFileSync(join(baselineDir, 'dashboard.json'), '{"schemaVersion":1,"tool":"agentguard","entries":')
+
+  const { lastFrame, stdin, unmount } = render(createElement(Dashboard, { loader, onExit: () => {}, homeDir: home }))
+  assert.ok(await waitFor(lastFrame, /Findings by surface/), 'overview should load')
+  for (let i = 0; i < 4; i += 1) {
+    stdin.write('\t')
+    await delay(25)
+  }
+
+  assert.ok(await waitFor(lastFrame, /Baseline load failed/), 'malformed baseline should show recoverable load error')
+  assert.match(lastFrame() ?? '', /Press \[s\][\s\S]*new\s*baseline/)
   unmount()
 })
 

@@ -383,12 +383,21 @@ export function Dashboard(props: DashboardProps): React.ReactElement {
   // Load + diff the baseline when the Baseline tab is active (cheap sync file read).
   useEffect(() => {
     if (state.activeTab !== 'baseline' || !state.data || state.loading) return
-    const baseline = loadBaseline(BASELINE_SCAN_ID, home)
-    dispatch({
-      type: 'baseline',
-      has: baseline !== undefined,
-      diff: baseline ? diffAgainstBaseline(baseline, state.data.residuals) : null,
-    })
+    try {
+      const baseline = loadBaseline(BASELINE_SCAN_ID, home)
+      dispatch({
+        type: 'baseline',
+        has: baseline !== undefined,
+        diff: baseline ? diffAgainstBaseline(baseline, state.data.residuals) : null,
+      })
+    } catch (error) {
+      dispatch({
+        type: 'baseline',
+        has: false,
+        diff: null,
+        message: 'Baseline load failed: saved snapshot is malformed or unreadable. Press [s] to save current scan as a new baseline.',
+      })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.activeTab, state.data])
 

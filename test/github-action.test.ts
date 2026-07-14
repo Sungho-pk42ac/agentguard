@@ -568,6 +568,18 @@ test('GitHub Action exposes PR diff report artifact/comment contract', () => {
   assert.doesNotMatch(stepText, /process\.exit\(1\).*review/i)
 })
 
+test('published and local GitHub Actions guard optional job summary append', () => {
+  for (const actionPath of ['action.yml', '.github/actions/agentguard/action.yml'] as const) {
+    const scanRun = scanRunFor(actionPath)
+    const summaryGuardIndex = scanRun.indexOf('if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]')
+    assert.ok(summaryGuardIndex >= 0, `${actionPath}: job summary append should be guarded for strict-mode Bash`)
+    assert.ok(
+      summaryGuardIndex < scanRun.indexOf('cat "$report_path" >> "$GITHUB_STEP_SUMMARY"'),
+      `${actionPath}: guard should run before appending the report`,
+    )
+  }
+})
+
 test('local GitHub Action emits SARIF artifact contract', () => {
   const action = YAML.parse(readFileSync('.github/actions/agentguard/action.yml', 'utf8'))
   const scanStep = action.runs.steps.find((step: { id?: string }) => step.id === 'scan')

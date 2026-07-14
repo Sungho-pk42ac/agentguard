@@ -161,6 +161,9 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'ruleIds',
     'sourceSha256',
     'artifactSha256',
+    'sourceBytes',
+    'artifactBytes',
+    'policyBytes',
   ] as const) {
     expectLiteral(card, manifestContract)
   }
@@ -174,6 +177,9 @@ test('AX smoke evidence manifest handoff card requires hash-backed replay and fr
     'sourceSha256',
     'artifactSha256',
     'policySha256',
+    'sourceBytes',
+    'artifactBytes',
+    'policyBytes',
     'manifest hash',
     'referenced JSON/SARIF artifact hash',
     'source fixture hash',

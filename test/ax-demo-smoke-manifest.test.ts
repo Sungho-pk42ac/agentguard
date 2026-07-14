@@ -65,6 +65,9 @@ type SmokeManifestCheck = {
   readonly sourceSha256?: string
   readonly artifactSha256?: string
   readonly policySha256?: string
+  readonly sourceBytes?: number
+  readonly artifactBytes?: number
+  readonly policyBytes?: number
 }
 
 test('AX demo smoke manifest records SHA-256 provenance for source inputs and artifacts', { timeout: 120_000 }, () => {
@@ -174,6 +177,12 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
         hexSha256,
         `${check.surface ?? 'check'} artifactSha256 should be lowercase SHA-256 hex`,
       )
+      assert.equal(typeof check.sourceBytes, 'number', `${check.surface ?? 'check'} sourceBytes should be present`)
+      assert.ok(Number.isInteger(check.sourceBytes), `${check.surface ?? 'check'} sourceBytes should be an integer`)
+      assert.ok((check.sourceBytes ?? 0) > 0, `${check.surface ?? 'check'} sourceBytes should be positive`)
+      assert.equal(typeof check.artifactBytes, 'number', `${check.surface ?? 'check'} artifactBytes should be present`)
+      assert.ok(Number.isInteger(check.artifactBytes), `${check.surface ?? 'check'} artifactBytes should be an integer`)
+      assert.ok((check.artifactBytes ?? 0) > 0, `${check.surface ?? 'check'} artifactBytes should be positive`)
     }
 
     const transcriptCheck = manifest.checks.find((check) => check.surface === 'transcript-log')
@@ -183,6 +192,9 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       'transcript-log should expose the policy fixture path without parsing command text',
     )
     assert.match(transcriptCheck?.policySha256 ?? '', hexSha256, 'transcript-log policySha256 should be lowercase SHA-256 hex')
+    assert.equal(typeof transcriptCheck?.policyBytes, 'number', 'transcript-log policyBytes should be present')
+    assert.ok(Number.isInteger(transcriptCheck?.policyBytes), 'transcript-log policyBytes should be an integer')
+    assert.ok((transcriptCheck?.policyBytes ?? 0) > 0, 'transcript-log policyBytes should be positive')
 
     assert.deepEqual(
       Object.fromEntries(manifest.checks.map((check) => [check.surface, check.verdict])),

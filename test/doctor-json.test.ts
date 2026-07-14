@@ -15,6 +15,12 @@ test('CLI doctor --json prints machine-readable readiness with the text doctor e
   assert.equal(parsed['tool'], 'agentguard')
   assert.ok(parsed['status'] === 'PASS' || parsed['status'] === 'FAIL')
   assert.equal(parsed['status'], jsonResult.status === 0 ? 'PASS' : 'FAIL')
+  assert.match(
+    parsed['generatedAt'],
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+    'doctor JSON should expose a top-level ISO-8601 UTC generatedAt freshness timestamp',
+  )
+  assert.ok(!Number.isNaN(Date.parse(parsed['generatedAt'])), 'generatedAt should be parseable by Date.parse')
   assert.equal(parsed['updateCommand'], 'npm i -g @pk42ac/agentguard@latest')
   const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
   assert.equal(parsed['packageVersion'], packageJson.version)
@@ -65,6 +71,7 @@ function assertDoctorJson(value: unknown): asserts value is {
   readonly schemaVersion: number
   readonly tool: string
   readonly status: string
+  readonly generatedAt: string
   readonly checks: readonly {
     readonly id: string
     readonly label: string
@@ -83,6 +90,7 @@ function assertDoctorJson(value: unknown): asserts value is {
   assert.equal(typeof value['schemaVersion'], 'number')
   assert.equal(typeof value['tool'], 'string')
   assert.equal(typeof value['status'], 'string')
+  assert.equal(typeof value['generatedAt'], 'string')
   assert.ok(Array.isArray(value['checks']), 'doctor JSON checks should be an array')
   assert.ok(isRecord(value['summary']), 'doctor JSON summary should be an object')
   assert.equal(typeof value['summary']['total'], 'number')

@@ -44,6 +44,15 @@ outputs:
   sarif-path:
     description: Path to the SARIF AgentGuard artifact.
     value: ${{ steps.scan.outputs.sarif-path }}
+  finding-count:
+    description: Total non-advisory AgentGuard findings count.
+    value: ${{ steps.scan.outputs.finding-count }}
+  review-count:
+    description: Non-advisory medium/high findings count for workflow routing; conclusion remains score-based.
+    value: ${{ steps.scan.outputs.review-count }}
+  block-count:
+    description: Weighted non-advisory finding score used for BLOCK routing.
+    value: ${{ steps.scan.outputs.block-count }}
 runs:
   using: composite
   steps:
@@ -194,20 +203,23 @@ runs:
           exit 2
         fi
 
-        conclusion=$(node --input-type=module -e "
+        action_outputs=$(node --input-type=module -e "
           import { readFileSync } from 'node:fs'
           const findings = JSON.parse(readFileSync(process.argv[1], 'utf8'))
           const weight = { low: 1, medium: 2, high: 3, critical: 4 }
-          const score = findings
-            .filter((finding) => !finding.advisory)
-            .reduce((sum, finding) => sum + (weight[finding.severity] ?? 0), 0)
-          if (score === 0) console.log('pass')
-          else if (score >= 8) console.log('block')
-          else console.log('review')
+          const nonAdvisoryFindings = findings.filter((finding) => !finding.advisory)
+          const score = nonAdvisoryFindings.reduce((sum, finding) => sum + (weight[finding.severity] ?? 0), 0)
+          const reviewCount = nonAdvisoryFindings.filter((finding) => finding.severity === 'medium' || finding.severity === 'high').length
+          const conclusion = score === 0 ? 'pass' : score >= 8 ? 'block' : 'review'
+          console.log('conclusion=' + conclusion)
+          console.log('finding-count=' + nonAdvisoryFindings.length)
+          console.log('review-count=' + reviewCount)
+          console.log('block-count=' + score)
         " -- "$json_path")
+        conclusion=$(printf '%s\n' "$action_outputs" | sed -n 's/^conclusion=//p')
 
         {
-          echo "conclusion=$conclusion"
+          printf '%s\n' "$action_outputs"
           echo "report-path=$report_path"
           echo "json-path=$json_path"
           echo "sarif-path=$sarif_path"

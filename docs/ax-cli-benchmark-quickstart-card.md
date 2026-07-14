@@ -32,6 +32,18 @@ npm/global install 환경에서는 같은 subcommands를 `agentguard doctor`, `a
 | Sentry CLI docs - https://docs.sentry.io/cli/ | Borrow: release/artifact/CI evidence language for reviewer handoff. | Avoid: production observability, error monitoring, hosted release management, or SaaS triage claims. | Map `.agentguard-demo/ax-cli-benchmark-quickstart.sarif` to reviewer-owned artifact evidence. |
 | Snyk CLI docs - https://docs.snyk.io/snyk-cli | Borrow: remediation/rerun language and security CLI proof discipline. | Avoid: vendor-scale scanner parity, hosted remediation workflow, or broad vulnerability coverage claim. | Keep proof limited to fixture-backed local commands, rerun conditions, and honest gaps. |
 
+## Research provenance checked this run
+
+이번 refresh에서는 normal public fetch/public API paths로 확인 가능한 source만 사용했다. insane-search escalation was not required because public fallback fetches returned 200; 이 문구는 insane-search 우회 증거가 아니라 공개 경로가 충분했다는 경계 표시다.
+
+| Source path | Run status | Borrow | Avoid | AgentGuard action |
+|---|---|---|---|---|
+| https://cli.github.com/manual/ | Public HTML fetch returned 200 for GitHub CLI manual. | status/manual vocabulary, command taxonomy, self-serve help surface. | GitHub account/auth/device-flow/repo-hosting claim. | Keep `doctor → scan-* → SARIF` as local commands a reviewer can rerun without hosted account assumptions. |
+| https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/ | Public HTML fetch returned 200 for OWASP Agentic AI threats and mitigations. | agentic risk/mitigation vocabulary: tool misuse, excessive agency, human control. | OWASP endorsement, complete threat coverage, or external assurance. | Explain `scan-diff`, `scan-mcp`, and `scan-log` as stop/fix/approve evidence for an agent rollout. |
+| https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices | Public HTML fetch returned 200 for MCP Security Best Practices. | least privilege, explicit user consent, token and permission-boundary language. | Runtime OAuth/session/consent enforcement claim. | Keep `scan-mcp` positioned as static pre-rollout evidence for MCP roots, writable paths, and credential passthrough. |
+| https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github | Public HTML fetch returned 200 for GitHub SARIF upload docs. | SARIF artifact handoff, rule/result/location reviewer-channel framing. | Automatic upload, automatic triage, or GitHub-native approval claim. | Preserve `.agentguard-demo/ax-cli-benchmark-quickstart.sarif` as local reviewer handoff evidence only. |
+| https://api.github.com/repos/snyk/agent-scan | GitHub API returned 200 for Snyk agent-scan metadata. | public scanner category pressure for agent/MCP/skill scanning. | Snyk parity, vendor-scale coverage, market adoption, or replacement claim. | Use the signal to sharpen AgentGuard's Korean-first AX rollout approval story while staying fixture-backed. |
+
 ## Fixture-backed AgentGuard commands
 
 | Surface | Exact command | Fixture path | Evidence intent | Expected reviewer signal |

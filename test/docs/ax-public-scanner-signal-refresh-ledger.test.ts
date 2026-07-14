@@ -14,6 +14,7 @@ const publicReferenceUrls = [
   'https://github.com/splx-ai/agentic-radar',
   'https://github.com/affaan-m/agentshield',
   'https://www.npmjs.com/package/agent-security-scanner-mcp',
+  'https://registry.npmjs.org/agent-security-scanner-mcp',
   'https://www.proof-layer.com/',
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
@@ -96,6 +97,7 @@ test('AX public scanner signal refresh ledger is Korean-first and maps source si
     '# AX public scanner signal refresh ledger',
     '## 목적',
     '## Fresh public signals checked this run',
+    '## Research provenance for this refresh',
     '## Judge-visible action ledger',
     '## Exact evidence commands',
     '## Machine contracts',
@@ -127,6 +129,12 @@ test('AX public scanner signal refresh ledger is Korean-first and maps source si
     'approval gate',
     'unknown company problem',
     'Korean-first rollout approval',
+    '401 Invalid authentication credentials',
+    'insane-search evidence',
+    'HTTP 403',
+    'Public registry metadata returned 200',
+    'latest version `4.4.12`',
+    'category-pressure evidence',
   ] as const) {
     expectLiteral(ledgerDoc, term)
   }

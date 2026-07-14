@@ -18,6 +18,15 @@
 | [MCP Authorization spec](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization) | Authorization guidance highlights client/server trust, session, state mismatch, trusted redirect URI, and token handling. | `authorization` and token-boundary framing. | live OAuth/session/consent control wording. | Frame `scan-mcp` as static preflight evidence for approval, not a live control. |
 | [GitHub SARIF upload docs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github) | SARIF upload flow shows reviewer-facing security artifact handoff. | `SARIF artifact`, `ruleId`, and reviewer route vocabulary. | automatic upload/triage or GitHub-native product claims. | Keep `scan-diff --sarif --out` as a rerunnable artifact lane. |
 
+## Research provenance for this refresh
+
+| Source path | Run status | How to use it |
+|---|---|---|
+| Claude Code + insane-search path | Attempted, but blocked in this cron environment with `401 Invalid authentication credentials`. | Record as unavailable; do not describe the fallback research below as insane-search evidence. |
+| `https://www.npmjs.com/package/agent-security-scanner-mcp` | Direct public page fetch returned HTTP 403 from this environment. | Treat the npm web page as a visible package signal only when a browser/user can confirm it; do not infer popularity or adoption. |
+| `https://registry.npmjs.org/agent-security-scanner-mcp` | Public registry metadata returned 200 with package name `agent-security-scanner-mcp`, latest version `4.4.12`, and agent/MCP scanner category keywords. | Use only as category-pressure evidence: AI agent/MCP scanner packaging exists, so AgentGuard must show local rerunnable PR/MCP/transcript/SARIF proof rather than broad platform claims. |
+| OWASP / MCP / GitHub docs URLs above | Public HTML fetch returned 200 for the reference pages used in this ledger. | Borrow risk, authorization-boundary, and artifact-handoff vocabulary while keeping every AgentGuard claim tied to source-of-record commands. |
+
 ## Judge-visible action ledger
 
 | Company-problem signal | AgentGuard evidence lane | Approval decision sentence |

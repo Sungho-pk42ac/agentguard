@@ -13,6 +13,7 @@ const requiredHeadings = [
   '## 사용 목적',
   '## Fresh clone quickstart',
   '## Benchmark signal map',
+  '## Research provenance checked this run',
   '## Fixture-backed AgentGuard commands',
   '## Agentic guardrail evidence ladder',
   '## SARIF handoff contract',
@@ -134,6 +135,28 @@ test('AX CLI benchmark quickstart card maps five public CLI benchmarks to borrow
   ] as const) {
     expectLiteral(card, borrowedSignal)
   }
+})
+
+test('AX CLI benchmark quickstart card records public research provenance for this slice', () => {
+  const card = readCard()
+
+  assert.match(card, /\|\s*Source path\s*\|\s*Run status\s*\|\s*Borrow\s*\|\s*Avoid\s*\|\s*AgentGuard action\s*\|/)
+  for (const provenance of [
+    'Public HTML fetch returned 200 for GitHub CLI manual',
+    'Public HTML fetch returned 200 for OWASP Agentic AI threats and mitigations',
+    'Public HTML fetch returned 200 for MCP Security Best Practices',
+    'Public HTML fetch returned 200 for GitHub SARIF upload docs',
+    'GitHub API returned 200 for Snyk agent-scan metadata',
+    'insane-search escalation was not required because public fallback fetches returned 200',
+  ] as const) {
+    expectLiteral(card, provenance)
+  }
+
+  assert.match(card, /status\/manual vocabulary/i)
+  assert.match(card, /agentic risk\/mitigation vocabulary/i)
+  assert.match(card, /least privilege|explicit user consent/i)
+  assert.match(card, /SARIF artifact handoff/i)
+  assert.match(card, /public scanner category pressure/i)
 })
 
 test('AX CLI benchmark quickstart card connects agentic guardrail references to a first-minute evidence ladder', () => {

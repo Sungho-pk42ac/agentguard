@@ -116,6 +116,8 @@ For a Korean-first package provenance reviewer handoff that maps fresh clone che
 
 For a Korean-first public AI-agent/MCP scanner ecosystem triage table with Borrow/Avoid/AgentGuard action rows, see [AX public scanner ecosystem triage](ax-public-scanner-ecosystem-triage.md).
 
+For a Korean-first public reference validation card that maps OWASP/MCP/SARIF/public scanner signals to exact evidence commands and claim guardrails, see [AX public reference validation card](ax-public-reference-validation-card.md).
+
 For a Korean-first public scanner gap-to-demo checklist with exact fixture-backed PR diff, MCP, transcript/log, and SARIF commands, see [AX public scanner gap checklist](ax-public-scanner-gap-checklist.md).
 
 For a Korean-first public scanner freshness scorecard that maps current public scanner signals to exact AgentGuard PR/MCP/transcript/SARIF evidence actions, see [AX public scanner freshness scorecard](ax-public-scanner-freshness-scorecard.md).

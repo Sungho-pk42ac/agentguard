@@ -222,6 +222,7 @@ Verdicts:
 - [AX public scanner gap checklist](docs/ax-public-scanner-gap-checklist.md)
 - [AX public scanner freshness scorecard](docs/ax-public-scanner-freshness-scorecard.md)
 - [AX public scanner signal refresh ledger](docs/ax-public-scanner-signal-refresh-ledger.md)
+- [AX public reference validation card](docs/ax-public-reference-validation-card.md)
 - [AX third-party agent scanner due diligence card](docs/ax-third-party-agent-scanner-due-diligence.md)
 - [AX emergency stop runbook](docs/ax-emergency-stop-runbook.md)
 - [AX guardrail tripwire evidence card](docs/ax-guardrail-tripwire-evidence-card.md)

@@ -80,6 +80,7 @@ type SmokeManifestCheck = {
   readonly surface?: string
   readonly command?: string
   readonly commandArgs?: readonly string[]
+  readonly cwd?: string
   readonly inputPath?: string
   readonly policyPath?: string
   readonly exitCode?: number
@@ -212,6 +213,7 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       assert.ok(Array.isArray(check.commandArgs), `${check.surface ?? 'check'} commandArgs should stay present`)
       assert.equal(check.commandArgs?.[0], 'node', `${check.surface ?? 'check'} commandArgs should describe the node CLI runner`)
       assert.equal(check.commandArgs?.[1], 'dist/index.js', `${check.surface ?? 'check'} commandArgs should name the built CLI`)
+      assert.equal(check.cwd, '.', `${check.surface ?? 'check'} cwd should record repo-root replay working directory`)
       assert.equal(typeof check.inputPath, 'string', `${check.surface ?? 'check'} inputPath should stay present`)
       assert.equal(typeof check.exitCode, 'number', `${check.surface ?? 'check'} exitCode should stay present`)
       assert.equal(typeof check.acceptedNonZero, 'boolean', `${check.surface ?? 'check'} acceptedNonZero should stay present`)

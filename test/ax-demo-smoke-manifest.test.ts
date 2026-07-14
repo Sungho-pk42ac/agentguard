@@ -52,6 +52,8 @@ type SmokeManifest = {
   readonly runId?: string
   readonly generatedBy: string
   readonly evidencePurpose: string
+  readonly replayCommand: string
+  readonly freshCloneSetup: readonly string[]
   readonly evidenceDirectory?: string
   readonly cliPath?: string
   readonly cliSha256?: string
@@ -127,6 +129,16 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.evidencePurpose,
       'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
       'manifest should explain the reviewer-facing purpose without parsing prose docs',
+    )
+    assert.equal(
+      manifest.replayCommand,
+      'npm run smoke:ax-demo',
+      'manifest should expose the top-level command that replays this evidence bundle',
+    )
+    assert.deepEqual(
+      manifest.freshCloneSetup,
+      ['npm ci', 'npm run build'],
+      'manifest should expose fresh-clone setup steps before replaying smoke evidence',
     )
     assert.ok(manifest.evidenceDirectory, 'manifest.evidenceDirectory should be present')
     assert.equal(

@@ -81,13 +81,20 @@ function expectLiteral(content: string, value: string): void {
   assert.ok(content.includes(value), `${value} should be present`)
 }
 
-test('AX agent rollout preflight checklist exists and is linked from README', () => {
+test('AX agent rollout preflight checklist exists and is linked from public entrypoints', () => {
   assert.ok(existsSync(docPath), 'docs/ax-agent-rollout-preflight-checklist.md should exist')
 
   const rootReadme = readFileSync(join(repoRoot, 'README.md'), 'utf8')
+  const examplesDoc = readFileSync(join(repoRoot, 'docs', 'examples.md'), 'utf8')
+
   assert.ok(
     rootReadme.includes(
       '[AX agent rollout preflight checklist](docs/ax-agent-rollout-preflight-checklist.md)',
+    ),
+  )
+  assert.ok(
+    examplesDoc.includes(
+      '[AX agent rollout preflight checklist](ax-agent-rollout-preflight-checklist.md)',
     ),
   )
 })

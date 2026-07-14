@@ -139,6 +139,8 @@ writeFileSync(
       generatedBy: 'agentguard ax-demo-smoke',
       evidencePurpose:
         'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
+      replayCommand: 'npm run smoke:ax-demo',
+      freshCloneSetup: ['npm ci', 'npm run build'],
       evidenceDirectory: relativeArtifactPath(evidenceDir),
       generatedAt: new Date().toISOString(),
       cliPath: cliRelativePath,

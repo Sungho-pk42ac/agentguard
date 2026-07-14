@@ -13,8 +13,10 @@ const publicReferenceUrls = [
   'https://github.com/Tencent/AI-Infra-Guard',
   'https://github.com/splx-ai/agentic-radar',
   'https://github.com/affaan-m/agentshield',
+  'https://www.npmjs.com/package/agent-security-scanner-mcp',
+  'https://www.proof-layer.com/',
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
-  'https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization',
+  'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
 ] as const
 
@@ -114,6 +116,11 @@ test('AX public scanner signal refresh ledger is Korean-first and maps source si
     'AI infra guardrail',
     'agentic workflow scanner',
     'tool permission',
+    'agent-security-scanner-mcp',
+    'package-distribution',
+    'agent/MCP scanner category pressure',
+    'state mismatch',
+    'trusted redirect URI',
     'authorization',
     'SARIF artifact',
     'source-of-record',

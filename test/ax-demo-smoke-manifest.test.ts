@@ -83,6 +83,9 @@ type SmokeManifest = {
   readonly manifestPath?: string
   readonly requiredArtifacts?: readonly string[]
   readonly generatedAt?: string
+  readonly startedAt?: string
+  readonly completedAt?: string
+  readonly durationMs?: number
   readonly cliPath?: string
   readonly cliSha256?: string
   readonly packageVersion?: string
@@ -229,6 +232,37 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     )
     const manifestGeneratedAtMs = Date.parse(manifest.generatedAt ?? '')
     assert.ok(Number.isFinite(manifestGeneratedAtMs), 'manifest generatedAt should be parseable')
+    assert.match(
+      manifest.startedAt ?? '',
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      'manifest startedAt should record bundle-level ISO-8601 UTC start time',
+    )
+    assert.match(
+      manifest.completedAt ?? '',
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      'manifest completedAt should record bundle-level ISO-8601 UTC completion time',
+    )
+    const manifestStartedAtMs = Date.parse(manifest.startedAt ?? '')
+    const manifestCompletedAtMs = Date.parse(manifest.completedAt ?? '')
+    assert.ok(Number.isFinite(manifestStartedAtMs), 'manifest startedAt should be parseable')
+    assert.ok(Number.isFinite(manifestCompletedAtMs), 'manifest completedAt should be parseable')
+    assert.ok(manifestCompletedAtMs >= manifestStartedAtMs, 'manifest completedAt should not precede startedAt')
+    assert.equal(typeof manifest.durationMs, 'number', 'manifest durationMs should record bundle-level runtime')
+    assert.ok(Number.isInteger(manifest.durationMs), 'manifest durationMs should be an integer')
+    assert.ok((manifest.durationMs ?? -1) >= 0, 'manifest durationMs should be non-negative')
+    assert.ok(
+      (manifest.durationMs ?? -1) >= manifestCompletedAtMs - manifestStartedAtMs - 5,
+      'manifest durationMs should cover the bundle-level startedAt/completedAt wall-clock window',
+    )
+    assert.ok(
+      (manifest.checks ?? []).every((check) => Date.parse(check.startedAt ?? '') >= manifestStartedAtMs),
+      'manifest startedAt should not follow per-check startedAt timestamps',
+    )
+    assert.ok(
+      (manifest.checks ?? []).every((check) => Date.parse(check.completedAt ?? '') <= manifestCompletedAtMs),
+      'manifest completedAt should not precede per-check completedAt timestamps',
+    )
+    assert.ok(manifestGeneratedAtMs >= manifestCompletedAtMs, 'manifest generatedAt should not precede completedAt')
     assert.ok(
       (manifest.checks ?? []).every((check) => Date.parse(check.startedAt ?? '') <= manifestGeneratedAtMs),
       'manifest generatedAt should not precede per-check startedAt timestamps',

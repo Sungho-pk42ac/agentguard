@@ -74,6 +74,7 @@ type SmokeManifest = {
   readonly runId?: string
   readonly generatedBy: string
   readonly evidencePurpose: string
+  readonly producerIntent?: string
   readonly replayCommand: string
   readonly replayWorkingDirectory: string
   readonly freshCloneSetup: readonly string[]
@@ -160,6 +161,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.evidencePurpose,
       'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
       'manifest should explain the reviewer-facing purpose without parsing prose docs',
+    )
+    assert.equal(
+      manifest.producerIntent,
+      'Reviewer source-of-record handoff for rerunnable AX smoke evidence; not approval, automatic upload, certification, scanner parity, or runtime authorization/session enforcement.',
+      'manifest should state the producer intent and non-claim boundary for reviewer handoff',
     )
     assert.equal(
       manifest.replayCommand,

@@ -10,6 +10,7 @@ const ledgerDocPath = join(repoRoot, 'docs', 'ax-public-scanner-signal-refresh-l
 
 const publicReferenceUrls = [
   'https://github.com/snyk/agent-scan',
+  'https://registry.npmjs.org/agent-scan',
   'https://github.com/Tencent/AI-Infra-Guard',
   'https://github.com/splx-ai/agentic-radar',
   'https://github.com/affaan-m/agentshield',
@@ -116,6 +117,9 @@ test('AX public scanner signal refresh ledger is Korean-first and maps source si
 
   for (const term of [
     'agent/MCP server/skill scanning',
+    'Detect suspicious AI agents activities on GitHub',
+    'latest version `0.0.1`',
+    'AI-agent activity scanner package category pressure',
     'AI infra guardrail',
     'agentic workflow scanner',
     'tool permission',

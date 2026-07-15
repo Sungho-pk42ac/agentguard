@@ -262,6 +262,8 @@ For a Korean-first control-plane CI gate card that maps CLI evidence, CI status,
 
 For a Korean-first public scanner signal refresh ledger that turns current public scanner/reference cues into Borrow/Avoid/AgentGuard-action rows and exact evidence commands, see [AX public scanner signal refresh ledger](ax-public-scanner-signal-refresh-ledger.md).
 
+For a Korean-first public reference fallback provenance card that labels normal fetch, WAF/403, registry fallback, and unavailable insane-search evidence before routing it to exact AgentGuard commands, see [AX public reference fallback provenance card](ax-public-reference-fallback-provenance.md).
+
 For a Korean-first third-party agent scanner due-diligence card that explains coexistence with Snyk agent-scan, AI-Infra-Guard, agentic-radar, and SARIF handoff without parity or runtime-enforcement claims, see [AX third-party agent scanner due diligence card](ax-third-party-agent-scanner-due-diligence.md).
 
 For a Korean-first emergency stop runbook that maps `BLOCK`/`REVIEW` evidence to rollout pause, recovery action, exact rerun command, and resume condition, see [AX emergency stop runbook](ax-emergency-stop-runbook.md).

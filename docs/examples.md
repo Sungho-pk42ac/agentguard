@@ -154,6 +154,8 @@ For Korean-first POSIX, PowerShell, and GitHub Actions command variants that pre
 
 For a Korean-first quickstart card that maps public CLI benchmark signals to exact AgentGuard evidence commands, see [AX CLI benchmark quickstart card](ax-cli-benchmark-quickstart-card.md).
 
+For a Korean-first 30-second provenance check on `npm run smoke:ax-demo` manifest fields, artifact paths, hashes, and clean-tree rerun triggers, see [AX smoke provenance quickcheck](ax-smoke-provenance-quickcheck.md).
+
 For a Korean-first competition-rule compliance checklist that separates public facts, current evidence, and gated unknowns, see [AX rule compliance checklist](ax-rule-compliance-checklist.md).
 
 For a tiny Korean before/after MCP rollout approval story, see [AX before/after rollout demo](ax-before-after-rollout-demo.md).

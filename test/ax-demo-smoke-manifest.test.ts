@@ -76,6 +76,7 @@ type SmokeManifest = {
   readonly evidencePurpose: string
   readonly producerIntent?: string
   readonly replayCommand: string
+  readonly replayCommandArgs?: readonly string[]
   readonly replayWorkingDirectory: string
   readonly freshCloneSetup: readonly string[]
   readonly evidenceSurfaces?: readonly string[]
@@ -175,6 +176,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.replayCommand,
       'npm run smoke:ax-demo',
       'manifest should expose the top-level command that replays this evidence bundle',
+    )
+    assert.deepEqual(
+      manifest.replayCommandArgs,
+      ['npm', 'run', 'smoke:ax-demo'],
+      'manifest should expose machine-readable argv for replaying the whole evidence bundle',
     )
     assert.equal(
       manifest.replayWorkingDirectory,

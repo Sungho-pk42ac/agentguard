@@ -66,6 +66,17 @@ Agentic guardrail reference는 이 quickstart의 evidence ladder를 `doctor → 
 | GitHub SARIF support — https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning | Borrow: SARIF result/artifact/channel framing that reviewers can inspect. | Avoid: automatic upload, native GitHub code scanning integration, or alert triage/remediation workflow claim. | Use `.agentguard-demo/ax-cli-benchmark-quickstart.sarif` as a local reviewer handoff artifact with command and fixture path. |
 | OpenAI agents-js — https://github.com/openai/openai-agents-js | Borrow: multi-agent workflow framing that makes the upstream agent/tool workflow explicit before judging outputs. | Avoid: OpenAI runtime control, tracing, hosted guardrail, SDK compatibility, or live agent execution claim. | Keep AgentGuard as the local reviewer gate over the artifacts an agent workflow leaves behind: PR diff, MCP config, transcript/log, and SARIF. |
 
+## First-minute transcript checklist
+
+이 checklist는 AX judge가 첫 60초에 terminal transcript에서 무엇을 봐야 하는지 고정한다. GitHub CLI/Vercel CLI에서 빌린 self-serve readiness habit은 `doctor`로 시작하고, OWASP/MCP/GitHub SARIF reference에서 빌린 reviewer handoff habit은 risky evidence와 artifact lane을 분리한다. 모든 command는 fresh clone에서 `npm ci && npm run build && mkdir -p .agentguard-demo` 이후 실행한다.
+
+| Minute | What the judge sees | Exact command or artifact | Expected signal | Borrowed benchmark habit |
+|---|---|---|---|---|
+| 00:00-00:15 | readiness before risk evidence | `node dist/index.js doctor` | Local CLI readiness report; not rollout approval. | GitHub/Vercel-style status or readiness before risky operations. |
+| 00:15-00:30 | risky PR diff is reviewer evidence | `node dist/index.js scan-diff < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | `REVIEW`/`BLOCK`-style finding output tied to PR diff evidence. | OWASP-style agentic risk explanation with exact rerun command. |
+| 00:30-00:45 | MCP permission boundary is static pre-rollout evidence | `node dist/index.js scan-mcp < examples/enterprise-scenarios/commerce-voc-agent/risky-mcp.json` | Broad filesystem/env-token risk stays static evidence until an owner narrows scope. | MCP least-privilege and explicit-consent vocabulary without live runtime enforcement claims. |
+| 00:45-01:00 | SARIF handoff is an artifact lane, not automatic approval | `.agentguard-demo/ax-cli-benchmark-quickstart.sarif` from `node dist/index.js scan-diff --sarif --out .agentguard-demo/ax-cli-benchmark-quickstart.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | Reviewer-owned artifact exists for archive/upload decision; risky input may still exit non-zero. | GitHub/Sentry-style artifact handoff while avoiding automatic approval, upload, or triage claims. |
+
 ## SARIF handoff contract
 
 SARIF는 reviewer가 다시 열 수 있는 artifact evidence입니다. `--sarif --out .agentguard-demo/ax-cli-benchmark-quickstart.sarif`는 파일을 만드는 handoff path를 보여주지만, GitHub upload, alert triage, remediation closure를 자동 수행한다고 말하지 않는다.

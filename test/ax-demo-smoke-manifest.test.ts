@@ -90,6 +90,7 @@ type SmokeManifest = {
   readonly cliPath?: string
   readonly cliSha256?: string
   readonly packageVersion?: string
+  readonly npmVersion?: string
   readonly repositoryUrl?: string
   readonly gitCommitSha: string
   readonly gitBranch?: string
@@ -281,6 +282,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     assert.equal(manifest.cliPath, 'dist/index.js', 'manifest should name the built CLI artifact used for the smoke')
     assert.match(manifest.cliSha256 ?? '', hexSha256, 'manifest cliSha256 should be lowercase SHA-256 hex')
     assert.match(manifest.packageVersion ?? '', /^\d+\.\d+\.\d+/, 'manifest should record package.json version')
+    assert.match(
+      manifest.npmVersion ?? '',
+      /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/,
+      'manifest should record the npm CLI version used to replay the smoke evidence bundle',
+    )
     const expectedRemoteUrl = expectedRepositoryUrl()
     assert.equal(
       manifest.repositoryUrl,

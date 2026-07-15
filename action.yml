@@ -217,6 +217,9 @@ runs:
           console.log('block-count=' + score)
         " -- "$json_path")
         conclusion=$(printf '%s\n' "$action_outputs" | sed -n 's/^conclusion=//p')
+        finding_count=$(printf '%s\n' "$action_outputs" | sed -n 's/^finding-count=//p')
+        review_count=$(printf '%s\n' "$action_outputs" | sed -n 's/^review-count=//p')
+        block_count=$(printf '%s\n' "$action_outputs" | sed -n 's/^block-count=//p')
 
         {
           printf '%s\n' "$action_outputs"
@@ -226,6 +229,18 @@ runs:
         } >> "$GITHUB_OUTPUT"
 
         if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+          {
+            echo "## AgentGuard PR gate summary"
+            echo ""
+            echo "- conclusion: $conclusion"
+            echo "- finding-count: $finding_count"
+            echo "- review-count: $review_count"
+            echo "- block-count: $block_count"
+            echo "- report-path: $report_path"
+            echo "- json-path: $json_path"
+            echo "- sarif-path: $sarif_path"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
           cat "$report_path" >> "$GITHUB_STEP_SUMMARY"
         fi
 

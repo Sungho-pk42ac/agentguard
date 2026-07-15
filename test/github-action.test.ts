@@ -232,6 +232,30 @@ test('published and local GitHub Actions ignore prototype severity names in coun
   }
 })
 
+test('published and local GitHub Actions prepend gate metadata to job summary', () => {
+  for (const actionPath of ['action.yml', '.github/actions/agentguard/action.yml'] as const) {
+    const scanRun = scanRunFor(actionPath)
+    const summaryIndex = scanRun.indexOf('AgentGuard PR gate summary')
+    const reportAppendIndex = scanRun.indexOf('cat "$report_path" >> "$GITHUB_STEP_SUMMARY"')
+
+    assert.ok(summaryIndex >= 0, `${actionPath}: job summary should include a concise AgentGuard gate block`)
+    assert.ok(reportAppendIndex >= 0, `${actionPath}: job summary should still append the Markdown report`)
+    assert.ok(summaryIndex < reportAppendIndex, `${actionPath}: gate metadata should appear before the full Markdown report`)
+
+    for (const expectedLine of [
+      'conclusion: $conclusion',
+      'finding-count: $finding_count',
+      'review-count: $review_count',
+      'block-count: $block_count',
+      'report-path: $report_path',
+      'json-path: $json_path',
+      'sarif-path: $sarif_path',
+    ]) {
+      assert.ok(scanRun.includes(expectedLine), `${actionPath}: missing job summary metadata line ${expectedLine}`)
+    }
+  }
+})
+
 test('published and local GitHub Actions reject unsafe artifact paths before file operations', () => {
   const cases: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['action.yml', ['report_path', 'json_path', 'sarif_path']],

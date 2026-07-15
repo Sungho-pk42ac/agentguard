@@ -67,6 +67,7 @@ const publicReferenceUrls = [
   'https://owasp.org/www-project-top-10-for-large-language-model-applications/',
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+  'https://registry.npmjs.org/agent-scan',
 ] as const
 
 function findRepoRoot(startDir: string): string {
@@ -222,6 +223,11 @@ test('AX smoke evidence manifest handoff card cites public references with borro
     assert.match(row, /Avoid|피할 점/i)
     assert.match(row, /AgentGuard action/i)
   }
+
+  expectLiteral(card, 'npmjs web page returned 403 in this environment')
+  expectLiteral(card, 'registry JSON public fallback')
+  expectLiteral(card, 'not insane-search evidence')
+  expectLiteral(card, 'category-pressure')
 })
 
 test('AX smoke evidence manifest handoff card preserves machine contracts and bans fake claims', () => {

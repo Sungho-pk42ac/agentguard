@@ -117,6 +117,7 @@ test('AX smoke evidence manifest handoff card is Korean-first and frames manifes
     'AGENTGUARD_AX_DEMO_EVIDENCE_DIR',
     'AGENTGUARD_AX_DEMO_RUN_ID',
     'runId',
+    'evidenceSurfaces',
     'evidenceDirectory',
   ] as const) {
     expectLiteral(card, term)
@@ -141,6 +142,7 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
   for (const manifestContract of [
     'checks[]',
     'summary',
+    'evidenceSurfaces',
     'evidenceDirectory',
     'repositoryUrl',
     'gitBranch',

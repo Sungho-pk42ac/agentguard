@@ -145,6 +145,7 @@ writeFileSync(
       freshCloneSetup: ['npm ci', 'npm run build'],
       evidenceSurfaces: manifest.map((item) => item.surface),
       evidenceDirectory: relativeArtifactPath(evidenceDir),
+      manifestPath: relativeArtifactPath(manifestPath),
       generatedAt: new Date().toISOString(),
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),

@@ -177,6 +177,27 @@ test('AX public scanner signal refresh ledger uses exact fixture-backed commands
   }
 })
 
+test('AX public scanner signal refresh ledger records a concrete public freshness snapshot', () => {
+  const ledgerDoc = readLedgerDoc()
+
+  assert.match(ledgerDoc, /^## Public reference freshness snapshot$/m)
+  assert.match(
+    ledgerDoc,
+    /\|\s*Reference\s*\|\s*Fetch status\s*\|\s*Observed title\/signal\s*\|\s*Borrow\s*\|\s*Avoid\s*\|/,
+  )
+
+  for (const snapshot of [
+    'Checked on 2026-07-15 via public fallback fetch; insane-search escalation was not required',
+    'Agentic AI - OWASP Lists Threats and Mitigations',
+    'Security Best Practices - Model Context Protocol',
+    'Uploading a SARIF file to GitHub - GitHub Docs',
+    'Security scanner for AI agents, MCP servers and agent skills',
+    'HTTP 200',
+  ] as const) {
+    expectLiteral(ledgerDoc, snapshot)
+  }
+})
+
 test('AX public scanner signal refresh ledger states smoke expectations for each evidence lane', () => {
   const ledgerDoc = readLedgerDoc()
 

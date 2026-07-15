@@ -89,6 +89,7 @@ test('AX guardrail tripwire evidence card is Korean-first and maps tripwire deci
     '## Tripwire decision table',
     '## Exact fixture-backed commands',
     '## Public references: Borrow / Avoid / AgentGuard action',
+    '## Observed smoke contract',
     '## Machine contracts',
     '## Non-claim guardrails',
   ] as const) {
@@ -103,6 +104,27 @@ test('AX guardrail tripwire evidence card is Korean-first and maps tripwire deci
     doc,
     /\|\s*Tripwire signal\s*\|\s*AgentGuard evidence\s*\|\s*Approval decision\s*\|\s*Rerun trigger\s*\|/,
   )
+})
+
+test('AX guardrail tripwire evidence card states observed smoke exits and verdict meaning', () => {
+  const doc = readDoc()
+
+  assert.match(
+    doc,
+    /\|\s*Evidence lane\s*\|\s*Expected exit\s*\|\s*Expected verdict\s*\|\s*Source-of-record meaning\s*\|/,
+  )
+
+  for (const row of [
+    ['PR diff', '1', 'REVIEW', 'generic-secret-assignment'],
+    ['MCP config', '0', 'REVIEW', 'mcp-filesystem-wide-root'],
+    ['Transcript/log', '0', 'REVIEW', 'denied-command'],
+    ['SARIF artifact', '1', 'REVIEW', 'SARIF 2.1.0'],
+  ] as const) {
+    for (const value of row) expectLiteral(doc, value)
+  }
+
+  expectLiteral(doc, 'non-zero exit is expected evidence')
+  expectLiteral(doc, 'automatic upload')
 })
 
 test('AX guardrail tripwire evidence card cites public references with Borrow Avoid AgentGuard action rows', () => {

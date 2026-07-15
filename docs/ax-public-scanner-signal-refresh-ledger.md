@@ -40,6 +40,10 @@ Checked on 2026-07-15 via public fallback fetch; insane-search escalation was no
 | https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices | HTTP 200 | `Security Best Practices - Model Context Protocol` | Least privilege, explicit user consent, and token/permission-boundary wording. | Live OAuth/session/consent control claim. |
 | https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github | HTTP 200 | `Uploading a SARIF file to GitHub - GitHub Docs` | Reviewer-owned SARIF artifact handoff vocabulary. | Automatic SARIF upload, triage, or GitHub-native approval claim. |
 | https://github.com/snyk/agent-scan | HTTP 200 | `Security scanner for AI agents, MCP servers and agent skills` | Public category pressure for agent/MCP/skill scanner wording. | Snyk parity, vendor-scale scope, or replacement claim. |
+| https://github.com/Tencent/AI-Infra-Guard | HTTP 200 | `A full-stack AI Red Teaming platform securing AI ecosystems` with OpenClaw Security Scan, Agent Scan, Skills Scan, MCP scan, AI Infra scan, and LLM jailbreak evaluation. | Multi-surface AI infrastructure risk taxonomy and scanner-lane naming. | Broad suite positioning, all-risk coverage, or vendor-scale platform claim. |
+| https://github.com/splx-ai/agentic-radar | HTTP 200 | `A security scanner for your LLM agentic workflows` | Agentic workflow attack-surface vocabulary. | Attack-lab/simulation-suite scope or any claim that AgentGuard covers every workflow class. |
+| https://github.com/affaan-m/agentshield | HTTP 200 | `AI agent security scanner. Detect vulnerabilities in agent configurations, MCP servers, and tool permissions` | Agent configuration, MCP server, tool-permission review phrasing. | Hosted app, GitHub App, ECC plugin, or monitoring feature claims not implemented here. |
+| https://www.proof-layer.com/ | HTTP 200 | `ProofLayer — Autonomous Red-Teaming for AI Systems`; autonomous red-teaming evidence positioning. | Evidence-oriented reviewer handoff language. | Continuous attack, managed service, or external assurance claims. |
 
 ## Judge-visible action ledger
 

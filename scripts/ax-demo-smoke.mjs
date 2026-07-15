@@ -174,6 +174,7 @@ writeFileSync(
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),
       packageVersion,
+      npmVersion: currentNpmVersion(),
       repositoryUrl: repositoryOriginUrl(),
       gitCommitSha: currentGitCommitSha(),
       gitBranch: currentGitBranch(),
@@ -312,6 +313,38 @@ function currentGitCommitSha() {
   const sha = result.stdout.trim()
   ensure(/^[0-9a-f]{40}$/.test(sha), `git commit SHA must be a 40-character lowercase hex SHA, got: ${sha}`)
   return sha
+}
+
+function currentNpmVersion() {
+  const versionFromUserAgent = npmVersionFromUserAgent(process.env.npm_config_user_agent)
+  if (versionFromUserAgent) return versionFromUserAgent
+
+  const result = spawnSync(npmCommand(), ['--version'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+    timeout: 10_000,
+  })
+  if (result.error) {
+    const message = result.error instanceof Error ? result.error.message : String(result.error)
+    fail(`npm version could not be read: ${message}`)
+  }
+  if (result.status !== 0) {
+    fail(`npm version could not be read. stderr=${result.stderr}`)
+  }
+  const version = result.stdout.trim()
+  ensure(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version), `npm version must be semver-like, got: ${version}`)
+  return version
+}
+
+function npmCommand() {
+  return process.platform === 'win32' ? 'npm.cmd' : 'npm'
+}
+
+function npmVersionFromUserAgent(userAgent) {
+  if (typeof userAgent !== 'string') return undefined
+  const match = userAgent.match(/(?:^|\s)npm\/(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)(?:\s|$)/)
+  return match?.[1]
 }
 
 function currentGitBranch() {

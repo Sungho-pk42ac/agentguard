@@ -125,6 +125,7 @@ test('AX smoke evidence manifest handoff card is Korean-first and frames manifes
     'manifestPath',
     'requiredArtifacts',
     'producerIntent',
+    'npmVersion',
   ] as const) {
     expectLiteral(card, term)
   }
@@ -156,6 +157,7 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'repositoryUrl',
     'gitBranch',
     'gitTreeState',
+    'npmVersion',
     'total',
     'pass',
     'review',

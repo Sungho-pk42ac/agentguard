@@ -30,6 +30,17 @@
 | `https://registry.npmjs.org/agent-security-scanner-mcp` | Public registry metadata returned 200 with package name `agent-security-scanner-mcp`, latest version `4.4.12`, and agent/MCP scanner category keywords. | Use only as category-pressure evidence: AI agent/MCP scanner packaging exists, so AgentGuard must show local rerunnable PR/MCP/transcript/SARIF proof rather than broad platform claims. |
 | OWASP / MCP / GitHub docs URLs above | Public HTML fetch returned 200 for the reference pages used in this ledger, including MCP Security Best Practices. | Borrow risk, least privilege, explicit user consent, authorization-boundary, and artifact-handoff vocabulary while keeping every AgentGuard claim tied to source-of-record commands. |
 
+## Public reference freshness snapshot
+
+Checked on 2026-07-15 via public fallback fetch; insane-search escalation was not required because the public pages below returned usable unauthenticated responses in this run. This snapshot is a freshness boundary, not an endorsement, external assurance badge, or production-readiness claim.
+
+| Reference | Fetch status | Observed title/signal | Borrow | Avoid |
+|---|---|---|---|---|
+| https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/ | HTTP 200 | `Agentic AI - OWASP Lists Threats and Mitigations` | Agentic risk vocabulary for tool misuse, autonomy, and human control. | OWASP endorsement, all-risk scope, external assurance. |
+| https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices | HTTP 200 | `Security Best Practices - Model Context Protocol` | Least privilege, explicit user consent, and token/permission-boundary wording. | Live OAuth/session/consent control claim. |
+| https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github | HTTP 200 | `Uploading a SARIF file to GitHub - GitHub Docs` | Reviewer-owned SARIF artifact handoff vocabulary. | Automatic SARIF upload, triage, or GitHub-native approval claim. |
+| https://github.com/snyk/agent-scan | HTTP 200 | `Security scanner for AI agents, MCP servers and agent skills` | Public category pressure for agent/MCP/skill scanner wording. | Snyk parity, vendor-scale scope, or replacement claim. |
+
 ## Judge-visible action ledger
 
 | Company-problem signal | AgentGuard evidence lane | Approval decision sentence |

@@ -22,6 +22,7 @@ const exactCommands = [
   'node dist/index.js scan-mcp < examples/risky-mcp.json',
   'node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log',
   'node dist/index.js scan-log --policy examples/agent-policy.team.yaml < examples/agent-transcript.log',
+  'node dist/index.js scan-diff --json --out .agentguard-demo/findings.json < examples/risky-pr.diff',
   'node dist/index.js scan-diff --sarif --out .agentguard-demo/agentguard.sarif < examples/risky-pr.diff',
 ] as const
 
@@ -87,6 +88,7 @@ test('team rollout baseline guide pins exact fixture-backed evidence commands', 
     expectLiteral(guide, command)
   }
 
+  expectLiteral(guide, '.agentguard-demo/findings.json')
   expectLiteral(guide, '.agentguard-demo/agentguard.sarif')
   assert.match(guide, /risky 입력은 BLOCK으로 non-zero exit가 날 수 있음/)
 })

@@ -60,6 +60,17 @@ Expected semantics:
 - Markdown/JSON/SARIF reports must redact secret evidence and preserve English-readable `ruleId`, `locations`, severity, `PASS`, `REVIEW`, `BLOCK` contracts.
 - The approval sentence must name the next owner/action; it must not claim automatic remediation, automatic SARIF upload, or runtime guardrail enforcement.
 
+## Observed smoke contract
+
+이 표는 발표 리허설이나 fresh-clone 검증에서 “명령이 non-zero로 끝났는데 실패인가?”를 바로 구분하기 위한 source-of-record contract입니다. 위험 fixture가 `REVIEW`/`BLOCK`을 만들면 non-zero exit is expected evidence이며, runner가 멈춘 것이 아니라 rollout gate가 작동한 것입니다.
+
+| Evidence lane | Expected exit | Expected verdict | Source-of-record meaning |
+|---|---:|---|---|
+| PR diff | `1` | `REVIEW` | `generic-secret-assignment` / `denied-command`가 risky diff를 포착했음을 보여주며, 수정 diff로 재실행해야 합니다. |
+| MCP config | `0` | `REVIEW` | `mcp-filesystem-wide-root` / `mcp-env-token`이 broad root와 token passthrough를 승인 검토해야 하는 조건입니다. 더 강한 위험 fixture나 aggregate policy에서는 `BLOCK`으로 승격될 수 있습니다. |
+| Transcript/log | `0` | `REVIEW` | `denied-command`가 정책 검토 대상임을 보여주며, 사람 owner가 실행 근거와 rollback 조건을 확인합니다. |
+| SARIF artifact | `1` | `REVIEW` | `SARIF 2.1.0` 파일을 생성해 reviewer가 확인할 수 있게 넘기지만, automatic upload 또는 자동 승인을 의미하지 않습니다. |
+
 ## Public references: Borrow / Avoid / AgentGuard action
 
 | Public reference | Borrow | Avoid | AgentGuard action |

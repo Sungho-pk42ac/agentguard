@@ -76,6 +76,7 @@ type SmokeManifest = {
   readonly evidencePurpose: string
   readonly replayCommand: string
   readonly freshCloneSetup: readonly string[]
+  readonly evidenceSurfaces?: readonly string[]
   readonly evidenceDirectory?: string
   readonly generatedAt?: string
   readonly cliPath?: string
@@ -166,6 +167,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       ['npm ci', 'npm run build'],
       'manifest should expose fresh-clone setup steps before replaying smoke evidence',
     )
+    assert.deepEqual(
+      manifest.evidenceSurfaces,
+      ['pr-diff', 'mcp-config', 'transcript-log', 'sarif-artifact'],
+      'manifest should expose top-level evidence surface coverage for quick reviewer handoff',
+    )
     assert.ok(manifest.evidenceDirectory, 'manifest.evidenceDirectory should be present')
     assert.equal(
       normalizeManifestPath(manifest.evidenceDirectory),
@@ -235,6 +241,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     assert.ok((manifest.arch ?? '').length > 0, 'manifest arch should be non-empty')
     assert.ok(Array.isArray(manifest.checks), 'manifest.checks should be an array')
     assert.equal(manifest.checks.length, 4, 'manifest should cover PR diff, MCP config, transcript/log, and SARIF')
+    assert.deepEqual(
+      manifest.evidenceSurfaces,
+      manifest.checks.map((check) => check.surface),
+      'manifest evidenceSurfaces should be derived from checks[] surface order',
+    )
     assert.deepEqual(
       manifest.summary,
       {

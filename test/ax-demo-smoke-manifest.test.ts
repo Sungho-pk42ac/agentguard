@@ -78,6 +78,7 @@ type SmokeManifest = {
   readonly freshCloneSetup: readonly string[]
   readonly evidenceSurfaces?: readonly string[]
   readonly evidenceDirectory?: string
+  readonly manifestPath?: string
   readonly generatedAt?: string
   readonly cliPath?: string
   readonly cliSha256?: string
@@ -179,6 +180,16 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       'manifest should record the evidence directory that contains manifest.json and same-run artifacts',
     )
     const resolvedEvidenceDirectory = resolveManifestPath(manifest.evidenceDirectory)
+    assert.equal(
+      normalizeManifestPath(manifest.manifestPath ?? ''),
+      normalizeManifestPath(join(manifest.evidenceDirectory, 'manifest.json')),
+      'manifest should record the source-of-record manifest.json path inside the evidence directory',
+    )
+    assert.equal(
+      resolveManifestPath(manifest.manifestPath ?? ''),
+      join(resolvedEvidenceDirectory, 'manifest.json'),
+      'manifestPath should resolve to manifest.json within the same evidenceDirectory',
+    )
     assert.ok(
       (manifest.checks ?? []).every(
         (check) => !check.artifact || isPathInside(resolvedEvidenceDirectory, resolveManifestPath(check.artifact)),

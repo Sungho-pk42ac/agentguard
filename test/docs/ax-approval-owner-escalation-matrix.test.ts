@@ -20,7 +20,7 @@ const requiredHeadings = [
 
 const publicReferenceUrls = [
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
-  'https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices',
+  'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support',
   'https://registry.npmjs.org/snyk',
 ] as const

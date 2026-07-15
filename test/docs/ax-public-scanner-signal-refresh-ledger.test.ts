@@ -192,6 +192,11 @@ test('AX public scanner signal refresh ledger records a concrete public freshnes
     'Security Best Practices - Model Context Protocol',
     'Uploading a SARIF file to GitHub - GitHub Docs',
     'Security scanner for AI agents, MCP servers and agent skills',
+    'A full-stack AI Red Teaming platform securing AI ecosystems',
+    'A security scanner for your LLM agentic workflows',
+    'AI agent security scanner. Detect vulnerabilities in agent configurations, MCP servers, and tool permissions',
+    'ProofLayer — Autonomous Red-Teaming for AI Systems',
+    'autonomous red-teaming evidence',
     'HTTP 200',
   ] as const) {
     expectLiteral(ledgerDoc, snapshot)

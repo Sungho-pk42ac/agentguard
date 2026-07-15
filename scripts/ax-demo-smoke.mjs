@@ -152,6 +152,7 @@ writeFileSync(
       producerIntent:
         'Reviewer source-of-record handoff for rerunnable AX smoke evidence; not approval, automatic upload, certification, scanner parity, or runtime authorization/session enforcement.',
       replayCommand: 'npm run smoke:ax-demo',
+      replayCommandArgs: ['npm', 'run', 'smoke:ax-demo'],
       replayWorkingDirectory: '.',
       freshCloneSetup: ['npm ci', 'npm run build'],
       evidenceSurfaces: manifest.map((item) => item.surface),

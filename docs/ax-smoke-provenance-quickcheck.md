@@ -22,7 +22,7 @@ npm run smoke:ax-demo
 .agentguard-demo/ax-evidence-smoke/manifest.json
 ```
 
-4. reviewer는 아래 source-of-record field를 먼저 확인합니다: `repositoryUrl`, `gitCommitSha`, `gitBranch`, `gitTreeState`, `manifestPath`, `requiredArtifacts`, `evidenceDirectory`, `sourceSha256`, `artifactSha256`, `producerIntent`.
+4. reviewer는 아래 source-of-record field를 먼저 확인합니다: `packageName`, `repositoryUrl`, `gitCommitSha`, `gitBranch`, `gitTreeState`, `manifestPath`, `requiredArtifacts`, `evidenceDirectory`, `sourceSha256`, `artifactSha256`, `producerIntent`.
 
 5. runner/runtime provenance도 같은 30초 확인 대상입니다: `runId`, `startedAt`, `completedAt`, `generatedAt`, `durationMs`, `nodeVersion`, `platform`, `arch`, `replayCommandArgs`, `freshCloneSetup`. 이 값들은 같은 bundle을 어느 Node/runtime 환경에서 언제 만들었고 어떤 argv로 replay해야 하는지 보여주는 reviewer handoff metadata입니다.
 
@@ -49,7 +49,7 @@ Expected result: risky fixture evidence exits non-zero and creates `.agentguard-
 
 | If the quickcheck sees... | Decision language |
 |---|---|
-| `repositoryUrl` points at the expected AgentGuard repo, `gitCommitSha` matches the reviewed PR/CI SHA, `gitBranch` is expected, `gitTreeState` is `clean`, and all `requiredArtifacts` exist under `evidenceDirectory` | `PASS` for provenance check; still review the findings themselves. |
+| `packageName` is `@pk42ac/agentguard`, `repositoryUrl` points at the expected AgentGuard repo, `gitCommitSha` matches the reviewed PR/CI SHA, `gitBranch` is expected, `gitTreeState` is `clean`, and all `requiredArtifacts` exist under `evidenceDirectory` | `PASS` for provenance check; still review the findings themselves. |
 | `gitTreeState` is `dirty`, artifact paths are missing, or `manifestPath` points outside the evidence directory | `REVIEW`; rerun from clean tree before judge/reviewer handoff. |
 | `repositoryUrl`, `gitCommitSha`, or artifact hashes do not match the claimed source | `BLOCK`; do not use that bundle as source-of-record evidence. |
 
@@ -64,6 +64,6 @@ Expected result: risky fixture evidence exits non-zero and creates `.agentguard-
 
 ## Machine-contract and non-claim boundary
 
-Keep English-compatible machine contracts unchanged: `PASS`, `REVIEW`, `BLOCK`, `scan-diff`, `scan-mcp`, `scan-log`, `--sarif`, `--out`, `checks[]`, `requiredArtifacts`, `sourceSha256`, `artifactSha256`, `repositoryUrl`, `gitCommitSha`, `gitBranch`, and `gitTreeState`.
+Keep English-compatible machine contracts unchanged: `PASS`, `REVIEW`, `BLOCK`, `scan-diff`, `scan-mcp`, `scan-log`, `--sarif`, `--out`, `checks[]`, `requiredArtifacts`, `sourceSha256`, `artifactSha256`, `packageName`, `repositoryUrl`, `gitCommitSha`, `gitBranch`, and `gitTreeState`.
 
 Current boundary phrase from the manifest must stay true: `not approval, automatic upload, certification, scanner parity, or runtime authorization/session enforcement`. This quickcheck is a reviewer/source-of-record handoff, not 고객 도입 evidence, official certification, GitHub replacement, Snyk replacement, or runtime authorization enforcement.

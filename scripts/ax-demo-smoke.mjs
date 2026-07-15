@@ -144,6 +144,8 @@ manifest.push({
 const manifestPath = join(evidenceDir, 'manifest.json')
 const packageJson = parseJson(readFileSync(repoPath('package.json'), 'utf8'), 'package.json')
 ensure(isObject(packageJson), 'package.json: root must be an object')
+const packageName = packageJson.name
+ensure(typeof packageName === 'string' && packageName.length > 0, 'package.json: name must be a non-empty string')
 const packageVersion = packageJson.version
 ensure(typeof packageVersion === 'string' && packageVersion.length > 0, 'package.json: version must be a non-empty string')
 const bundleCompletedAt = new Date().toISOString()
@@ -173,6 +175,7 @@ writeFileSync(
       generatedAt: new Date().toISOString(),
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),
+      packageName,
       packageVersion,
       npmVersion: currentNpmVersion(),
       repositoryUrl: repositoryOriginUrl(),

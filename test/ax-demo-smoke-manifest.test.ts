@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(testDir, '..')
 const hexSha256 = /^[0-9a-f]{64}$/
+const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as { name?: string }
 
 function normalizeManifestPath(path: string): string {
   return path.replace(/\\/g, '/')
@@ -89,6 +90,7 @@ type SmokeManifest = {
   readonly durationMs?: number
   readonly cliPath?: string
   readonly cliSha256?: string
+  readonly packageName?: string
   readonly packageVersion?: string
   readonly npmVersion?: string
   readonly repositoryUrl?: string
@@ -281,6 +283,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
     )
     assert.equal(manifest.cliPath, 'dist/index.js', 'manifest should name the built CLI artifact used for the smoke')
     assert.match(manifest.cliSha256 ?? '', hexSha256, 'manifest cliSha256 should be lowercase SHA-256 hex')
+    assert.equal(
+      manifest.packageName,
+      packageJson.name,
+      'manifest should record the package.json name for reviewer package-identity provenance',
+    )
     assert.match(manifest.packageVersion ?? '', /^\d+\.\d+\.\d+/, 'manifest should record package.json version')
     assert.match(
       manifest.npmVersion ?? '',

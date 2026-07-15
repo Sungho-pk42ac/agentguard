@@ -16,6 +16,7 @@ const publicReferenceUrls = [
 ] as const
 
 const requiredManifestFields = [
+  'packageName',
   'repositoryUrl',
   'gitCommitSha',
   'gitBranch',

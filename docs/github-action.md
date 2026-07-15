@@ -60,6 +60,7 @@ jobs:
             agent-risk-report.md
             agent-risk-findings.json
             agentguard.sarif
+          retention-days: 14
 
       - name: Comment AgentGuard report on PR
         if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
@@ -102,6 +103,8 @@ AgentGuard borrows the evidence-routing pattern from those references while keep
 ## Timeout and evidence preservation
 
 `timeout-minutes: 10` is a CI operations guardrail for the required status check that bounds stalled checkout, npm install, SARIF upload, or scanner execution so a PR gate does not hang indefinitely. The timeout does not change `PASS`, `REVIEW`, or `BLOCK` verdict semantics; scanner execution errors still fail the job. Keep artifact upload guarded with `if: ${{ !cancelled() }}` so completed Markdown, JSON, and SARIF evidence is preserved when AgentGuard reports a blocking finding, while a true timeout/cancellation remains visible as a CI failure that should be rerun or investigated.
+
+`retention-days: 14` in the upload-artifact step gives the team a predictable reviewer handoff window for Markdown, JSON, and SARIF evidence after a PR run. It is an evidence-preservation setting only: it does not change `PASS`, `REVIEW`, or `BLOCK` verdicts, does not make AgentGuard a hosted archive/compliance system, and should be adjusted to the repository's retention policy if the team needs a longer source-of-record window.
 
 ## Fork PR permission boundary
 
@@ -235,6 +238,7 @@ jobs:
         with:
           name: agentguard-pr-report
           path: agent-risk-report.md
+          retention-days: 14
 
       - name: Comment AgentGuard report on PR
         if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}

@@ -36,6 +36,11 @@ test('GitHub Action docs include AX output routing contract', () => {
   assert.match(doc, /branch protection|required status check/i)
   assert.match(doc, /artifact/i)
   assert.match(doc, /SARIF/i)
+  assert.match(doc, /retention-days: 14/)
+  assert.match(doc, /retention-days[\s\S]{0,260}reviewer handoff/i)
+  for (const verdict of ['PASS', 'REVIEW', 'BLOCK'] as const) {
+    assert.match(doc, new RegExp(`retention-days[\\s\\S]{0,320}does not change[\\s\\S]{0,160}${verdict}`))
+  }
 
   for (const url of requiredReferenceUrls) {
     assert.ok(doc.includes(url), `docs should cite public reference ${url}`)

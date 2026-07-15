@@ -153,6 +153,7 @@ writeFileSync(
       evidenceSurfaces: manifest.map((item) => item.surface),
       evidenceDirectory: relativeArtifactPath(evidenceDir),
       manifestPath: relativeArtifactPath(manifestPath),
+      requiredArtifacts: manifest.map((item) => item.artifact),
       generatedAt: new Date().toISOString(),
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),

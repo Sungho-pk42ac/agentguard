@@ -81,6 +81,7 @@ type SmokeManifest = {
   readonly evidenceSurfaces?: readonly string[]
   readonly evidenceDirectory?: string
   readonly manifestPath?: string
+  readonly requiredArtifacts?: readonly string[]
   readonly generatedAt?: string
   readonly cliPath?: string
   readonly cliSha256?: string
@@ -209,6 +210,17 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
         (check) => !check.artifact || isPathInside(resolvedEvidenceDirectory, resolveManifestPath(check.artifact)),
       ),
       'manifest artifact paths should live under the manifest evidenceDirectory source-of-record',
+    )
+    assert.deepEqual(
+      manifest.requiredArtifacts,
+      (manifest.checks ?? []).map((check) => check.artifact),
+      'manifest should expose top-level requiredArtifacts derived from checks[].artifact in order',
+    )
+    assert.ok(
+      (manifest.requiredArtifacts ?? []).every((artifact) =>
+        isPathInside(resolvedEvidenceDirectory, resolveManifestPath(artifact)),
+      ),
+      'manifest requiredArtifacts should resolve inside the evidenceDirectory source-of-record',
     )
     assert.match(
       manifest.generatedAt ?? '',

@@ -13,7 +13,7 @@
 | Public reference | Borrow | Avoid | AgentGuard use |
 | --- | --- | --- | --- |
 | OWASP Agentic AI Threats and Mitigations: https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/ | human oversight, mitigation, threat-model framing | OWASP가 AgentGuard를 심사했다는 표현 | `BLOCK`은 사람의 승인 없이 rollout하지 않는 위험 신호로 설명 |
-| MCP Security Best Practices: https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices | least privilege, consent, control, tool access review | runtime MCP enforcement claim | `scan-mcp` evidence를 security owner의 permission review 입력으로 전달 |
+| MCP Security Best Practices: https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices | least privilege, consent, control, tool access review | runtime MCP enforcement claim | `scan-mcp` evidence를 security owner의 permission review 입력으로 전달 |
 | GitHub SARIF support: https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support | `ruleId`, `artifactLocation.uri`, `region.startLine`, artifact handoff field framing | GitHub 보증 또는 제품 기능 비교 표현 | `.agentguard-demo/approval-owner-escalation.sarif`를 reviewer handoff artifact 예시로 사용 |
 | Snyk npm public package: https://registry.npmjs.org/snyk | mature CLI, rerunnable evidence, package-distributed command expectation | Snyk와 기능 비교 표현 | AgentGuard CLI evidence도 같은 방식으로 다시 실행 가능한 명령과 artifact를 남긴다고 설명 |
 

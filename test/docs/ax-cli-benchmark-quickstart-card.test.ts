@@ -33,6 +33,7 @@ const publicAgenticGuardrailUrls = [
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
+  'https://github.com/openai/openai-agents-js',
 ] as const
 
 const fixtureBackedCommands = [
@@ -147,6 +148,7 @@ test('AX CLI benchmark quickstart card records public research provenance for th
     'Public HTML fetch returned 200 for MCP Security Best Practices',
     'Public HTML fetch returned 200 for GitHub SARIF upload docs',
     'GitHub API returned 200 for Snyk agent-scan metadata',
+    'GitHub API returned 200 for OpenAI agents-js metadata',
     'insane-search escalation was not required because public fallback fetches returned 200',
   ] as const) {
     expectLiteral(card, provenance)
@@ -157,6 +159,7 @@ test('AX CLI benchmark quickstart card records public research provenance for th
   assert.match(card, /least privilege|explicit user consent/i)
   assert.match(card, /SARIF artifact handoff/i)
   assert.match(card, /public scanner category pressure/i)
+  assert.match(card, /multi-agent workflow|agent workflow framework/i)
 })
 
 test('AX CLI benchmark quickstart card connects agentic guardrail references to a first-minute evidence ladder', () => {

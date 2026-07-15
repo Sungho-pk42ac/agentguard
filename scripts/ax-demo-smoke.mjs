@@ -83,6 +83,12 @@ for (const check of checks) {
     exitCode: result.status,
     expectedExitCode: check.expectedStatus,
     acceptedNonZero: result.status !== 0,
+    ...(result.status !== 0
+      ? {
+          acceptedNonZeroReason:
+            'Expected risky fixture evidence: observed non-zero exit matches expectedExitCode and preserves REVIEW/BLOCK handoff proof.',
+        }
+      : {}),
     verdict: verdictForFindings(findings),
     startedAt,
     completedAt,
@@ -120,6 +126,8 @@ manifest.push({
   exitCode: sarifResult.status,
   expectedExitCode: checks[0].expectedStatus,
   acceptedNonZero: true,
+  acceptedNonZeroReason:
+    'Expected risky fixture evidence: observed non-zero exit matches expectedExitCode and preserves REVIEW/BLOCK handoff proof.',
   verdict: manifest.find((item) => item.surface === 'pr-diff')?.verdict ?? 'BLOCK',
   startedAt: sarifStartedAt,
   completedAt: sarifCompletedAt,

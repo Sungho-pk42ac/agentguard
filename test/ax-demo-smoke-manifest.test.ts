@@ -119,6 +119,7 @@ type SmokeManifestCheck = {
   readonly exitCode?: number
   readonly expectedExitCode?: number
   readonly acceptedNonZero?: boolean
+  readonly acceptedNonZeroReason?: string
   readonly verdict?: string
   readonly expectedRuleIds?: readonly string[]
   readonly startedAt?: string
@@ -355,6 +356,19 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
         `${check.surface ?? 'check'} observed exitCode should match expectedExitCode`,
       )
       assert.equal(typeof check.acceptedNonZero, 'boolean', `${check.surface ?? 'check'} acceptedNonZero should stay present`)
+      if (check.acceptedNonZero) {
+        assert.match(
+          check.acceptedNonZeroReason ?? '',
+          /Expected risky fixture evidence: observed non-zero exit matches expectedExitCode/,
+          `${check.surface ?? 'check'} acceptedNonZeroReason should explain expected risky fixture evidence`,
+        )
+      } else {
+        assert.equal(
+          check.acceptedNonZeroReason,
+          undefined,
+          `${check.surface ?? 'check'} acceptedNonZeroReason should be omitted when exit 0 is not accepted-nonzero evidence`,
+        )
+      }
       assert.match(check.verdict ?? '', /^(PASS|REVIEW|BLOCK)$/, `${check.surface ?? 'check'} verdict should be present`)
       assert.ok(Array.isArray(check.expectedRuleIds), `${check.surface ?? 'check'} expectedRuleIds should stay present`)
       assert.deepEqual(

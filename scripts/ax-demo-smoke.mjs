@@ -49,6 +49,8 @@ if (!existsSync(cliPath)) {
 
 mkdirSync(evidenceDir, { recursive: true })
 
+const bundleStartedAt = new Date().toISOString()
+const bundleStartedAtMs = performance.now()
 const manifest = []
 for (const check of checks) {
   const sourcePath = repoPath(check.inputPath)
@@ -136,6 +138,8 @@ const packageJson = parseJson(readFileSync(repoPath('package.json'), 'utf8'), 'p
 ensure(isObject(packageJson), 'package.json: root must be an object')
 const packageVersion = packageJson.version
 ensure(typeof packageVersion === 'string' && packageVersion.length > 0, 'package.json: version must be a non-empty string')
+const bundleCompletedAt = new Date().toISOString()
+const bundleDurationMs = Math.round(performance.now() - bundleStartedAtMs)
 writeFileSync(
   manifestPath,
   `${JSON.stringify(
@@ -154,6 +158,9 @@ writeFileSync(
       evidenceDirectory: relativeArtifactPath(evidenceDir),
       manifestPath: relativeArtifactPath(manifestPath),
       requiredArtifacts: manifest.map((item) => item.artifact),
+      startedAt: bundleStartedAt,
+      completedAt: bundleCompletedAt,
+      durationMs: bundleDurationMs,
       generatedAt: new Date().toISOString(),
       cliPath: cliRelativePath,
       cliSha256: sha256File(cliPath),

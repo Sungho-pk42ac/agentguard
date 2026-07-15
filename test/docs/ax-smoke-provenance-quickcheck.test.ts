@@ -28,6 +28,19 @@ const requiredManifestFields = [
   'producerIntent',
 ] as const
 
+const requiredRunnerRuntimeFields = [
+  'runId',
+  'startedAt',
+  'completedAt',
+  'generatedAt',
+  'durationMs',
+  'nodeVersion',
+  'platform',
+  'arch',
+  'replayCommandArgs',
+  'freshCloneSetup',
+] as const
+
 const exactCommands = [
   'npm run build',
   'npm run smoke:ax-demo',
@@ -72,6 +85,7 @@ test('AX smoke provenance quickcheck documents exact replay commands and manifes
 
   for (const command of exactCommands) expectLiteral(card, command)
   for (const field of requiredManifestFields) expectLiteral(card, field)
+  for (const field of requiredRunnerRuntimeFields) expectLiteral(card, field)
 
   for (const fixturePath of fixturePaths) {
     assert.ok(existsSync(join(repoRoot, fixturePath)), `${fixturePath} should exist`)

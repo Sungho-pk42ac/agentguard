@@ -22,9 +22,11 @@ npm run smoke:ax-demo
 .agentguard-demo/ax-evidence-smoke/manifest.json
 ```
 
-4. reviewer는 아래 field를 먼저 확인합니다: `repositoryUrl`, `gitCommitSha`, `gitBranch`, `gitTreeState`, `manifestPath`, `requiredArtifacts`, `evidenceDirectory`, `sourceSha256`, `artifactSha256`, `producerIntent`.
+4. reviewer는 아래 source-of-record field를 먼저 확인합니다: `repositoryUrl`, `gitCommitSha`, `gitBranch`, `gitTreeState`, `manifestPath`, `requiredArtifacts`, `evidenceDirectory`, `sourceSha256`, `artifactSha256`, `producerIntent`.
 
-5. `gitTreeState`가 `dirty`이면 최종 handoff로 쓰기 전에 clean tree에서 `npm run smoke:ax-demo`를 다시 실행합니다. `clean`이어도 `gitCommitSha`와 PR/CI SHA가 다르면 같은 evidence로 승인하지 않습니다.
+5. runner/runtime provenance도 같은 30초 확인 대상입니다: `runId`, `startedAt`, `completedAt`, `generatedAt`, `durationMs`, `nodeVersion`, `platform`, `arch`, `replayCommandArgs`, `freshCloneSetup`. 이 값들은 같은 bundle을 어느 Node/runtime 환경에서 언제 만들었고 어떤 argv로 replay해야 하는지 보여주는 reviewer handoff metadata입니다.
+
+6. `gitTreeState`가 `dirty`이면 최종 handoff로 쓰기 전에 clean tree에서 `npm run smoke:ax-demo`를 다시 실행합니다. `clean`이어도 `gitCommitSha`와 PR/CI SHA가 다르거나 timestamp window가 reviewer가 받은 artifact 생성 시점과 맞지 않으면 같은 evidence로 승인하지 않습니다.
 
 ## Exact evidence surfaces
 

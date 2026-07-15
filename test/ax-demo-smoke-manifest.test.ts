@@ -111,8 +111,10 @@ type SmokeManifestCheck = {
   readonly inputPath?: string
   readonly policyPath?: string
   readonly exitCode?: number
+  readonly expectedExitCode?: number
   readonly acceptedNonZero?: boolean
   readonly verdict?: string
+  readonly expectedRuleIds?: readonly string[]
   readonly startedAt?: string
   readonly completedAt?: string
   readonly durationMs?: number
@@ -284,8 +286,28 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       assert.equal(check.cwd, '.', `${check.surface ?? 'check'} cwd should record repo-root replay working directory`)
       assert.equal(typeof check.inputPath, 'string', `${check.surface ?? 'check'} inputPath should stay present`)
       assert.equal(typeof check.exitCode, 'number', `${check.surface ?? 'check'} exitCode should stay present`)
+      assert.equal(
+        typeof check.expectedExitCode,
+        'number',
+        `${check.surface ?? 'check'} expectedExitCode should expose the acceptance contract`,
+      )
+      assert.equal(
+        check.exitCode,
+        check.expectedExitCode,
+        `${check.surface ?? 'check'} observed exitCode should match expectedExitCode`,
+      )
       assert.equal(typeof check.acceptedNonZero, 'boolean', `${check.surface ?? 'check'} acceptedNonZero should stay present`)
       assert.match(check.verdict ?? '', /^(PASS|REVIEW|BLOCK)$/, `${check.surface ?? 'check'} verdict should be present`)
+      assert.ok(Array.isArray(check.expectedRuleIds), `${check.surface ?? 'check'} expectedRuleIds should stay present`)
+      assert.deepEqual(
+        [...(check.expectedRuleIds ?? [])].sort(),
+        check.expectedRuleIds,
+        `${check.surface ?? 'check'} expectedRuleIds should be sorted for stable reviewer handoff`,
+      )
+      assert.ok(
+        (check.expectedRuleIds ?? []).every((ruleId) => check.ruleIds?.includes(ruleId)),
+        `${check.surface ?? 'check'} observed ruleIds should include every expectedRuleId`,
+      )
       assert.match(
         check.startedAt ?? '',
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,

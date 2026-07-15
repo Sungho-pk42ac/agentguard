@@ -79,6 +79,7 @@ for (const check of checks) {
     inputPath: check.inputPath,
     ...(check.policyPath ? { policyPath: check.policyPath } : {}),
     exitCode: result.status,
+    expectedExitCode: check.expectedStatus,
     acceptedNonZero: result.status !== 0,
     verdict: verdictForFindings(findings),
     startedAt,
@@ -90,6 +91,7 @@ for (const check of checks) {
     sourceBytes: byteSize(sourcePath),
     artifactBytes: byteSize(artifactPath),
     ...(check.policyPath ? { policySha256: sha256File(repoPath(check.policyPath)), policyBytes: byteSize(repoPath(check.policyPath)) } : {}),
+    expectedRuleIds: [...check.expectedRuleIds].sort(),
     ruleIds: [...ruleIds].sort(),
   })
 }
@@ -114,6 +116,7 @@ manifest.push({
   cwd: '.',
   inputPath: checks[0].inputPath,
   exitCode: sarifResult.status,
+  expectedExitCode: checks[0].expectedStatus,
   acceptedNonZero: true,
   verdict: manifest.find((item) => item.surface === 'pr-diff')?.verdict ?? 'BLOCK',
   startedAt: sarifStartedAt,
@@ -124,6 +127,7 @@ manifest.push({
   artifactSha256: sha256File(sarifPath),
   sourceBytes: byteSize(repoPath(prDiffInputPath)),
   artifactBytes: byteSize(sarifPath),
+  expectedRuleIds: [...checks[0].expectedRuleIds].sort(),
   ruleIds: [...sarifRuleIds].sort(),
 })
 

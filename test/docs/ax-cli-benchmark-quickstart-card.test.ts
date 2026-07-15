@@ -16,6 +16,7 @@ const requiredHeadings = [
   '## Research provenance checked this run',
   '## Fixture-backed AgentGuard commands',
   '## Agentic guardrail evidence ladder',
+  '## First-minute transcript checklist',
   '## SARIF handoff contract',
   '## Machine contracts',
   '## Non-claim guardrails',
@@ -191,6 +192,27 @@ test('AX CLI benchmark quickstart card uses exact fresh-clone commands backed by
       assert.ok(existsSync(join(repoRoot, fixturePath)), `${fixturePath} should exist`)
       expectLiteral(card, fixturePath)
     }
+  }
+})
+
+test('AX CLI benchmark quickstart card defines a first-minute transcript checklist', () => {
+  const card = readCard()
+
+  assert.match(card, /^## First-minute transcript checklist$/m)
+  assert.match(card, /\|\s*Minute\s*\|\s*What the judge sees\s*\|\s*Exact command or artifact\s*\|\s*Expected signal\s*\|\s*Borrowed benchmark habit\s*\|/)
+
+  for (const checklistSignal of [
+    '00:00-00:15',
+    '00:15-00:30',
+    '00:30-00:45',
+    '00:45-01:00',
+    'readiness before risk evidence',
+    'risky PR diff is reviewer evidence',
+    'MCP permission boundary is static pre-rollout evidence',
+    'SARIF handoff is an artifact lane, not automatic approval',
+    '.agentguard-demo/ax-cli-benchmark-quickstart.sarif',
+  ] as const) {
+    expectLiteral(card, checklistSignal)
   }
 })
 

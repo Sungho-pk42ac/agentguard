@@ -142,6 +142,7 @@ writeFileSync(
       evidencePurpose:
         'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
       replayCommand: 'npm run smoke:ax-demo',
+      replayWorkingDirectory: '.',
       freshCloneSetup: ['npm ci', 'npm run build'],
       evidenceSurfaces: manifest.map((item) => item.surface),
       evidenceDirectory: relativeArtifactPath(evidenceDir),

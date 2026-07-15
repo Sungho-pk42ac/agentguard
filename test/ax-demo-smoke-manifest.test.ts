@@ -75,6 +75,7 @@ type SmokeManifest = {
   readonly generatedBy: string
   readonly evidencePurpose: string
   readonly replayCommand: string
+  readonly replayWorkingDirectory: string
   readonly freshCloneSetup: readonly string[]
   readonly evidenceSurfaces?: readonly string[]
   readonly evidenceDirectory?: string
@@ -162,6 +163,11 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.replayCommand,
       'npm run smoke:ax-demo',
       'manifest should expose the top-level command that replays this evidence bundle',
+    )
+    assert.equal(
+      manifest.replayWorkingDirectory,
+      '.',
+      'manifest should expose repo-root as the top-level replay working directory',
     )
     assert.deepEqual(
       manifest.freshCloneSetup,

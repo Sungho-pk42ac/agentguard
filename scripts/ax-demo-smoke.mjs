@@ -145,6 +145,8 @@ writeFileSync(
       generatedBy: 'agentguard ax-demo-smoke',
       evidencePurpose:
         'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
+      producerIntent:
+        'Reviewer source-of-record handoff for rerunnable AX smoke evidence; not approval, automatic upload, certification, scanner parity, or runtime authorization/session enforcement.',
       replayCommand: 'npm run smoke:ax-demo',
       replayWorkingDirectory: '.',
       freshCloneSetup: ['npm ci', 'npm run build'],

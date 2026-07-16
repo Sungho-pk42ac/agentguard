@@ -230,6 +230,7 @@ Verdicts:
 - [AX emergency stop runbook](docs/ax-emergency-stop-runbook.md)
 - [AX guardrail tripwire evidence card](docs/ax-guardrail-tripwire-evidence-card.md)
 - [AX agent tool onboarding readiness](docs/ax-agent-tool-onboarding-readiness.md)
+- [AX human approval gate checklist](docs/ax-human-approval-gate-checklist.md)
 - [AX agent rollout preflight checklist](docs/ax-agent-rollout-preflight-checklist.md)
 - [AX control objective map](docs/ax-control-objective-map.md)
 - [AX control-plane CI gate card](docs/ax-control-plane-ci-gate-card.md)

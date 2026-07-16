@@ -170,6 +170,7 @@ writeFileSync(
       evidenceDirectory: relativeArtifactPath(evidenceDir),
       manifestPath: relativeArtifactPath(manifestPath),
       requiredArtifacts: manifest.map((item) => item.artifact),
+      requiredSources: requiredSources(manifest),
       startedAt: bundleStartedAt,
       completedAt: bundleCompletedAt,
       durationMs: bundleDurationMs,
@@ -254,6 +255,18 @@ function summarizeChecks(checks) {
     },
     { total: 0, pass: 0, review: 0, block: 0, acceptedNonZero: 0 },
   )
+}
+
+function requiredSources(checks) {
+  const sources = []
+  for (const check of checks) {
+    for (const source of [check.inputPath, check.policyPath]) {
+      if (typeof source === 'string' && source.length > 0 && !sources.includes(source)) {
+        sources.push(source)
+      }
+    }
+  }
+  return sources
 }
 
 function smokeRunId() {

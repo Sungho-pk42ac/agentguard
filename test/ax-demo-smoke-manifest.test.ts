@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { test } from 'node:test'
@@ -88,6 +88,7 @@ type SmokeManifest = {
   readonly evidenceDirectory?: string
   readonly manifestPath?: string
   readonly requiredArtifacts?: readonly string[]
+  readonly requiredSources?: readonly string[]
   readonly generatedAt?: string
   readonly startedAt?: string
   readonly completedAt?: string
@@ -240,6 +241,22 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
         isPathInside(resolvedEvidenceDirectory, resolveManifestPath(artifact)),
       ),
       'manifest requiredArtifacts should resolve inside the evidenceDirectory source-of-record',
+    )
+    const expectedRequiredSources = Array.from(
+      new Set(
+        (manifest.checks ?? []).flatMap((check) =>
+          [check.inputPath, check.policyPath].filter((path): path is string => typeof path === 'string' && path.length > 0),
+        ),
+      ),
+    )
+    assert.deepEqual(
+      manifest.requiredSources,
+      expectedRequiredSources,
+      'manifest should expose top-level requiredSources derived from checks[] inputPath/policyPath in stable first-seen order',
+    )
+    assert.ok(
+      (manifest.requiredSources ?? []).every((sourcePath) => existsSync(resolveManifestPath(sourcePath))),
+      'manifest requiredSources should point at existing repo source/policy files for replay',
     )
     assert.match(
       manifest.generatedAt ?? '',

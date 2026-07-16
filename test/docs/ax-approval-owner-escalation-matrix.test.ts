@@ -13,6 +13,7 @@ const requiredHeadings = [
   '## purpose',
   '## public reference signals',
   '## verdict-to-owner escalation matrix',
+  '## pre-rollout guardrail review checkpoints',
   '## fixture-backed evidence commands',
   '## machine-contract guardrails',
   '## claim guardrails',
@@ -23,6 +24,8 @@ const publicReferenceUrls = [
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support',
   'https://registry.npmjs.org/snyk',
+  'https://openai.github.io/openai-agents-js/guides/guardrails/',
+  'https://docs.anthropic.com/en/docs/claude-code/security',
 ] as const
 
 const fixtureBackedCommands = [
@@ -140,6 +143,34 @@ test('AX approval owner escalation matrix maps verdicts to owners and actions', 
   for (const owner of ['business owner', 'security owner', 'evidence owner', 'pilot owner'] as const) {
     expectLiteral(doc, owner)
   }
+})
+
+test('AX approval owner escalation matrix maps guardrail review checkpoints to owners and evidence', () => {
+  const doc = readDoc()
+
+  assert.match(
+    doc,
+    /\|\s*Checkpoint\s*\|\s*Owner question\s*\|\s*Evidence command\s*\|\s*Decision rule\s*\|/,
+  )
+
+  for (const term of [
+    'guardrail input/output check',
+    'tool permission review',
+    'least privilege consent review',
+    'SARIF reviewer handoff',
+    'business owner',
+    'security owner',
+    'evidence owner',
+    'node dist/index.js scan-diff --json < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff',
+    'node dist/index.js scan-mcp --json < examples/enterprise-scenarios/commerce-voc-agent/risky-mcp.json',
+    'node dist/index.js scan-log --json --policy examples/agent-policy.yaml < examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log',
+    'node dist/index.js scan-diff --sarif --out .agentguard-demo/approval-owner-escalation.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff',
+  ] as const) {
+    expectLiteral(doc, term)
+  }
+
+  assert.match(doc, /OpenAI guardrails?를 실행한다고 말하지 않는다/i)
+  assert.match(doc, /Claude Code\/Anthropic approval/i)
 })
 
 test('AX approval owner escalation matrix uses exact fixture-backed commands and existing fixture paths', () => {

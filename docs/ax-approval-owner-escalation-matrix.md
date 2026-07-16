@@ -16,6 +16,8 @@
 | MCP Security Best Practices: https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices | least privilege, consent, control, tool access review | runtime MCP enforcement claim | `scan-mcp` evidence를 security owner의 permission review 입력으로 전달 |
 | GitHub SARIF support: https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support | `ruleId`, `artifactLocation.uri`, `region.startLine`, artifact handoff field framing | GitHub 보증 또는 제품 기능 비교 표현 | `.agentguard-demo/approval-owner-escalation.sarif`를 reviewer handoff artifact 예시로 사용 |
 | Snyk npm public package: https://registry.npmjs.org/snyk | mature CLI, rerunnable evidence, package-distributed command expectation | Snyk와 기능 비교 표현 | AgentGuard CLI evidence도 같은 방식으로 다시 실행 가능한 명령과 artifact를 남긴다고 설명 |
+| OpenAI Agents SDK guardrails: https://openai.github.io/openai-agents-js/guides/guardrails/ | guardrail input/output check framing, tripwire-before-handoff vocabulary | OpenAI guardrails를 실행한다고 말하지 않는다 | `scan-diff`/`scan-log` evidence를 rollout 전 guardrail checkpoint 질문으로 바꾼다 |
+| Anthropic Claude Code security: https://docs.anthropic.com/en/docs/claude-code/security | tool permission review, workspace trust, and human approval boundary framing | Claude Code/Anthropic approval 또는 runtime sandbox 보증 표현 | `scan-mcp`와 transcript evidence를 security owner의 tool permission review 입력으로 전달 |
 
 ## verdict-to-owner escalation matrix
 
@@ -36,6 +38,19 @@ Owner shorthand:
 - security owner: 권한, 민감정보, tool access review, residual risk 책임자
 - evidence owner: `scan-diff`, `scan-mcp`, `scan-log`, SARIF/JSON artifact 재실행 책임자
 - pilot owner: 제한 rollout 일정, rollback, 현장 운영 책임자
+
+## pre-rollout guardrail review checkpoints
+
+이 checkpoint는 AgentGuard가 runtime guardrail, OAuth state validation, MCP enforcement, hosted approval workflow를 새로 수행한다는 뜻이 아니다. 공개 reference에서 빌린 guardrail/security 언어를 현재 fixture-backed evidence command와 owner question으로 연결하는 judge-facing approval checklist다.
+
+| Checkpoint | Owner question | Evidence command | Decision rule |
+| --- | --- | --- | --- |
+| guardrail input/output check | business owner가 agent-generated PR delta를 업무 rollout 후보로 받을 수 있는가? | `node dist/index.js scan-diff --json < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | `BLOCK`이면 rollout 중지, `REVIEW`이면 business owner가 fix/policy 조건을 적고 evidence owner가 재실행 |
+| tool permission review | security owner가 MCP/tool permission과 workspace trust boundary를 승인할 수 있는가? | `node dist/index.js scan-mcp --json < examples/enterprise-scenarios/commerce-voc-agent/risky-mcp.json` | broad root, credential passthrough, or risky command surface가 보이면 least-privilege 축소 전까지 `BLOCK` 또는 conditional `REVIEW` |
+| least privilege consent review | security owner와 pilot owner가 transcript/log의 승인 필요 행동을 사용자 동의/권한 축소 조건으로 설명할 수 있는가? | `node dist/index.js scan-log --json --policy examples/agent-policy.yaml < examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log` | approval-required operation은 owner, residual risk, rerun trigger가 없으면 rollout 후보로 넘기지 않음 |
+| SARIF reviewer handoff | evidence owner가 같은 finding을 reviewer channel artifact로 전달할 수 있는가? | `node dist/index.js scan-diff --sarif --out .agentguard-demo/approval-owner-escalation.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | SARIF artifact는 reviewer handoff source-of-record다. 자동 upload, 자동 승인, GitHub 보증을 뜻하지 않음 |
+
+Non-claims: OpenAI guardrails를 실행한다고 말하지 않는다. Claude Code/Anthropic approval을 받은 것처럼 말하지 않는다. MCP runtime authorization, session binding, redirect URI validation, hosted dashboard, customer rollout proof는 이 문서 범위가 아니다.
 
 ## fixture-backed evidence commands
 

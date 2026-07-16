@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -88,6 +88,42 @@ test('scan -> save -> mutate -> re-scan -> diff smoke (appeared + disappeared)',
 test('loadBaseline returns undefined when no snapshot exists', () => {
   const home = mkdtempSync(join(tmpdir(), 'agentguard-baseline-missing-'))
   assert.equal(loadBaseline('nope', home), undefined)
+})
+
+test('baselineSchema accepts only strict UTC ISO createdAt timestamps', () => {
+  const validBaseline = buildBaseline([residual('a')])
+
+  for (const createdAt of ['2026-07-16T00:00:00Z', '2026-07-16T00:00:00.123Z'] as const) {
+    assert.doesNotThrow(() => baselineSchema.parse({ ...validBaseline, createdAt }), createdAt)
+  }
+
+  for (const createdAt of [
+    'July 16, 2026',
+    '2026-07-16T00:00:00+00:00',
+    '2026-07-16T00:00:00',
+    '2026-02-30T00:00:00Z',
+    '2026-07-16T00:00:00.1Z',
+    '2026-07-16T00:00:00.1234Z',
+  ] as const) {
+    assert.throws(
+      () => baselineSchema.parse({ ...validBaseline, createdAt }),
+      /createdAt must be an ISO-8601 UTC timestamp/,
+      createdAt,
+    )
+  }
+})
+
+test('loadBaseline rejects a snapshot with a non-ISO UTC createdAt', () => {
+  // Given: a baseline file whose timestamp was tampered outside saveBaseline.
+  const home = mkdtempSync(join(tmpdir(), 'agentguard-baseline-created-at-'))
+  const scanId = 'bad-created-at'
+  const baseline = buildBaseline([residual('a')])
+  const dir = join(home, '.agentguard', 'baselines')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, `${scanId}.json`), JSON.stringify({ ...baseline, scanId, createdAt: 'July 16, 2026' }))
+
+  // When/Then: loading rejects the malformed evidence metadata.
+  assert.throws(() => loadBaseline(scanId, home), /createdAt/)
 })
 
 test('baselineSchema rejects a tampered schema version', () => {

@@ -128,6 +128,7 @@ test('AX smoke evidence manifest handoff card is Korean-first and frames manifes
     'packageName',
     'npmVersion',
     'packageManager',
+    'packageLockSha256',
   ] as const) {
     expectLiteral(card, term)
   }
@@ -162,6 +163,7 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'gitTreeState',
     'npmVersion',
     'packageManager',
+    'packageLockSha256',
     'total',
     'pass',
     'review',
@@ -207,6 +209,8 @@ test('AX smoke evidence manifest handoff card requires hash-backed replay and fr
     'manifest hash',
     'referenced JSON/SARIF artifact hash',
     'source fixture hash',
+    'package-lock.json hash',
+    'dependency-lock provenance',
     'freshness expires',
     'npm run smoke:ax-demo',
   ] as const) {

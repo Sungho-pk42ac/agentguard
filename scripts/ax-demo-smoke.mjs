@@ -162,6 +162,12 @@ writeFileSync(
         'AX Rollout Guard fixture-backed smoke evidence for PR diff, MCP config, transcript/log, and SARIF reviewer handoff',
       producerIntent:
         'Reviewer source-of-record handoff for rerunnable AX smoke evidence; not approval, automatic upload, certification, scanner parity, or runtime authorization/session enforcement.',
+      claimBoundaries: [
+        'Not approval evidence by itself; reviewers must inspect checks, artifacts, and rerun commands.',
+        'Does not automatically upload SARIF or own GitHub code-scanning workflow execution.',
+        'Does not implement runtime MCP authorization, OAuth/session enforcement, or consent UI.',
+        'Does not claim parity, replacement, certification, customer adoption, or vendor-scale scanner coverage.',
+      ],
       replayCommand: 'npm run smoke:ax-demo',
       replayCommandArgs: ['npm', 'run', 'smoke:ax-demo'],
       replayWorkingDirectory: '.',

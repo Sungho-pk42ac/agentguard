@@ -80,6 +80,7 @@ type SmokeManifest = {
   readonly generatedBy: string
   readonly evidencePurpose: string
   readonly producerIntent?: string
+  readonly claimBoundaries?: readonly string[]
   readonly replayCommand: string
   readonly replayCommandArgs?: readonly string[]
   readonly replayWorkingDirectory: string
@@ -182,6 +183,16 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.producerIntent,
       'Reviewer source-of-record handoff for rerunnable AX smoke evidence; not approval, automatic upload, certification, scanner parity, or runtime authorization/session enforcement.',
       'manifest should state the producer intent and non-claim boundary for reviewer handoff',
+    )
+    assert.deepEqual(
+      manifest.claimBoundaries,
+      [
+        'Not approval evidence by itself; reviewers must inspect checks, artifacts, and rerun commands.',
+        'Does not automatically upload SARIF or own GitHub code-scanning workflow execution.',
+        'Does not implement runtime MCP authorization, OAuth/session enforcement, or consent UI.',
+        'Does not claim parity, replacement, certification, customer adoption, or vendor-scale scanner coverage.',
+      ],
+      'manifest should expose stable machine-readable claim boundaries for reviewer handoff',
     )
     assert.equal(
       manifest.replayCommand,

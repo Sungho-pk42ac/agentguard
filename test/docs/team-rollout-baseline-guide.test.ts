@@ -48,9 +48,12 @@ test('team rollout baseline guide exists and is linked from public docs entrypoi
   assert.ok(existsSync(guidePath), 'docs/team-rollout-baseline-guide.md should exist')
 
   const rootReadme = readFileSync(join(repoRoot, 'README.md'), 'utf8')
+  const englishReadme = readFileSync(join(repoRoot, 'README.en.md'), 'utf8')
   const actionDocs = readFileSync(join(repoRoot, 'docs', 'github-action.md'), 'utf8')
 
   assert.match(rootReadme, /\[Team rollout baseline guide\]\(docs\/team-rollout-baseline-guide\.md\)/)
+  assert.match(englishReadme, /\[Team rollout baseline guide\]\(docs\/team-rollout-baseline-guide\.md\)/)
+  assert.match(englishReadme, /baseline\/noise triage[\s\S]{0,220}false-positive[\s\S]{0,220}allowlist/i)
   assert.match(actionDocs, /\[Team rollout baseline guide\]\(team-rollout-baseline-guide\.md\)/)
 })
 

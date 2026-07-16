@@ -47,6 +47,9 @@ outputs:
   finding-count:
     description: Total non-advisory AgentGuard findings count.
     value: ${{ steps.scan.outputs.finding-count }}
+  advisory-count:
+    description: Advisory AgentGuard findings count excluded from gate scoring.
+    value: ${{ steps.scan.outputs.advisory-count }}
   review-count:
     description: Non-advisory medium/high/critical findings count for workflow routing; conclusion remains score-based.
     value: ${{ steps.scan.outputs.review-count }}
@@ -208,16 +211,19 @@ runs:
           const findings = JSON.parse(readFileSync(process.argv[1], 'utf8'))
           const weight = Object.assign(Object.create(null), { low: 1, medium: 2, high: 3, critical: 4 })
           const nonAdvisoryFindings = findings.filter((finding) => !finding.advisory)
+          const advisoryCount = findings.filter((finding) => finding.advisory === true).length
           const score = nonAdvisoryFindings.reduce((sum, finding) => sum + (weight[finding.severity] ?? 0), 0)
           const reviewCount = nonAdvisoryFindings.filter((finding) => finding.severity === 'medium' || finding.severity === 'high' || finding.severity === 'critical').length
           const conclusion = score === 0 ? 'pass' : score >= 8 ? 'block' : 'review'
           console.log('conclusion=' + conclusion)
           console.log('finding-count=' + nonAdvisoryFindings.length)
+          console.log('advisory-count=' + advisoryCount)
           console.log('review-count=' + reviewCount)
           console.log('block-count=' + score)
         " -- "$json_path")
         conclusion=$(printf '%s\n' "$action_outputs" | sed -n 's/^conclusion=//p')
         finding_count=$(printf '%s\n' "$action_outputs" | sed -n 's/^finding-count=//p')
+        advisory_count=$(printf '%s\n' "$action_outputs" | sed -n 's/^advisory-count=//p')
         review_count=$(printf '%s\n' "$action_outputs" | sed -n 's/^review-count=//p')
         block_count=$(printf '%s\n' "$action_outputs" | sed -n 's/^block-count=//p')
 
@@ -234,6 +240,7 @@ runs:
             echo ""
             echo "- conclusion: $conclusion"
             echo "- finding-count: $finding_count"
+            echo "- advisory-count: $advisory_count"
             echo "- review-count: $review_count"
             echo "- block-count: $block_count"
             echo "- report-path: $report_path"

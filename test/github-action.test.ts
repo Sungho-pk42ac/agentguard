@@ -154,6 +154,7 @@ test('published GitHub Action exposes a team-ready PR gate contract', () => {
   assert.equal(action.outputs['report-path'].value, '${{ steps.scan.outputs.report-path }}')
   assert.equal(action.outputs['sarif-path'].value, '${{ steps.scan.outputs.sarif-path }}')
   assert.equal(action.outputs['finding-count'].value, '${{ steps.scan.outputs.finding-count }}')
+  assert.equal(action.outputs['advisory-count'].value, '${{ steps.scan.outputs.advisory-count }}')
   assert.equal(action.outputs['review-count'].value, '${{ steps.scan.outputs.review-count }}')
   assert.equal(action.outputs['block-count'].value, '${{ steps.scan.outputs.block-count }}')
 
@@ -192,6 +193,7 @@ test('published GitHub Action computes machine-readable finding count outputs fr
   assert.deepEqual(outputs, {
     conclusion: 'block',
     'finding-count': '4',
+    'advisory-count': '1',
     'review-count': '3',
     'block-count': '10',
   })
@@ -209,6 +211,7 @@ test('local GitHub Action computes machine-readable finding count outputs from J
   assert.deepEqual(outputs, {
     conclusion: 'block',
     'finding-count': '4',
+    'advisory-count': '1',
     'review-count': '3',
     'block-count': '10',
   })
@@ -226,6 +229,7 @@ test('published and local GitHub Actions ignore prototype severity names in coun
     assert.deepEqual(actionComputedOutputs(actionPath, findings), {
       conclusion: 'review',
       'finding-count': '4',
+      'advisory-count': '0',
       'review-count': '1',
       'block-count': '2',
     })
@@ -245,6 +249,7 @@ test('published and local GitHub Actions prepend gate metadata to job summary', 
     for (const expectedLine of [
       'conclusion: $conclusion',
       'finding-count: $finding_count',
+      'advisory-count: $advisory_count',
       'review-count: $review_count',
       'block-count: $block_count',
       'report-path: $report_path',
@@ -468,6 +473,7 @@ test('local GitHub Action exposes fail-on gate parity with the published action'
   assert.equal(action.inputs['fail-on'].required, false)
   assert.equal(action.inputs['fail-on'].default, 'block')
   assert.equal(action.outputs['finding-count'].value, '${{ steps.scan.outputs.finding-count }}')
+  assert.equal(action.outputs['advisory-count'].value, '${{ steps.scan.outputs.advisory-count }}')
   assert.equal(action.outputs['review-count'].value, '${{ steps.scan.outputs.review-count }}')
   assert.equal(action.outputs['block-count'].value, '${{ steps.scan.outputs.block-count }}')
   assert.equal(scanStep.env.FAIL_ON, '${{ inputs.fail-on }}')

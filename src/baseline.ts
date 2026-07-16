@@ -21,11 +21,20 @@ const baselineEntrySchema = z.strictObject({
   valueHash: z.string().optional(),
 })
 
+const utcIsoTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/
+
+function isUtcIsoTimestamp(value: string): boolean {
+  if (!utcIsoTimestampPattern.test(value)) return false
+  const normalized = value.includes('.') ? value : value.replace('Z', '.000Z')
+  const timestamp = new Date(value)
+  return !Number.isNaN(timestamp.valueOf()) && timestamp.toISOString() === normalized
+}
+
 export const baselineSchema = z.strictObject({
   schemaVersion: z.literal(BASELINE_SCHEMA_VERSION),
   tool: z.literal('agentguard'),
   scanId: z.string().min(1),
-  createdAt: z.string().min(1),
+  createdAt: z.string().refine(isUtcIsoTimestamp, 'createdAt must be an ISO-8601 UTC timestamp'),
   trackRotation: z.boolean(),
   entries: z.array(baselineEntrySchema),
 })

@@ -164,6 +164,40 @@ test('AX public reference fallback provenance card uses exact fixture-backed com
   }
 })
 
+test('AX public reference fallback provenance card includes a status-to-evidence decision matrix', () => {
+  const doc = readDoc()
+
+  assert.match(doc, /^## Status-to-evidence decision matrix$/m)
+  assert.match(
+    doc,
+    /\|\s*Source status\s*\|\s*Next evidence command\s*\|\s*Operator decision\s*\|\s*Do not claim\s*\|/,
+  )
+
+  for (const route of [
+    'PUBLIC_FETCH_200',
+    'PUBLIC_WAF_403',
+    'PUBLIC_REGISTRY_FALLBACK_200',
+    'INSANE_SEARCH_UNAVAILABLE',
+    'AUTH_REQUIRED_STOP',
+  ] as const) {
+    expectLiteral(doc, route)
+  }
+
+  for (const { command } of fixtureBackedCommands) {
+    expectLiteral(doc, command)
+  }
+
+  for (const decisionTerm of [
+    'source status first, evidence command second',
+    'blocked page is not evidence',
+    'registry metadata is category pressure only',
+    'stop at auth boundary',
+    'rerun smoke manifest before handoff',
+  ] as const) {
+    expectLiteral(doc, decisionTerm)
+  }
+})
+
 test('AX public reference fallback provenance card preserves English-compatible machine contracts', () => {
   const doc = readDoc()
 

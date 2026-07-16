@@ -174,6 +174,8 @@ For a Korean-first agentic tool-use approval queue that maps PR/MCP/transcript/S
 
 For a Korean-first evidence acceptance receipt that maps source evidence to artifact, owner, acceptance condition, and rerun trigger, see [AX evidence acceptance receipt](ax-evidence-acceptance-receipt.md).
 
+For a Korean-first workspace trust approval checklist that maps public agent/MCP/security signals to exact AgentGuard evidence commands, see [AX workspace trust approval checklist](ax-workspace-trust-approval-checklist.md).
+
 For a Korean-first review artifact acceptance checklist that maps PR/MCP/transcript/SARIF evidence bundles to accept, rerun, or block decisions, see [AX review artifact acceptance checklist](ax-review-artifact-acceptance-checklist.md).
 
 For a Korean-first fresh-clone verifier path from `npm ci && npm run build` to exact PR/MCP/transcript/SARIF proof commands, see [AX fresh-clone verifier card](ax-fresh-clone-verifier-card.md).

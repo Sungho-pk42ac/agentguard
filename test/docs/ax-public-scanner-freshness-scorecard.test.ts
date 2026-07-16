@@ -9,14 +9,27 @@ const repoRoot = findRepoRoot(testDir)
 const scorecardDocPath = join(repoRoot, 'docs', 'ax-public-scanner-freshness-scorecard.md')
 
 const publicReferenceUrls = [
+  'https://hackathon.jocodingax.ai/',
+  'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
+  'https://modelcontextprotocol.io/specification/draft/basic/security_best_practices',
+  'https://registry.npmjs.org/agent-scan',
   'https://github.com/snyk/agent-scan',
   'https://github.com/Tencent/AI-Infra-Guard',
   'https://github.com/splx-ai/agentic-radar',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
 ] as const
 
 const freshPublicSignalTerms = [
   'Fresh public-signal rows checked in this run',
+  'AX 인재전쟁 2026 - 진짜 AI 인재를 찾는다',
+  '국내 대표 기업이 AI 인재를 채용합니다',
+  'Agentic AI - OWASP Lists Threats and Mitigations',
+  'Security Best Practices - Model Context Protocol',
+  'Security considerations, attack vectors, and best practices for MCP implementations',
+  'agent-scan 0.0.1',
+  'Detect suspicious AI agents activities on GitHub',
+  'SARIF support for code scanning - GitHub Docs',
   'agent/MCP/skills scanner category',
   'MCP execution-consent warning',
   'does not execute MCP servers',

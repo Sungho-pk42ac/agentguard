@@ -74,6 +74,23 @@ function expectedGitTreeState(): 'clean' | 'dirty' {
   return porcelain.length === 0 ? 'clean' : 'dirty'
 }
 
+function withoutGitHubActionsEnv(extraEnv: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  const env = { ...process.env, ...extraEnv }
+  for (const key of [
+    'GITHUB_ACTIONS',
+    'GITHUB_SERVER_URL',
+    'GITHUB_REPOSITORY',
+    'GITHUB_RUN_ID',
+    'GITHUB_RUN_ATTEMPT',
+    'GITHUB_WORKFLOW',
+    'GITHUB_REF',
+    'GITHUB_SHA',
+  ] as const) {
+    delete env[key]
+  }
+  return env
+}
+
 type SmokeManifest = {
   readonly schemaVersion: string
   readonly runId?: string
@@ -105,6 +122,7 @@ type SmokeManifest = {
   readonly gitCommitSha: string
   readonly gitBranch?: string
   readonly gitTreeState?: 'clean' | 'dirty'
+  readonly ciRun?: SmokeManifestCiRun
   readonly nodeVersion: string
   readonly platform: string
   readonly arch: string
@@ -118,6 +136,16 @@ type SmokeManifestSummary = {
   readonly review?: number
   readonly block?: number
   readonly acceptedNonZero?: number
+}
+
+type SmokeManifestCiRun = {
+  readonly serverUrl?: string
+  readonly repository?: string
+  readonly runId?: string
+  readonly runAttempt?: string
+  readonly workflow?: string
+  readonly ref?: string
+  readonly sha?: string
 }
 
 type SmokeManifestCheck = {
@@ -157,7 +185,7 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
   try {
     execFileSync(process.execPath, [join(repoRoot, 'scripts', 'ax-demo-smoke.mjs')], {
       cwd: repoRoot,
-      env: { ...process.env, AGENTGUARD_AX_DEMO_EVIDENCE_DIR: evidenceDir },
+      env: withoutGitHubActionsEnv({ AGENTGUARD_AX_DEMO_EVIDENCE_DIR: evidenceDir }),
       stdio: 'pipe',
       timeout: 120_000,
     })
@@ -376,6 +404,7 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       'manifest should record whether tracked source files were clean or dirty when smoke evidence was produced',
     )
     assert.match(manifest.gitTreeState ?? '', /^(clean|dirty)$/, 'manifest gitTreeState should be clean or dirty')
+    assert.equal(manifest.ciRun, undefined, 'local smoke manifests must omit ciRun rather than inventing CI evidence')
     assert.equal(manifest.nodeVersion, process.version, 'manifest should record the exact Node.js runtime version')
     assert.match(manifest.nodeVersion ?? '', /^v\d+\.\d+\.\d+/, 'manifest nodeVersion should be a safe Node semver string')
     assert.equal(manifest.platform, process.platform, 'manifest should record the exact Node.js platform')
@@ -501,6 +530,44 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       },
       'manifest should expose reviewer-ready verdicts for each evidence surface',
     )
+
+    const ciEvidenceDir = mkdtempSync(join(tmpdir(), 'agentguard-ax-smoke-cirun-'))
+    try {
+      execFileSync(process.execPath, [join(repoRoot, 'scripts', 'ax-demo-smoke.mjs')], {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          AGENTGUARD_AX_DEMO_EVIDENCE_DIR: ciEvidenceDir,
+          GITHUB_ACTIONS: 'true',
+          GITHUB_SERVER_URL: 'https://github.com',
+          GITHUB_REPOSITORY: 'Sungho-pk42ac/agentguard',
+          GITHUB_RUN_ID: '29538364564',
+          GITHUB_RUN_ATTEMPT: '2',
+          GITHUB_WORKFLOW: 'CI',
+          GITHUB_REF: 'refs/heads/main',
+          GITHUB_SHA: '0123456789abcdef0123456789abcdef01234567',
+        },
+        stdio: 'pipe',
+        timeout: 120_000,
+      })
+
+      const ciManifest = JSON.parse(readFileSync(join(ciEvidenceDir, 'manifest.json'), 'utf8')) as SmokeManifest
+      assert.deepEqual(
+        ciManifest.ciRun,
+        {
+          serverUrl: 'https://github.com',
+          repository: 'Sungho-pk42ac/agentguard',
+          runId: '29538364564',
+          runAttempt: '2',
+          workflow: 'CI',
+          ref: 'refs/heads/main',
+          sha: '0123456789abcdef0123456789abcdef01234567',
+        },
+        'GitHub Actions smoke manifests should record safe CI run provenance exactly from the environment',
+      )
+    } finally {
+      rmSync(ciEvidenceDir, { recursive: true, force: true })
+    }
 
     const explicitRunEvidenceDir = mkdtempSync(join(tmpdir(), 'agentguard-ax-smoke-runid-'))
     try {

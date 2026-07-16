@@ -200,6 +200,8 @@ For a Korean-first agent/tool onboarding readiness card that maps `doctor`, MCP 
 
 For a Korean-first 60-second agent rollout preflight path from `doctor --json` to PR diff, MCP config, transcript/log, and SARIF reviewer evidence, see [AX agent rollout preflight checklist](ax-agent-rollout-preflight-checklist.md).
 
+For a Korean-first public-reference-to-run-decision trace that maps public signals to exact fixture-backed evidence commands, see [AX public reference run trace](ax-public-reference-run-trace.md).
+
 ## AX company problem intake kit
 
 [AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.

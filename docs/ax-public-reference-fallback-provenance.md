@@ -43,6 +43,18 @@
 | SARIF artifact | `node dist/index.js scan-diff --sarif --out .agentguard-demo/public-reference-fallback-provenance.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | `.agentguard-demo/public-reference-fallback-provenance.sarif` | CI/reviewer owner archives or uploads the artifact through a separately approved workflow. |
 | smoke manifest | `npm run smoke:ax-demo` | `scripts/ax-demo-smoke.mjs`; `.agentguard-demo/ax-evidence-smoke/manifest.json` | reviewer checks `schemaVersion`, `gitCommitSha`, `summary`, `checks[]`, and per-lane expected results before handoff. |
 
+## Status-to-evidence decision matrix
+
+원칙: source status first, evidence command second. 공개 reference는 방향 신호이고, 승인 판단은 아래 fixture-backed evidence command를 다시 실행한 결과로만 남깁니다.
+
+| Source status | Next evidence command | Operator decision | Do not claim |
+|---|---|---|---|
+| `PUBLIC_FETCH_200` | `node dist/index.js scan-diff < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | public source에서 빌린 risk language를 PR diff evidence로 낮추고, 필요하면 rerun smoke manifest before handoff. | external endorsement, certification, or production-readiness. |
+| `PUBLIC_WAF_403` | `node dist/index.js scan-mcp < examples/enterprise-scenarios/commerce-voc-agent/risky-mcp.json` | blocked page is not evidence; WAF 상태를 provenance로 기록한 뒤 MCP permission evidence로만 설명합니다. | blocked page contents, insane-search success, or hidden page quote. |
+| `PUBLIC_REGISTRY_FALLBACK_200` | `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/enterprise-scenarios/commerce-voc-agent/agent-transcript.log` | registry metadata is category pressure only; package category wording은 transcript/log approval owner 질문으로 전환합니다. | npm popularity, maturity, adoption, scanner parity, or vendor assurance. |
+| `INSANE_SEARCH_UNAVAILABLE` | `npm run smoke:ax-demo` | fallback research와 insane-search boundary를 분리하고, smoke manifest source-of-record로 재현성을 확인합니다. | calling normal fetch or registry fallback “insane-search evidence”. |
+| `AUTH_REQUIRED_STOP` | `node dist/index.js scan-diff --sarif --out .agentguard-demo/public-reference-fallback-provenance.sarif < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | stop at auth boundary; private/auth/paywall content은 보지 않고, 공개 fixture SARIF artifact만 reviewer handoff로 남깁니다. | auth bypass, private content inference, automatic SARIF upload, or runtime authorization control. |
+
 ## Machine contracts
 
 - Commands remain `agentguard scan-diff`, `agentguard scan-mcp`, `agentguard scan-log`, and `agentguard doctor`.

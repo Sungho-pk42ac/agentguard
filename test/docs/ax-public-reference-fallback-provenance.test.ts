@@ -18,6 +18,8 @@ const publicReferenceUrls = [
   'https://github.com/Tencent/AI-Infra-Guard',
   'https://www.npmjs.com/package/agent-scan',
   'https://registry.npmjs.org/agent-scan',
+  'https://openai.com/index/introducing-agentkit/',
+  'https://registry.npmjs.org/agent-security-scanner-mcp',
 ] as const
 
 const fixtureBackedCommands = [
@@ -133,6 +135,12 @@ test('AX public reference fallback provenance card cites public sources and keep
     'A full-stack AI Red Teaming platform securing AI ecosystems',
     'Detect suspicious AI agents activities on GitHub',
     'latest version `0.0.1`',
+    'OpenAI AgentKit public page',
+    'PUBLIC_WAF_403`; HTTP 403 from this Hermes environment; no AgentKit page content was read',
+    'agent-security-scanner-mcp',
+    'latest version `4.4.12`',
+    'npm audit for AI agents and MCP servers',
+    'Claude Code, Cursor, Windsurf, Cline, OpenClaw, and CI',
     'category pressure',
     'Korean-first rollout approval evidence',
   ] as const) {

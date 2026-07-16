@@ -242,6 +242,8 @@ For a Korean-first pilot responsibility handoff that assigns business approval, 
 
 For a Korean-first approval owner escalation matrix that maps `PASS` / `REVIEW` / `BLOCK` evidence to business/security owner action and rerun responsibility, see [AX approval owner escalation matrix](ax-approval-owner-escalation-matrix.md).
 
+For a Korean-first security reviewer question bank that maps workspace trust, least-privilege, agent/MCP surface inventory, and SARIF handoff questions to exact evidence commands, see [AX security reviewer question bank](ax-security-reviewer-question-bank.md).
+
 For a Korean-first incident response evidence card mapping AgentGuard `BLOCK` / `REVIEW` findings to triage, containment owner, fix/policy condition, rerun command, and approval/residual-risk sentence, see [AX incident response evidence card](ax-incident-response-evidence-card.md).
 
 For a Korean-first finding lifecycle approval card mapping finding, source evidence, owner, fix/policy condition, rerun command/artifact, and approval decision, see [AX finding lifecycle approval card](ax-finding-lifecycle-approval-card.md).

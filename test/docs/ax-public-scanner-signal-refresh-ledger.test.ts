@@ -21,6 +21,9 @@ const publicReferenceUrls = [
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+  'https://openai.github.io/openai-agents-python/guardrails/',
+  'https://docs.anthropic.com/en/docs/claude-code/security',
+  'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning',
 ] as const
 
 const fixtureBackedCommands = [
@@ -138,6 +141,14 @@ test('AX public scanner signal refresh ledger is Korean-first and maps source si
     'approval gate',
     'unknown company problem',
     'Korean-first rollout approval',
+    'input guardrails',
+    'output guardrails',
+    'tool guardrails',
+    'tripwire',
+    'Claude Code Security',
+    'workspace trust',
+    'human approval boundary',
+    'SARIF support for code scanning',
     '401 Invalid authentication credentials',
     'insane-search evidence',
     'HTTP 403',
@@ -187,10 +198,11 @@ test('AX public scanner signal refresh ledger records a concrete public freshnes
   )
 
   for (const snapshot of [
-    'Checked on 2026-07-15 via public fallback fetch; insane-search escalation was not required',
-    'Agentic AI - OWASP Lists Threats and Mitigations',
+    'Checked on 2026-07-16 via public fallback fetch; insane-search escalation was not required',
+    'Guardrails - OpenAI Agents SDK',
+    'Security - Claude Code Docs',
     'Security Best Practices - Model Context Protocol',
-    'Uploading a SARIF file to GitHub - GitHub Docs',
+    'SARIF support for code scanning - GitHub Docs',
     'Security scanner for AI agents, MCP servers and agent skills',
     'A full-stack AI Red Teaming platform securing AI ecosystems',
     'A security scanner for your LLM agentic workflows',

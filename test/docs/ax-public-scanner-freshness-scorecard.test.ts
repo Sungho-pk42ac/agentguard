@@ -11,7 +11,7 @@ const scorecardDocPath = join(repoRoot, 'docs', 'ax-public-scanner-freshness-sco
 const publicReferenceUrls = [
   'https://hackathon.jocodingax.ai/',
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
-  'https://modelcontextprotocol.io/specification/draft/basic/security_best_practices',
+  'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://registry.npmjs.org/agent-scan',
   'https://github.com/snyk/agent-scan',
   'https://github.com/Tencent/AI-Infra-Guard',
@@ -26,6 +26,8 @@ const freshPublicSignalTerms = [
   '국내 대표 기업이 AI 인재를 채용합니다',
   'Agentic AI - OWASP Lists Threats and Mitigations',
   'Security Best Practices - Model Context Protocol',
+  'current MCP security URL HTTP 200',
+  'normal public fetch; insane-search escalation not required',
   'Security considerations, attack vectors, and best practices for MCP implementations',
   'agent-scan 0.0.1',
   'Detect suspicious AI agents activities on GitHub',

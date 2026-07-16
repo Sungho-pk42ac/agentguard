@@ -93,6 +93,7 @@ type SmokeManifest = {
   readonly packageName?: string
   readonly packageVersion?: string
   readonly npmVersion?: string
+  readonly packageManager?: string
   readonly repositoryUrl?: string
   readonly gitCommitSha: string
   readonly gitBranch?: string
@@ -293,6 +294,16 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.npmVersion ?? '',
       /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/,
       'manifest should record the npm CLI version used to replay the smoke evidence bundle',
+    )
+    assert.equal(
+      manifest.packageManager,
+      `npm@${manifest.npmVersion}`,
+      'manifest should expose a copy-pasteable package manager identity derived from npmVersion',
+    )
+    assert.match(
+      manifest.packageManager ?? '',
+      /^npm@\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/,
+      'manifest packageManager should be npm@<semver> replay provenance',
     )
     const expectedRemoteUrl = expectedRepositoryUrl()
     assert.equal(

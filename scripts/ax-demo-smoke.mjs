@@ -148,6 +148,7 @@ const packageName = packageJson.name
 ensure(typeof packageName === 'string' && packageName.length > 0, 'package.json: name must be a non-empty string')
 const packageVersion = packageJson.version
 ensure(typeof packageVersion === 'string' && packageVersion.length > 0, 'package.json: version must be a non-empty string')
+const npmVersion = currentNpmVersion()
 const bundleCompletedAt = new Date().toISOString()
 const bundleDurationMs = Math.round(performance.now() - bundleStartedAtMs)
 writeFileSync(
@@ -177,7 +178,8 @@ writeFileSync(
       cliSha256: sha256File(cliPath),
       packageName,
       packageVersion,
-      npmVersion: currentNpmVersion(),
+      npmVersion,
+      packageManager: `npm@${npmVersion}`,
       repositoryUrl: repositoryOriginUrl(),
       gitCommitSha: currentGitCommitSha(),
       gitBranch: currentGitBranch(),

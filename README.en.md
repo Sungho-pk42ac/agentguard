@@ -119,6 +119,7 @@ Verdicts:
 ## Documentation
 
 - [GitHub Actions / SARIF setup](docs/github-action.md)
+- [Team rollout baseline guide](docs/team-rollout-baseline-guide.md) — baseline/noise triage, false-positive and allowlist boundaries, reviewer handoff, and preserved artifacts for first-day team adoption.
 - [Policy files](docs/policy.md)
 - [Rule surfaces](docs/rules.md)
 - [Examples](docs/examples.md)

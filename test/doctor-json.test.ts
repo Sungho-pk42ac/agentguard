@@ -47,6 +47,11 @@ test('CLI doctor --json prints machine-readable readiness with the text doctor e
   assert.match(actionCheck.detail, /json-path/)
   assert.match(actionCheck.detail, /sarif-path/)
   assert.match(actionCheck.detail, /artifact/i)
+  assert.match(
+    actionCheck.detail,
+    /\.github\/actions\/agentguard\/action\.yml/,
+    'doctor JSON should prove the repo-local fallback action contract was checked',
+  )
 })
 
 test('CLI doctor text output includes reusable GitHub Action contract readiness', () => {
@@ -56,8 +61,10 @@ test('CLI doctor text output includes reusable GitHub Action contract readiness'
   assert.equal(koResult.status, 0, koResult.stderr)
   assert.match(koResult.stdout, /GitHub Action/)
   assert.match(koResult.stdout, /action\.yml/)
+  assert.match(koResult.stdout, /\.github\/actions\/agentguard\/action\.yml/)
   assert.match(enResult.stdout, /GitHub Action/)
   assert.match(enResult.stdout, /action\.yml/)
+  assert.match(enResult.stdout, /\.github\/actions\/agentguard\/action\.yml/)
 })
 
 function runDoctor(...args: readonly string[]): ReturnType<typeof spawnSync> {

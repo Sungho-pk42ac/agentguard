@@ -158,57 +158,85 @@ function scannerSmokeCheck(lang: DoctorLanguage): DoctorCheck {
 }
 
 function githubActionContractCheck(lang: DoctorLanguage): DoctorCheck {
-  const requiredInputs = ['base-sha', 'head-sha', 'fail-on', 'package-version', 'report-path', 'json-path', 'sarif-path'] as const
   try {
-    const actionText = readFileSync(new URL('../action.yml', import.meta.url), 'utf8')
     // The TypeScript build emits a flat dist/ layout, so ../action.yml points
     // at the package/repo root both in tsx tests and installed npm tarballs.
-    const action = YAML.parse(actionText) as unknown
-    const inputs = isRecord(action) && isRecord(action['inputs']) ? action['inputs'] : {}
-    const runs = isRecord(action) && isRecord(action['runs']) ? action['runs'] : {}
-    const steps = Array.isArray(runs['steps']) ? runs['steps'] : []
-    const missing = requiredInputs.filter((field) => !isRecord(inputs[field]))
-    const hasCompositeRun = runs['using'] === 'composite'
-    const scanStep = steps.find((step) => isRecord(step) && step['id'] === 'scan' && typeof step['run'] === 'string' && step['run'].includes('scan-diff'))
-    const scanRun = isRecord(scanStep) && typeof scanStep['run'] === 'string' ? scanStep['run'] : ''
-    const hasScanStep = scanRun.length > 0
-    const hasPackageVersionGuard = scanRun.includes('validate_package_version "$package_version"')
-    const hasArtifactPathGuard = ['report_path', 'json_path', 'sarif_path'].every((name) =>
-      scanRun.includes(`validate_artifact_path "$${name}"`),
-    )
+    const contracts = [
+      readActionContract('action.yml', new URL('../action.yml', import.meta.url), { requirePackageVersion: true }),
+      readActionContract('.github/actions/agentguard/action.yml', new URL('../.github/actions/agentguard/action.yml', import.meta.url), {
+        requirePackageVersion: false,
+      }),
+    ]
+    const failedContracts = contracts.filter((contract) => !contract.passed)
+    const contractPaths = contracts.map((contract) => contract.path).join(', ')
 
-    if (missing.length === 0 && hasCompositeRun && hasScanStep && hasPackageVersionGuard && hasArtifactPathGuard) {
+    if (failedContracts.length === 0) {
       return {
         id: 'github_action_contract',
         label: 'GitHub Action contract',
         detail:
           lang === 'ko'
-            ? 'action.yml 재사용 PR gate 확인: base-sha, head-sha, fail-on, package-version, report-path, json-path, sarif-path, artifact path guard, scan step'
-            : 'action.yml reusable PR gate ok: base-sha, head-sha, fail-on, package-version, report-path, json-path, sarif-path, artifact path guard, scan step',
+            ? `${contractPaths} 재사용 PR gate 확인: base-sha, head-sha, fail-on, package-version, report-path, json-path, sarif-path, artifact path guard, scan step`
+            : `${contractPaths} reusable PR gate ok: base-sha, head-sha, fail-on, package-version, report-path, json-path, sarif-path, artifact path guard, scan step`,
         passed: true,
       }
     }
 
-    const reasons = [
-      ...missing.map((field) => `missing ${field}`),
-      ...(hasCompositeRun ? [] : ['missing composite runs contract']),
-      ...(hasScanStep ? [] : ['missing scan step']),
-      ...(hasPackageVersionGuard ? [] : ['missing package-version guard']),
-      ...(hasArtifactPathGuard ? [] : ['missing artifact path guard']),
-    ]
+    const reasons = failedContracts.flatMap((contract) => contract.reasons.map((reason) => `${contract.path}: ${reason}`))
     return {
       id: 'github_action_contract',
       label: 'GitHub Action contract',
-      detail: lang === 'ko' ? `action.yml 재사용 PR gate 불완전: ${reasons.join(', ')}` : `action.yml reusable PR gate incomplete: ${reasons.join(', ')}`,
+      detail: lang === 'ko' ? `재사용 PR gate 불완전: ${reasons.join(', ')}` : `reusable PR gate incomplete: ${reasons.join(', ')}`,
       passed: false,
     }
   } catch (error: unknown) {
     return {
       id: 'github_action_contract',
       label: 'GitHub Action contract',
-      detail: lang === 'ko' ? `action.yml 확인 오류: ${errorMessage(error, lang)}` : `action.yml check error: ${errorMessage(error, lang)}`,
+      detail: lang === 'ko' ? `GitHub Action 확인 오류: ${errorMessage(error, lang)}` : `GitHub Action check error: ${errorMessage(error, lang)}`,
       passed: false,
     }
+  }
+}
+
+function readActionContract(
+  path: string,
+  url: URL,
+  options: { readonly requirePackageVersion: boolean },
+): { readonly path: string; readonly passed: boolean; readonly reasons: readonly string[] } {
+  const requiredInputs = [
+    'base-sha',
+    'head-sha',
+    'fail-on',
+    ...(options.requirePackageVersion ? ['package-version'] : []),
+    'report-path',
+    'json-path',
+    'sarif-path',
+  ] as const
+  const actionText = readFileSync(url, 'utf8')
+  const action = YAML.parse(actionText) as unknown
+  const inputs = isRecord(action) && isRecord(action['inputs']) ? action['inputs'] : {}
+  const runs = isRecord(action) && isRecord(action['runs']) ? action['runs'] : {}
+  const steps = Array.isArray(runs['steps']) ? runs['steps'] : []
+  const missing = requiredInputs.filter((field) => !isRecord(inputs[field]))
+  const hasCompositeRun = runs['using'] === 'composite'
+  const scanStep = steps.find((step) => isRecord(step) && step['id'] === 'scan' && typeof step['run'] === 'string' && step['run'].includes('scan-diff'))
+  const scanRun = isRecord(scanStep) && typeof scanStep['run'] === 'string' ? scanStep['run'] : ''
+  const hasScanStep = scanRun.length > 0
+  const hasPackageVersionGuard = options.requirePackageVersion ? scanRun.includes('validate_package_version "$package_version"') : true
+  const hasArtifactPathGuard = ['report_path', 'json_path', 'sarif_path'].every((name) => scanRun.includes(`validate_artifact_path "$${name}"`))
+  const reasons = [
+    ...missing.map((field) => `missing ${field}`),
+    ...(hasCompositeRun ? [] : ['missing composite runs contract']),
+    ...(hasScanStep ? [] : ['missing scan step']),
+    ...(hasPackageVersionGuard ? [] : ['missing package-version guard']),
+    ...(hasArtifactPathGuard ? [] : ['missing artifact path guard']),
+  ]
+
+  return {
+    path,
+    passed: reasons.length === 0,
+    reasons,
   }
 }
 

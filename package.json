@@ -27,6 +27,7 @@
     "docs",
     "examples",
     "action.yml",
+    ".github/actions/agentguard/action.yml",
     "CHANGELOG.md",
     "README.md",
     "README.en.md",
@@ -34,7 +35,9 @@
     "scripts"
   ],
   "directories": {
-    "example": "examples"
+    "doc": "docs",
+    "example": "examples",
+    "test": "test"
   },
   "scripts": {
     "test": "npm run test:behavior && npm run test:docs",

@@ -375,6 +375,8 @@ jobs:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
           report-path: agent-risk-report.md
+          json-path: agent-risk-findings.json
+          sarif-path: agentguard.sarif
 
       - name: Upload AgentGuard report
         if: ${{ !cancelled() }}
@@ -382,6 +384,17 @@ jobs:
         with:
           name: agentguard-pr-report
           path: agent-risk-report.md
+          retention-days: 14 # reviewer handoff evidence; does not change scanner verdict
+
+      - name: Upload AgentGuard machine artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentguard-machine-artifacts
+          path: |
+            agent-risk-findings.json
+            agentguard.sarif
+          retention-days: 14
 
       - name: Comment AgentGuard report on PR
         if: ${{ !cancelled() }}
@@ -390,6 +403,8 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: agent-risk-report.md
 ```
+
+JSON/SARIF artifact 보존은 reviewer handoff와 증거 보존을 위한 운영 가드입니다. `retention-days: 14`를 붙여 PR 리뷰 기간 동안 machine-readable evidence를 남기되, scanner verdict, `fail-on`, `PASS`/`REVIEW`/`BLOCK` 판정, GitHub code scanning upload 의미는 바꾸지 않습니다.
 
 ## 컨트롤 플레인 (Fleet · Observe)
 

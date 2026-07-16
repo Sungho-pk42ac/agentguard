@@ -629,6 +629,10 @@ test('README workflow still uploads and comments the report when AgentGuard bloc
   const readme = readFileSync('README.md', 'utf8')
 
   assert.match(readme, /Upload AgentGuard report[\s\S]*if: \$\{\{ !cancelled\(\) \}\}/)
+  assert.match(readme, /Upload AgentGuard machine artifacts[\s\S]*if: \$\{\{ !cancelled\(\) \}\}/)
+  assert.match(readme, /path: \|\r?\n\s+agent-risk-findings\.json\r?\n\s+agentguard\.sarif/)
+  assert.match(readme, /retention-days: 14[\s\S]{0,240}reviewer handoff/i)
+  assert.match(readme, /JSON\/SARIF artifact[\s\S]{0,220}scanner verdict/i)
   assert.match(readme, /Comment AgentGuard report on PR[\s\S]*if: \$\{\{ !cancelled\(\) \}\}/)
 })
 

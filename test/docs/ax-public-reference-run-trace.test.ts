@@ -13,6 +13,9 @@ const publicUrls = [
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
   'https://registry.npmjs.org/agent-scan',
+  'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
+  'https://docs.anthropic.com/en/docs/claude-code/security',
+  'https://openai.github.io/openai-agents-python/guardrails/',
 ] as const
 
 const fixtureBackedCommands = [
@@ -90,6 +93,10 @@ test('AX public reference run trace maps public signals to run decisions', () =>
     'explicit user consent',
     'SARIF reviewer handoff',
     'public registry metadata',
+    'agentic threat-to-mitigation',
+    'workspace trust',
+    'tool permission review',
+    'guardrail tripwire',
     'source-of-record',
     'fresh-clone rerun',
     'approval owner',

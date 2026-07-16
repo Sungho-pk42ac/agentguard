@@ -204,6 +204,8 @@ For a Korean-first 60-second agent rollout preflight path from `doctor --json` t
 
 For a Korean-first public-reference-to-run-decision trace that maps public signals to exact fixture-backed evidence commands, see [AX public reference run trace](ax-public-reference-run-trace.md).
 
+For a Korean-first source-status-to-evidence decision matrix that maps public fetch, WAF/403, registry fallback, auth boundary, and insane-search unavailable states to exact evidence commands, see [AX public reference decision matrix](ax-public-reference-decision-matrix.md).
+
 ## AX company problem intake kit
 
 [AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.

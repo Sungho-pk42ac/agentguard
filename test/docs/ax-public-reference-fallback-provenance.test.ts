@@ -11,6 +11,7 @@ const docPath = join(repoRoot, 'docs', 'ax-public-reference-fallback-provenance.
 const publicReferenceUrls = [
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
   'https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization',
+  'https://modelcontextprotocol.io/specification/draft/basic/security_best_practices',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
   'https://github.com/snyk/agent-scan',
   'https://docs.snyk.io/scan-with-snyk/snyk-cli/scan-agentic-workflows',
@@ -123,6 +124,9 @@ test('AX public reference fallback provenance card cites public sources and keep
   for (const term of [
     'Agentic AI - OWASP Lists Threats and Mitigations',
     'Authorization - Model Context Protocol',
+    'Security Best Practices - Model Context Protocol',
+    'least privilege',
+    'explicit user consent',
     'Uploading a SARIF file to GitHub - GitHub Docs',
     'Security scanner for AI agents, MCP servers and agent skills',
     'HTTP 404 from this run; no evidence should be borrowed from the missing Snyk docs URL',

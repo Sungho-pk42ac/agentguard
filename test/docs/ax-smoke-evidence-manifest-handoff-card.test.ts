@@ -131,6 +131,7 @@ test('AX smoke evidence manifest handoff card is Korean-first and frames manifes
     'npmVersion',
     'packageManager',
     'packageLockSha256',
+    'ciRun',
   ] as const) {
     expectLiteral(card, term)
   }
@@ -168,6 +169,14 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'npmVersion',
     'packageManager',
     'packageLockSha256',
+    'ciRun',
+    'serverUrl',
+    'repository',
+    'runId',
+    'runAttempt',
+    'workflow',
+    'ref',
+    'sha',
     'total',
     'pass',
     'review',
@@ -259,6 +268,7 @@ test('AX smoke evidence manifest handoff card preserves machine contracts and ba
     'no JSON/SARIF field name change',
     'no package publishing change',
     'no verdict policy change',
+    'ciRun is CI source-of-record provenance only',
     'no external certification',
     'no MCP conformance/runtime auth',
     'no automatic SARIF upload',

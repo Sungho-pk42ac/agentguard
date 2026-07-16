@@ -149,6 +149,7 @@ ensure(typeof packageName === 'string' && packageName.length > 0, 'package.json:
 const packageVersion = packageJson.version
 ensure(typeof packageVersion === 'string' && packageVersion.length > 0, 'package.json: version must be a non-empty string')
 const npmVersion = currentNpmVersion()
+const ciRun = githubActionsCiRun()
 const bundleCompletedAt = new Date().toISOString()
 const bundleDurationMs = Math.round(performance.now() - bundleStartedAtMs)
 writeFileSync(
@@ -192,6 +193,7 @@ writeFileSync(
       gitCommitSha: currentGitCommitSha(),
       gitBranch: currentGitBranch(),
       gitTreeState: currentGitTreeState(),
+      ...(ciRun ? { ciRun } : {}),
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
@@ -408,6 +410,35 @@ function currentGitTreeState() {
     fail(`git tree state could not be read. stderr=${result.stderr}`)
   }
   return result.stdout.trim().length === 0 ? 'clean' : 'dirty'
+}
+
+function githubActionsCiRun() {
+  if (process.env.GITHUB_ACTIONS !== 'true') return undefined
+
+  const ciRun = compactObject({
+    serverUrl: safeCiString(process.env.GITHUB_SERVER_URL),
+    repository: safeCiString(process.env.GITHUB_REPOSITORY),
+    runId: safeCiString(process.env.GITHUB_RUN_ID),
+    runAttempt: safeCiString(process.env.GITHUB_RUN_ATTEMPT),
+    workflow: safeCiString(process.env.GITHUB_WORKFLOW),
+    ref: safeCiString(process.env.GITHUB_REF),
+    sha: safeCiString(process.env.GITHUB_SHA),
+  })
+  ensure(Object.keys(ciRun).length > 0, 'GitHub Actions CI provenance requires at least one safe GITHUB_* value')
+  return ciRun
+}
+
+function safeCiString(value) {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  ensure(!/[\r\n\t\u0000-\u001f\u007f]/.test(trimmed), 'CI provenance values must not contain control characters')
+  ensure(trimmed.length <= 512, 'CI provenance values must be at most 512 characters')
+  return trimmed
+}
+
+function compactObject(entries) {
+  return Object.fromEntries(Object.entries(entries).filter(([, value]) => typeof value === 'string' && value.length > 0))
 }
 
 function parseFindings(stdout, surface) {

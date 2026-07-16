@@ -204,6 +204,7 @@ Verdicts:
 - [AX data egress approval route](docs/ax-data-egress-approval-route.md)
 - [AX env custody approval route](docs/ax-env-custody-approval-route.md)
 - [AX approval owner escalation matrix](docs/ax-approval-owner-escalation-matrix.md)
+- [AX security reviewer question bank](docs/ax-security-reviewer-question-bank.md)
 - [AX prompt-injection evidence routing card](docs/ax-prompt-injection-evidence-routing-card.md)
 - [AX submission readiness scorecard](docs/ax-submission-readiness-scorecard.md)
 - [AX onsite triage card](docs/ax-onsite-triage-card.md)

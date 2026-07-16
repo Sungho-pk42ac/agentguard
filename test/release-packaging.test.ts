@@ -29,6 +29,7 @@ test('npm package tarball installs a working agentguard bin', () => {
     assert.ok(packedFiles.includes('README.md'))
     assert.ok(packedFiles.includes('README.en.md'))
     assert.ok(packedFiles.includes('action.yml'))
+    assert.ok(packedFiles.includes('.github/actions/agentguard/action.yml'))
     assert.ok(packedFiles.includes('package.json'))
     assert.ok(packedFiles.every((path) => !path.startsWith('src/')), `src files should not ship in npm tarball: ${packedFiles.join(', ')}`)
     assert.ok(packedFiles.every((path) => !path.startsWith('test/')), `test files should not ship in npm tarball: ${packedFiles.join(', ')}`)
@@ -38,6 +39,14 @@ test('npm package tarball installs a working agentguard bin', () => {
     const output = run('npx', ['agentguard', 'scan-log'], temp)
     assert.match(output, /# AgentGuard 위험 리포트/)
     assert.match(output, /\*\*판정:\*\* PASS/)
+    const doctorJson = JSON.parse(run('npx', ['agentguard', 'doctor', '--json'], temp)) as {
+      status: string
+      checks: Array<{ id: string, passed: boolean, detail: string }>
+    }
+    const actionCheck = doctorJson.checks.find((check) => check.id === 'github_action_contract')
+    assert.equal(doctorJson.status, 'PASS')
+    assert.equal(actionCheck?.passed, true)
+    assert.match(actionCheck?.detail ?? '', /\.github\/actions\/agentguard\/action\.yml/)
   } finally {
     rmSync(temp, { recursive: true, force: true })
   }

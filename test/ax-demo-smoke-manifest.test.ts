@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
@@ -10,6 +11,9 @@ const testDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(testDir, '..')
 const hexSha256 = /^[0-9a-f]{64}$/
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as { name?: string }
+const packageLockSha256 = createHash('sha256')
+  .update(readFileSync(join(repoRoot, 'package-lock.json')))
+  .digest('hex')
 
 function normalizeManifestPath(path: string): string {
   return path.replace(/\\/g, '/')
@@ -94,6 +98,7 @@ type SmokeManifest = {
   readonly packageVersion?: string
   readonly npmVersion?: string
   readonly packageManager?: string
+  readonly packageLockSha256?: string
   readonly repositoryUrl?: string
   readonly gitCommitSha: string
   readonly gitBranch?: string
@@ -304,6 +309,16 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       manifest.packageManager ?? '',
       /^npm@\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/,
       'manifest packageManager should be npm@<semver> replay provenance',
+    )
+    assert.equal(
+      manifest.packageLockSha256,
+      packageLockSha256,
+      'manifest should record package-lock.json SHA-256 for dependency-lock replay provenance',
+    )
+    assert.match(
+      manifest.packageLockSha256 ?? '',
+      hexSha256,
+      'manifest packageLockSha256 should be lowercase SHA-256 hex',
     )
     const expectedRemoteUrl = expectedRepositoryUrl()
     assert.equal(

@@ -180,6 +180,7 @@ writeFileSync(
       packageVersion,
       npmVersion,
       packageManager: `npm@${npmVersion}`,
+      packageLockSha256: sha256File(repoPath('package-lock.json')),
       repositoryUrl: repositoryOriginUrl(),
       gitCommitSha: currentGitCommitSha(),
       gitBranch: currentGitBranch(),

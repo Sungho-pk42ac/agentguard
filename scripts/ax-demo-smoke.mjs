@@ -129,6 +129,41 @@ const approvalOwnerRoutes = [
   },
 ]
 
+const approvalEscalationTimeboxes = [
+  {
+    surface: 'pr-diff',
+    decision: 'REVIEW',
+    ownerRole: 'code-review-owner',
+    timebox: 'before merge or within 4 business hours',
+    escalationTrigger: 'Risky PR diff findings remain after the first reviewer pass or the branch is approaching merge.',
+    rerunEvidence: 'Rerun npm run smoke:ax-demo and attach pr-diff-findings.json before approving the PR evidence package.',
+  },
+  {
+    surface: 'mcp-config',
+    decision: 'BLOCK',
+    ownerRole: 'security-approval-owner',
+    timebox: 'before agent rollout resumes',
+    escalationTrigger: 'Broad filesystem roots, writable paths, or env-token exposure are present in MCP config evidence.',
+    rerunEvidence: 'Rerun npm run smoke:ax-demo and compare mcp-config-findings.json before unblocking rollout.',
+  },
+  {
+    surface: 'transcript-log',
+    decision: 'REVIEW',
+    ownerRole: 'agent-operations-owner',
+    timebox: 'within the same review shift',
+    escalationTrigger: 'Agent transcript/log evidence shows a denied command that needs an accountable operations decision.',
+    rerunEvidence: 'Rerun npm run smoke:ax-demo with the same transcript/log and policy fixture after the operator decision.',
+  },
+  {
+    surface: 'sarif-artifact',
+    decision: 'REVIEW',
+    ownerRole: 'ci-security-reviewer',
+    timebox: 'before marking the CI evidence package accepted',
+    escalationTrigger: 'SARIF artifact is being handed to CI/security reviewers for archive or upload consideration.',
+    rerunEvidence: 'Rerun npm run smoke:ax-demo and verify agentguard.sarif plus manifest hashes from the same evidence directory.',
+  },
+]
+
 if (!existsSync(cliPath)) {
   fail(`Built CLI not found at ${cliPath}. Run: npm run build`)
 }
@@ -258,6 +293,7 @@ writeFileSync(
       publicReferenceSignals,
       approvalDecisionMap,
       approvalOwnerRoutes,
+      approvalEscalationTimeboxes,
       replayCommand: 'npm run smoke:ax-demo',
       replayCommandArgs: ['npm', 'run', 'smoke:ax-demo'],
       replayWorkingDirectory: '.',

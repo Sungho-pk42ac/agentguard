@@ -114,6 +114,8 @@ For a Korean-first SARIF reviewer loop from company problem to evidence command 
 
 For a Korean-first package provenance reviewer handoff that maps fresh clone checks to exact PR diff, MCP config, transcript/log, and SARIF artifact evidence, see [AX package provenance reviewer handoff card](ax-package-provenance-handoff.md).
 
+For a Korean-first release attestation receipt that pins source-of-record commands, expected verdicts, artifacts, hashes, approval owners, and rerun triggers before team pilot or judge handoff, see [AX release attestation receipt](ax-release-attestation-receipt.md).
+
 For a Korean-first public AI-agent/MCP scanner ecosystem triage table with Borrow/Avoid/AgentGuard action rows, see [AX public scanner ecosystem triage](ax-public-scanner-ecosystem-triage.md).
 
 For a Korean-first public reference validation card that maps OWASP/MCP/SARIF/public scanner signals to exact evidence commands and claim guardrails, see [AX public reference validation card](ax-public-reference-validation-card.md).

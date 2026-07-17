@@ -212,6 +212,8 @@ For a Korean-first public-reference-to-run-decision trace that maps public signa
 
 For a Korean-first source-status-to-evidence decision matrix that maps public fetch, WAF/403, registry fallback, auth boundary, and insane-search unavailable states to exact evidence commands, see [AX public reference decision matrix](ax-public-reference-decision-matrix.md).
 
+For a Korean-first public-reference source-status drill that maps `HTTP 200`, `403/WAF`, registry fallback, auth/login boundary, and stale-reference states to exact AgentGuard evidence commands, see [AX public-reference source-status drill](ax-public-reference-source-status-drill.md).
+
 ## AX company problem intake kit
 
 [AX company problem intake kit](ax-company-problem-intake-kit.md) turns an unknown Korean company problem into a reusable AX Rollout Guard demo plan: business workflow, agent/tool surface, risky inputs, AgentGuard commands, `BLOCK → 수정/정책 → PASS` evidence, approval report, and a 30-second script.

@@ -230,6 +230,7 @@ Verdicts:
 - [AX third-party agent scanner due diligence card](docs/ax-third-party-agent-scanner-due-diligence.md)
 - [AX emergency stop runbook](docs/ax-emergency-stop-runbook.md)
 - [AX guardrail tripwire evidence card](docs/ax-guardrail-tripwire-evidence-card.md)
+- [AX agent hook event approval route](docs/ax-agent-hook-event-approval-route.md)
 - [AX agent tool onboarding readiness](docs/ax-agent-tool-onboarding-readiness.md)
 - [AX human approval gate checklist](docs/ax-human-approval-gate-checklist.md)
 - [AX agent rollout preflight checklist](docs/ax-agent-rollout-preflight-checklist.md)

@@ -98,6 +98,37 @@ const approvalDecisionMap = {
   },
 }
 
+const approvalOwnerRoutes = [
+  {
+    surface: 'pr-diff',
+    ownerRole: 'code-review-owner',
+    reviewerChannel: 'PR comment plus JSON findings artifact',
+    decisionCondition: 'Review risky diff findings and approve only after secrets or denied commands are removed or explicitly justified.',
+    rerunTrigger: 'Rerun npm run smoke:ax-demo whenever the PR diff fixture, policy scope, or generated findings artifact changes.',
+  },
+  {
+    surface: 'mcp-config',
+    ownerRole: 'security-approval-owner',
+    reviewerChannel: 'MCP config review packet plus mcp-config findings artifact',
+    decisionCondition: 'Block rollout until broad filesystem roots, writable paths, and env-token exposure have an owner-approved mitigation.',
+    rerunTrigger: 'Rerun npm run smoke:ax-demo whenever MCP server config, allowlist policy, or risk ownership changes.',
+  },
+  {
+    surface: 'transcript-log',
+    ownerRole: 'agent-operations-owner',
+    reviewerChannel: 'Transcript/log reviewer note plus policy-backed findings artifact',
+    decisionCondition: 'Keep REVIEW until the denied-command evidence has an accountable operator decision and rerunnable policy proof.',
+    rerunTrigger: 'Rerun npm run smoke:ax-demo whenever transcript evidence or examples/agent-policy.yaml changes.',
+  },
+  {
+    surface: 'sarif-artifact',
+    ownerRole: 'ci-security-reviewer',
+    reviewerChannel: 'SARIF artifact archive or reviewer-owned GitHub code scanning upload step',
+    decisionCondition: 'Use SARIF as machine-readable reviewer handoff; approval still depends on owner inspection and matching manifest evidence.',
+    rerunTrigger: 'Rerun npm run smoke:ax-demo whenever SARIF output path, PR diff evidence, or CI artifact retention changes.',
+  },
+]
+
 if (!existsSync(cliPath)) {
   fail(`Built CLI not found at ${cliPath}. Run: npm run build`)
 }
@@ -226,6 +257,7 @@ writeFileSync(
       ],
       publicReferenceSignals,
       approvalDecisionMap,
+      approvalOwnerRoutes,
       replayCommand: 'npm run smoke:ax-demo',
       replayCommandArgs: ['npm', 'run', 'smoke:ax-demo'],
       replayWorkingDirectory: '.',

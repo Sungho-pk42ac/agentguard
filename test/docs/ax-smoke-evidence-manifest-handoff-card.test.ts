@@ -129,6 +129,7 @@ test('AX smoke evidence manifest handoff card is Korean-first and frames manifes
     'claimBoundaries',
     'publicReferenceSignals',
     'approvalDecisionMap',
+    'approvalOwnerRoutes',
     'approvalAction',
     'koreanHandoff',
     'reviewerNextStep',
@@ -169,6 +170,7 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'claimBoundaries',
     'publicReferenceSignals',
     'approvalDecisionMap',
+    'approvalOwnerRoutes',
     'approvalAction',
     'koreanHandoff',
     'reviewerNextStep',
@@ -215,6 +217,26 @@ test('AX smoke evidence manifest handoff card maps manifest checks to exact surf
     'policyBytes',
   ] as const) {
     expectLiteral(card, manifestContract)
+  }
+})
+
+test('AX smoke evidence manifest handoff card documents approval owner routes without overclaiming', () => {
+  const card = readCard()
+
+  for (const requiredTerm of [
+    'approvalOwnerRoutes',
+    'ownerRole',
+    'reviewerChannel',
+    'decisionCondition',
+    'rerunTrigger',
+    'team routing metadata',
+    'not approval, certification, runtime authorization, SARIF upload, or scanner behavior change',
+  ] as const) {
+    expectLiteral(card, requiredTerm)
+  }
+
+  for (const surface of ['pr-diff', 'mcp-config', 'transcript-log', 'sarif-artifact'] as const) {
+    expectLiteral(card, surface)
   }
 })
 

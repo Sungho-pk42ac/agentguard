@@ -100,6 +100,7 @@ type SmokeManifest = {
   readonly claimBoundaries?: readonly string[]
   readonly publicReferenceSignals?: readonly SmokeManifestPublicReferenceSignal[]
   readonly approvalDecisionMap?: SmokeManifestApprovalDecisionMap
+  readonly approvalOwnerRoutes?: readonly SmokeManifestApprovalOwnerRoute[]
   readonly replayCommand: string
   readonly replayCommandArgs?: readonly string[]
   readonly replayWorkingDirectory: string
@@ -160,6 +161,14 @@ type SmokeManifestApprovalDecision = {
   readonly reviewerNextStep?: string
 }
 
+type SmokeManifestApprovalOwnerRoute = {
+  readonly surface?: string
+  readonly ownerRole?: string
+  readonly reviewerChannel?: string
+  readonly decisionCondition?: string
+  readonly rerunTrigger?: string
+}
+
 type SmokeManifestCiRun = {
   readonly serverUrl?: string
   readonly repository?: string
@@ -196,7 +205,7 @@ type SmokeManifestCheck = {
   readonly policyBytes?: number
 }
 
-test('AX demo smoke manifest records SHA-256 provenance for source inputs and artifacts', { timeout: 120_000 }, () => {
+test('AX demo smoke manifest records SHA-256 provenance and approval owner routes for source inputs and artifacts', { timeout: 120_000 }, () => {
   execFileSync(process.execPath, [join(repoRoot, 'node_modules', 'typescript', 'bin', 'tsc')], {
     cwd: repoRoot,
     stdio: 'pipe',
@@ -331,6 +340,25 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
         `${decision?.approvalAction} ${decision?.koreanHandoff} ${decision?.reviewerNextStep}`,
         /certification|customer adoption|automatic SARIF upload|runtime OAuth|runtime MCP/i,
         `${verdict} decision map entry should not overclaim external approval or runtime enforcement`,
+      )
+    }
+    assert.deepEqual(
+      manifest.approvalOwnerRoutes?.map((route) => route.surface),
+      ['pr-diff', 'mcp-config', 'transcript-log', 'sarif-artifact'],
+      'manifest should expose approval owner routes for every smoke evidence surface',
+    )
+    for (const route of manifest.approvalOwnerRoutes ?? []) {
+      assert.equal(typeof route.ownerRole, 'string', `${route.surface} ownerRole should be present`)
+      assert.equal(typeof route.reviewerChannel, 'string', `${route.surface} reviewerChannel should be present`)
+      assert.equal(typeof route.decisionCondition, 'string', `${route.surface} decisionCondition should be present`)
+      assert.equal(typeof route.rerunTrigger, 'string', `${route.surface} rerunTrigger should be present`)
+      for (const fieldValue of [route.ownerRole, route.reviewerChannel, route.decisionCondition, route.rerunTrigger]) {
+        assert.ok(fieldValue && fieldValue.trim().length > 0, `${route.surface} approval owner route fields should be non-empty`)
+      }
+      assert.doesNotMatch(
+        `${route.ownerRole} ${route.reviewerChannel} ${route.decisionCondition} ${route.rerunTrigger}`,
+        /certification|customer adoption|automatic SARIF upload|runtime OAuth|runtime MCP/i,
+        `${route.surface} approval owner route should not overclaim external approval or runtime enforcement`,
       )
     }
     assert.equal(

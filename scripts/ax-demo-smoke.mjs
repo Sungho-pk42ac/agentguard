@@ -43,6 +43,43 @@ const checks = [
   },
 ]
 
+const publicReferenceSignals = [
+  {
+    source: 'MCP Security Best Practices',
+    url: 'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
+    borrow: 'Least-privilege, explicit consent, token-boundary, and tool-boundary language for MCP config review.',
+    avoid:
+      'Do not claim AgentGuard enforces live MCP consent, runtime OAuth/session policy, token policy, or MCP conformance.',
+    agentGuardAction:
+      'Route the signal to the mcp-config smoke row and static MCP config approval evidence.',
+  },
+  {
+    source: 'GitHub SARIF upload docs',
+    url: 'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+    borrow: 'Reviewer artifact handoff and code scanning upload vocabulary for SARIF evidence.',
+    avoid: 'Do not claim automatic SARIF upload, GitHub-native triage, or external approval.',
+    agentGuardAction:
+      'Route the signal to the sarif-artifact smoke row and reviewer-owned upload/archive handoff.',
+  },
+  {
+    source: 'Claude Code Security',
+    url: 'https://docs.anthropic.com/en/docs/claude-code/security',
+    borrow: 'Workspace trust, tool permission review, and human approval boundary wording.',
+    avoid: 'Do not imply Anthropic approval, private workspace access, or sandbox/runtime guarantees.',
+    agentGuardAction:
+      'Route the signal to transcript/log and MCP approval-owner review before rollout.',
+  },
+  {
+    source: 'agent-scan registry fallback',
+    url: 'https://registry.npmjs.org/agent-scan/latest',
+    borrow:
+      'Public registry category-pressure signal for AI-agent activity scanning when the npmjs web page returned HTTP 403.',
+    avoid: 'Do not claim adoption, maturity, scanner parity, replacement, or package-quality proof from metadata alone.',
+    agentGuardAction:
+      'Keep AgentGuard differentiation on rerunnable PR diff, MCP config, transcript/log, and SARIF source-of-record evidence.',
+  },
+]
+
 if (!existsSync(cliPath)) {
   fail(`Built CLI not found at ${cliPath}. Run: npm run build`)
 }
@@ -169,6 +206,7 @@ writeFileSync(
         'Does not implement runtime MCP authorization, OAuth/session enforcement, or consent UI.',
         'Does not claim parity, replacement, certification, customer adoption, or vendor-scale scanner coverage.',
       ],
+      publicReferenceSignals,
       replayCommand: 'npm run smoke:ax-demo',
       replayCommandArgs: ['npm', 'run', 'smoke:ax-demo'],
       replayWorkingDirectory: '.',

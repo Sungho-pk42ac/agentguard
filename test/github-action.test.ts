@@ -248,6 +248,7 @@ test('published and local GitHub Actions prepend gate metadata to job summary', 
 
     for (const expectedLine of [
       'conclusion: $conclusion',
+      'fail-on: $fail_on',
       'finding-count: $finding_count',
       'advisory-count: $advisory_count',
       'review-count: $review_count',

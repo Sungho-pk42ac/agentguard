@@ -239,6 +239,7 @@ runs:
             echo "## AgentGuard PR gate summary"
             echo ""
             echo "- conclusion: $conclusion"
+            echo "- fail-on: $fail_on"
             echo "- finding-count: $finding_count"
             echo "- advisory-count: $advisory_count"
             echo "- review-count: $review_count"

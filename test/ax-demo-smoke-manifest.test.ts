@@ -99,6 +99,7 @@ type SmokeManifest = {
   readonly producerIntent?: string
   readonly claimBoundaries?: readonly string[]
   readonly publicReferenceSignals?: readonly SmokeManifestPublicReferenceSignal[]
+  readonly approvalDecisionMap?: SmokeManifestApprovalDecisionMap
   readonly replayCommand: string
   readonly replayCommandArgs?: readonly string[]
   readonly replayWorkingDirectory: string
@@ -145,6 +146,18 @@ type SmokeManifestPublicReferenceSignal = {
   readonly borrow?: string
   readonly avoid?: string
   readonly agentGuardAction?: string
+}
+
+type SmokeManifestApprovalDecisionMap = {
+  readonly PASS?: SmokeManifestApprovalDecision
+  readonly REVIEW?: SmokeManifestApprovalDecision
+  readonly BLOCK?: SmokeManifestApprovalDecision
+}
+
+type SmokeManifestApprovalDecision = {
+  readonly approvalAction?: string
+  readonly koreanHandoff?: string
+  readonly reviewerNextStep?: string
 }
 
 type SmokeManifestCiRun = {
@@ -286,6 +299,38 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
         typeof signal.agentGuardAction,
         'string',
         'public reference signal agentGuardAction should be present',
+      )
+    }
+    assert.deepEqual(
+      manifest.approvalDecisionMap,
+      {
+        PASS: {
+          approvalAction: 'accept',
+          koreanHandoff: 'PASS는 현재 증거 기준으로 배포 승인 가능 후보입니다.',
+          reviewerNextStep: 'Verify freshness, artifact hashes, and policy scope before final approval.',
+        },
+        REVIEW: {
+          approvalAction: 'conditional-review',
+          koreanHandoff: 'REVIEW는 담당자 조건부 검토와 수정 조건 합의가 필요한 후보입니다.',
+          reviewerNextStep: 'Assign an approval owner, inspect findings, apply fix/policy conditions, then rerun evidence.',
+        },
+        BLOCK: {
+          approvalAction: 'block-rollout',
+          koreanHandoff: 'BLOCK은 rollout 중지 후 수정 또는 정책 변경 전까지 승인하면 안 되는 후보입니다.',
+          reviewerNextStep: 'Stop rollout, fix or tighten policy, regenerate artifacts, and require a fresh PASS/REVIEW decision.',
+        },
+      },
+      'manifest should expose stable PASS/REVIEW/BLOCK approval decision mapping without parsing prose docs',
+    )
+    for (const verdict of ['PASS', 'REVIEW', 'BLOCK'] as const) {
+      const decision = manifest.approvalDecisionMap?.[verdict]
+      assert.equal(typeof decision?.approvalAction, 'string', `${verdict} approvalAction should be present`)
+      assert.equal(typeof decision?.koreanHandoff, 'string', `${verdict} koreanHandoff should be present`)
+      assert.equal(typeof decision?.reviewerNextStep, 'string', `${verdict} reviewerNextStep should be present`)
+      assert.doesNotMatch(
+        `${decision?.approvalAction} ${decision?.koreanHandoff} ${decision?.reviewerNextStep}`,
+        /certification|customer adoption|automatic SARIF upload|runtime OAuth|runtime MCP/i,
+        `${verdict} decision map entry should not overclaim external approval or runtime enforcement`,
       )
     }
     assert.equal(

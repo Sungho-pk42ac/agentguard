@@ -80,6 +80,24 @@ const publicReferenceSignals = [
   },
 ]
 
+const approvalDecisionMap = {
+  PASS: {
+    approvalAction: 'accept',
+    koreanHandoff: 'PASS는 현재 증거 기준으로 배포 승인 가능 후보입니다.',
+    reviewerNextStep: 'Verify freshness, artifact hashes, and policy scope before final approval.',
+  },
+  REVIEW: {
+    approvalAction: 'conditional-review',
+    koreanHandoff: 'REVIEW는 담당자 조건부 검토와 수정 조건 합의가 필요한 후보입니다.',
+    reviewerNextStep: 'Assign an approval owner, inspect findings, apply fix/policy conditions, then rerun evidence.',
+  },
+  BLOCK: {
+    approvalAction: 'block-rollout',
+    koreanHandoff: 'BLOCK은 rollout 중지 후 수정 또는 정책 변경 전까지 승인하면 안 되는 후보입니다.',
+    reviewerNextStep: 'Stop rollout, fix or tighten policy, regenerate artifacts, and require a fresh PASS/REVIEW decision.',
+  },
+}
+
 if (!existsSync(cliPath)) {
   fail(`Built CLI not found at ${cliPath}. Run: npm run build`)
 }
@@ -207,6 +225,7 @@ writeFileSync(
         'Does not claim parity, replacement, certification, customer adoption, or vendor-scale scanner coverage.',
       ],
       publicReferenceSignals,
+      approvalDecisionMap,
       replayCommand: 'npm run smoke:ax-demo',
       replayCommandArgs: ['npm', 'run', 'smoke:ax-demo'],
       replayWorkingDirectory: '.',

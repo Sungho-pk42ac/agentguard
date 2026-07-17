@@ -187,6 +187,7 @@ Verdicts:
 - [AX SARIF reviewer loop card](docs/ax-sarif-reviewer-loop-card.md)
 - [AX package provenance reviewer handoff card](docs/ax-package-provenance-handoff.md)
 - [AX release attestation receipt](docs/ax-release-attestation-receipt.md)
+- [AX PR gate first-run decision record](docs/ax-pr-gate-first-run-decision-record.md)
 - [AX reference command routing card](docs/ax-reference-command-routing-card.md)
 - [AX MCP consent/token handoff card](docs/ax-mcp-consent-token-handoff.md)
 - [AX MCP third-party server trust boundary card](docs/ax-mcp-third-party-server-trust-boundary.md)

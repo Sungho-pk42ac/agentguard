@@ -98,6 +98,7 @@ type SmokeManifest = {
   readonly evidencePurpose: string
   readonly producerIntent?: string
   readonly claimBoundaries?: readonly string[]
+  readonly publicReferenceSignals?: readonly SmokeManifestPublicReferenceSignal[]
   readonly replayCommand: string
   readonly replayCommandArgs?: readonly string[]
   readonly replayWorkingDirectory: string
@@ -136,6 +137,14 @@ type SmokeManifestSummary = {
   readonly review?: number
   readonly block?: number
   readonly acceptedNonZero?: number
+}
+
+type SmokeManifestPublicReferenceSignal = {
+  readonly source?: string
+  readonly url?: string
+  readonly borrow?: string
+  readonly avoid?: string
+  readonly agentGuardAction?: string
 }
 
 type SmokeManifestCiRun = {
@@ -222,6 +231,63 @@ test('AX demo smoke manifest records SHA-256 provenance for source inputs and ar
       ],
       'manifest should expose stable machine-readable claim boundaries for reviewer handoff',
     )
+    assert.deepEqual(
+      manifest.publicReferenceSignals,
+      [
+        {
+          source: 'MCP Security Best Practices',
+          url: 'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
+          borrow:
+            'Least-privilege, explicit consent, token-boundary, and tool-boundary language for MCP config review.',
+          avoid:
+            'Do not claim AgentGuard enforces live MCP consent, runtime OAuth/session policy, token policy, or MCP conformance.',
+          agentGuardAction: 'Route the signal to the mcp-config smoke row and static MCP config approval evidence.',
+        },
+        {
+          source: 'GitHub SARIF upload docs',
+          url: 'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+          borrow: 'Reviewer artifact handoff and code scanning upload vocabulary for SARIF evidence.',
+          avoid: 'Do not claim automatic SARIF upload, GitHub-native triage, or external approval.',
+          agentGuardAction:
+            'Route the signal to the sarif-artifact smoke row and reviewer-owned upload/archive handoff.',
+        },
+        {
+          source: 'Claude Code Security',
+          url: 'https://docs.anthropic.com/en/docs/claude-code/security',
+          borrow: 'Workspace trust, tool permission review, and human approval boundary wording.',
+          avoid: 'Do not imply Anthropic approval, private workspace access, or sandbox/runtime guarantees.',
+          agentGuardAction: 'Route the signal to transcript/log and MCP approval-owner review before rollout.',
+        },
+        {
+          source: 'agent-scan registry fallback',
+          url: 'https://registry.npmjs.org/agent-scan/latest',
+          borrow:
+            'Public registry category-pressure signal for AI-agent activity scanning when the npmjs web page returned HTTP 403.',
+          avoid:
+            'Do not claim adoption, maturity, scanner parity, replacement, or package-quality proof from metadata alone.',
+          agentGuardAction:
+            'Keep AgentGuard differentiation on rerunnable PR diff, MCP config, transcript/log, and SARIF source-of-record evidence.',
+        },
+      ],
+      'manifest should expose stable public reference signals without parsing prose docs',
+    )
+    assert.equal(
+      manifest.publicReferenceSignals?.length,
+      4,
+      'manifest should include the current reference set used to shape the smoke evidence bundle',
+    )
+    for (const signal of manifest.publicReferenceSignals ?? []) {
+      assert.equal(typeof signal.source, 'string', 'public reference signal source should be present')
+      assert.equal(typeof signal.url, 'string', 'public reference signal url should be present')
+      assert.match(signal.url ?? '', /^https:\/\//, 'public reference signal url should be an HTTPS public URL')
+      assert.equal(typeof signal.borrow, 'string', 'public reference signal borrow should be present')
+      assert.equal(typeof signal.avoid, 'string', 'public reference signal avoid should be present')
+      assert.equal(
+        typeof signal.agentGuardAction,
+        'string',
+        'public reference signal agentGuardAction should be present',
+      )
+    }
     assert.equal(
       manifest.replayCommand,
       'npm run smoke:ax-demo',

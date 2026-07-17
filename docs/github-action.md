@@ -4,6 +4,8 @@ AgentGuard can be used as a team PR gate without copying this repository into th
 
 For baseline/noise triage and reviewer handoff, see the [Team rollout baseline guide](team-rollout-baseline-guide.md).
 
+For the first team PR-gate run, use the [AX PR gate first-run decision record](ax-pr-gate-first-run-decision-record.md) to map action outputs, artifact paths, and required status check context to owner decisions.
+
 ## Recommended team PR gate
 
 Create `.github/workflows/agentguard.yml` in the repository you want to protect:

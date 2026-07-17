@@ -200,6 +200,8 @@ For a Korean-first first-minute evidence priority card that tells operators whic
 
 For a Korean-first guardrail/tripwire evidence card that maps public agent guardrail concepts to exact AgentGuard approval evidence, see [AX guardrail tripwire evidence card](ax-guardrail-tripwire-evidence-card.md).
 
+For a Korean-first agent hook-event approval route that maps hook-style tool events to transcript/MCP/PR/SARIF evidence and approval decisions, see [AX agent hook event approval route](ax-agent-hook-event-approval-route.md).
+
 For a Korean-first agent/tool onboarding readiness card that maps `doctor`, MCP config, transcript/log, PR diff, and SARIF handoff evidence to rollout approval decisions, see [AX agent tool onboarding readiness](ax-agent-tool-onboarding-readiness.md).
 
 For a Korean-first 60-second agent rollout preflight path from `doctor --json` to PR diff, MCP config, transcript/log, and SARIF reviewer evidence, see [AX agent rollout preflight checklist](ax-agent-rollout-preflight-checklist.md).

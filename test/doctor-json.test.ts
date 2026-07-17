@@ -34,6 +34,15 @@ test('CLI doctor --json prints machine-readable readiness with the text doctor e
   assert.ok(checkIds.has('examples_directory'))
   assert.ok(checkIds.has('scanner_smoke'))
   assert.ok(checkIds.has('github_action_contract'))
+  assert.ok(checkIds.has('documentation_readiness'))
+
+  const docsCheck = parsed['checks'].find((check) => check.id === 'documentation_readiness')
+  assert.ok(docsCheck, 'doctor JSON should include team documentation readiness')
+  assert.equal(docsCheck.passed, true)
+  assert.match(docsCheck.detail, /README\.md/)
+  assert.match(docsCheck.detail, /docs\/github-action\.md/)
+  assert.match(docsCheck.detail, /docs\/team-rollout-baseline-guide\.md/)
+  assert.match(docsCheck.detail, /docs\/policy\.md/)
 
   const actionCheck = parsed['checks'].find((check) => check.id === 'github_action_contract')
   assert.ok(actionCheck, 'doctor JSON should include reusable GitHub Action contract readiness')

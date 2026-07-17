@@ -6,7 +6,7 @@ import { UPDATE_COMMAND } from './update-check.js'
 export type DoctorLanguage = 'ko' | 'en'
 
 interface DoctorCheck {
-  readonly id: 'package_version' | 'examples_directory' | 'scanner_smoke' | 'github_action_contract'
+  readonly id: 'package_version' | 'examples_directory' | 'scanner_smoke' | 'github_action_contract' | 'documentation_readiness'
   readonly label: string
   readonly detail: string
   readonly passed: boolean
@@ -37,7 +37,13 @@ interface DoctorJsonOutput {
 }
 
 export function runDoctor(lang: DoctorLanguage = 'ko', options: DoctorOptions = {}): DoctorResult {
-  const checks = [packageVersionCheck(lang), examplesDirectoryCheck(lang), scannerSmokeCheck(lang), githubActionContractCheck(lang)]
+  const checks = [
+    packageVersionCheck(lang),
+    examplesDirectoryCheck(lang),
+    scannerSmokeCheck(lang),
+    githubActionContractCheck(lang),
+    documentationReadinessCheck(lang),
+  ]
   const exitCode = checks.every((check) => check.passed) ? 0 : 1
   if (options.json === true) {
     const passed = checks.filter((check) => check.passed).length
@@ -194,6 +200,44 @@ function githubActionContractCheck(lang: DoctorLanguage): DoctorCheck {
       id: 'github_action_contract',
       label: 'GitHub Action contract',
       detail: lang === 'ko' ? `GitHub Action 확인 오류: ${errorMessage(error, lang)}` : `GitHub Action check error: ${errorMessage(error, lang)}`,
+      passed: false,
+    }
+  }
+}
+
+function documentationReadinessCheck(lang: DoctorLanguage): DoctorCheck {
+  const requiredLinks = ['docs/github-action.md', 'docs/team-rollout-baseline-guide.md', 'docs/policy.md'] as const
+  try {
+    const readmePath = 'README.md'
+    const readmeText = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
+    const missingLinks = requiredLinks.filter((link) => !readmeText.includes(`](${link})`))
+
+    if (missingLinks.length === 0) {
+      return {
+        id: 'documentation_readiness',
+        label: 'documentation readiness',
+        detail:
+          lang === 'ko'
+            ? `${readmePath} 팀 온보딩 링크 확인: ${requiredLinks.join(', ')}`
+            : `${readmePath} team onboarding links ok: ${requiredLinks.join(', ')}`,
+        passed: true,
+      }
+    }
+
+    return {
+      id: 'documentation_readiness',
+      label: 'documentation readiness',
+      detail:
+        lang === 'ko'
+          ? `${readmePath} 팀 온보딩 링크 누락: ${missingLinks.join(', ')}`
+          : `${readmePath} missing team onboarding links: ${missingLinks.join(', ')}`,
+      passed: false,
+    }
+  } catch (error: unknown) {
+    return {
+      id: 'documentation_readiness',
+      label: 'documentation readiness',
+      detail: lang === 'ko' ? `문서 readiness 확인 오류: ${errorMessage(error, lang)}` : `documentation readiness check error: ${errorMessage(error, lang)}`,
       passed: false,
     }
   }

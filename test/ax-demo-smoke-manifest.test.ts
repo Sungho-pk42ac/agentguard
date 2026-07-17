@@ -101,6 +101,7 @@ type SmokeManifest = {
   readonly publicReferenceSignals?: readonly SmokeManifestPublicReferenceSignal[]
   readonly approvalDecisionMap?: SmokeManifestApprovalDecisionMap
   readonly approvalOwnerRoutes?: readonly SmokeManifestApprovalOwnerRoute[]
+  readonly approvalEscalationTimeboxes?: readonly SmokeManifestApprovalEscalationTimebox[]
   readonly replayCommand: string
   readonly replayCommandArgs?: readonly string[]
   readonly replayWorkingDirectory: string
@@ -167,6 +168,15 @@ type SmokeManifestApprovalOwnerRoute = {
   readonly reviewerChannel?: string
   readonly decisionCondition?: string
   readonly rerunTrigger?: string
+}
+
+type SmokeManifestApprovalEscalationTimebox = {
+  readonly surface?: string
+  readonly decision?: string
+  readonly ownerRole?: string
+  readonly timebox?: string
+  readonly escalationTrigger?: string
+  readonly rerunEvidence?: string
 }
 
 type SmokeManifestCiRun = {
@@ -347,6 +357,37 @@ test('AX demo smoke manifest records SHA-256 provenance and approval owner route
       ['pr-diff', 'mcp-config', 'transcript-log', 'sarif-artifact'],
       'manifest should expose approval owner routes for every smoke evidence surface',
     )
+    assert.deepEqual(
+      manifest.approvalEscalationTimeboxes?.map(
+        (route) => `${route.surface}:${route.decision}:${route.ownerRole}:${route.timebox}`,
+      ),
+      [
+        'pr-diff:REVIEW:code-review-owner:before merge or within 4 business hours',
+        'mcp-config:BLOCK:security-approval-owner:before agent rollout resumes',
+        'transcript-log:REVIEW:agent-operations-owner:within the same review shift',
+        'sarif-artifact:REVIEW:ci-security-reviewer:before marking the CI evidence package accepted',
+      ],
+      'manifest should expose reviewer escalation timeboxes for every smoke evidence surface',
+    )
+    for (const route of manifest.approvalEscalationTimeboxes ?? []) {
+      assert.equal(typeof route.escalationTrigger, 'string', `${route.surface} escalationTrigger should be present`)
+      assert.equal(typeof route.rerunEvidence, 'string', `${route.surface} rerunEvidence should be present`)
+      for (const fieldValue of [
+        route.surface,
+        route.decision,
+        route.ownerRole,
+        route.timebox,
+        route.escalationTrigger,
+        route.rerunEvidence,
+      ]) {
+        assert.ok(fieldValue && fieldValue.trim().length > 0, `${route.surface} approval escalation timebox fields should be non-empty`)
+      }
+      assert.doesNotMatch(
+        `${route.decision} ${route.ownerRole} ${route.timebox} ${route.escalationTrigger} ${route.rerunEvidence}`,
+        /certification|customer adoption|automatic SARIF upload|runtime OAuth|runtime MCP/i,
+        `${route.surface} approval escalation timebox should not overclaim external approval or runtime enforcement`,
+      )
+    }
     for (const route of manifest.approvalOwnerRoutes ?? []) {
       assert.equal(typeof route.ownerRole, 'string', `${route.surface} ownerRole should be present`)
       assert.equal(typeof route.reviewerChannel, 'string', `${route.surface} reviewerChannel should be present`)

@@ -38,7 +38,7 @@
 
 ## Public reference freshness snapshot
 
-Checked on 2026-07-16 via public fallback fetch; insane-search escalation was not required because the public pages below returned usable unauthenticated responses in this run. This snapshot is a freshness boundary, not an endorsement, external assurance badge, or production-readiness claim.
+Checked on 2026-07-17 via public fallback fetch; insane-search escalation was not required because the public pages below returned usable unauthenticated responses in this run. This snapshot is a freshness boundary, not an endorsement, external assurance badge, or production-readiness claim.
 
 | Reference | Fetch status | Observed title/signal | Borrow | Avoid |
 |---|---|---|---|---|

@@ -198,7 +198,7 @@ test('AX public scanner signal refresh ledger records a concrete public freshnes
   )
 
   for (const snapshot of [
-    'Checked on 2026-07-16 via public fallback fetch; insane-search escalation was not required',
+    'Checked on 2026-07-17 via public fallback fetch; insane-search escalation was not required',
     'Guardrails - OpenAI Agents SDK',
     'Security - Claude Code Docs',
     'Security Best Practices - Model Context Protocol',

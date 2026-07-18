@@ -2,6 +2,20 @@
 
 This directory contains intentionally fake sample inputs. They are designed to demonstrate AgentGuard behavior without including real credentials or private data.
 
+## AX judge start route (첫 60초)
+
+AX Rollout Guard 심사자·보안 reviewer가 긴 예시 목록을 읽기 전에 먼저 따라갈 한국어 우선 경로입니다. 새 기능이나 고객 도입을 주장하지 않고, 현재 저장소의 synthetic fixture와 재실행 가능한 명령만 source-of-record로 둡니다.
+
+| Step | Judge question | Start here | Source-of-record command or artifact | Boundary |
+| --- | --- | --- | --- | --- |
+| 1 | 회사 문제가 오면 무엇부터 구조화하나? | [AX company problem intake kit](ax-company-problem-intake-kit.md) | `node dist/index.js scan-diff < examples/enterprise-scenarios/commerce-voc-agent/risky-pr.diff` | final company problem, customer data, portal-only scoring detail은 안다고 말하지 않는다. |
+| 2 | 30초 안에 `BLOCK -> fix/policy -> PASS`를 어떻게 보여주나? | [AX 30-second demo card](ax-30-second-demo-card.md) | `node dist/index.js scan-mcp < examples/risky-mcp.json` | demo fixture는 synthetic rehearsal이며 실제 운영 증거나 인증 증거가 아니다. |
+| 3 | Fresh clone reviewer가 같은 결과를 재현할 수 있나? | [AX fresh-clone verifier card](ax-fresh-clone-verifier-card.md) | `npm ci && npm run build` then `node dist/index.js scan-log --policy examples/agent-policy.yaml < examples/agent-transcript.log` | build/setup failure와 risky finding non-zero exit을 구분한다. |
+| 4 | GitHub/SARIF reviewer handoff는 어디에 남기나? | [AX SARIF reviewer loop card](ax-sarif-reviewer-loop-card.md) | `node dist/index.js scan-diff --sarif --out .agentguard-demo/ax-judge-start-route.sarif < examples/risky-pr.diff` | SARIF artifact는 reviewer-owned handoff이며 automatic approval/upload를 뜻하지 않는다. |
+| 5 | 마지막 제출·파일럿 전에 무엇을 receipt로 고정하나? | [AX release attestation receipt](ax-release-attestation-receipt.md) | command output + artifact hash + approver + rerun trigger | npm provenance/SARIF/reference vocabulary는 borrow only; 동급 벤더 범위, adoption, replacement, or 외부 보증을 주장하지 않는다. |
+
+Public reference refresh에서 빌린 언어는 MCP Security Best Practices의 least-privilege/authorization boundary, GitHub SARIF upload docs의 reviewer artifact handoff, npm provenance statements의 reproducible package trust, OWASP LLM/agentic risk framing입니다. AgentGuard의 주장은 항상 위 fixture-backed command와 문서화된 residual-risk boundary에만 묶습니다.
+
 ## Risky MCP config
 
 ```bash

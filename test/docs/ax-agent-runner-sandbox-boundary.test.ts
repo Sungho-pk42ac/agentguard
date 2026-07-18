@@ -40,9 +40,12 @@ const requiredHeadings = [
 ] as const
 
 const publicReferenceUrls = [
-  'https://modelcontextprotocol.io/specification/draft/basic/security_best_practices',
+  'https://openai.github.io/openai-agents-python/guardrails/',
+  'https://docs.anthropic.com/en/docs/claude-code/security',
+  'https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices',
   'https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/',
   'https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github',
+  'https://github.com/affaan-m/agentshield',
 ] as const
 
 function findRepoRoot(startDir: string): string {
@@ -131,9 +134,12 @@ test('AX agent runner sandbox boundary cites public references with borrow avoid
     expectLiteral(doc, referenceUrl)
   }
 
-  assert.match(doc, /least privilege|consent|confused deputy|SSRF|token/i)
+  assert.match(doc, /input\/output\/tool guardrail|tripwire/i)
+  assert.match(doc, /permission-based architecture|read-only default|explicit permission|workspace trust|human approval boundary/i)
+  assert.match(doc, /least privilege|consent|dangerous command highlighting|trust boundary|confused deputy|SSRF|token/i)
   assert.match(doc, /tool misuse|excessive agency|mitigation|control/i)
   assert.match(doc, /SARIF|code scanning|artifact/i)
+  assert.match(doc, /agent configurations|MCP servers|tool permissions/i)
 })
 
 test('AX agent runner sandbox boundary preserves machine contracts and static boundary language', () => {

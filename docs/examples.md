@@ -288,6 +288,8 @@ For a Korean-first reviewer non-response fallback card mapping `PASS` / `REVIEW`
 
 For a Korean-first first-run trust path from `agentguard --help` and `agentguard doctor` to fixture-backed PR/MCP/transcript/SARIF evidence, see [AX CLI trust onboarding card](ax-cli-trust-onboarding-card.md).
 
+For a Korean-first CLI exit semantics card that separates `PASS`/`REVIEW`/`BLOCK` evidence from infrastructure/build failure and SARIF handoff ownership, see [AX CLI exit semantics evidence card](ax-cli-exit-semantics-card.md).
+
 For a Korean-first change-control evidence card mapping change request to AgentGuard evidence, approver decision, and rollback/rerun, see [AX agent change-control evidence card](ax-agent-change-control-evidence-card.md).
 
 For a Korean-first public-reference delta watch that maps fresh public signals to exact fixture-backed evidence commands without unsupported adoption, endorsement, or scope claims, see [AX public-reference delta watch](ax-public-reference-delta-watch.md).

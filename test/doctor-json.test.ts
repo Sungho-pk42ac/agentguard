@@ -76,6 +76,19 @@ test('CLI doctor text output includes reusable GitHub Action contract readiness'
   assert.match(enResult.stdout, /\.github\/actions\/agentguard\/action\.yml/)
 })
 
+test('CLI doctor help lists every current readiness check for team rollout discovery', () => {
+  const result = runDoctor('--help')
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /agentguard doctor \[--lang ko\|en\] \[--json\]/)
+  assert.match(result.stdout, /package version readability/)
+  assert.match(result.stdout, /examples directory presence/)
+  assert.match(result.stdout, /scanner smoke test/)
+  assert.match(result.stdout, /reusable GitHub Action contract/i)
+  assert.match(result.stdout, /PR gate readiness/i)
+  assert.match(result.stdout, /team documentation readiness/i)
+})
+
 function runDoctor(...args: readonly string[]): ReturnType<typeof spawnSync> {
   return spawnSync(process.execPath, ['--import', 'tsx', 'src/index.ts', 'doctor', ...args], {
     cwd: process.cwd(),

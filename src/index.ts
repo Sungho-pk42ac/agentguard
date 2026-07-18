@@ -108,7 +108,11 @@ function doctorUsage(exitCode = 2): never {
   agentguard doctor [--lang ko|en] [--json]
 
 Checks:
-  package version readability, examples directory presence, scanner smoke test`
+  - package version readability
+  - examples directory presence
+  - scanner smoke test
+  - reusable GitHub Action contract / PR gate readiness
+  - team documentation readiness`
   if (exitCode === 0) console.log(output)
   else console.error(output)
   process.exit(exitCode)

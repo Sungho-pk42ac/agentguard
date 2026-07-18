@@ -273,6 +273,7 @@ Verdicts:
 - [AX timeboxed escalation drill](docs/ax-timeboxed-escalation-drill.md)
 - [AX reviewer non-response fallback card](docs/ax-reviewer-nonresponse-fallback-card.md)
 - [AX CLI trust onboarding card](docs/ax-cli-trust-onboarding-card.md)
+- [AX CLI exit semantics evidence card](docs/ax-cli-exit-semantics-card.md)
 - [AX agent change-control evidence card](docs/ax-agent-change-control-evidence-card.md)
 - [AX assumption ledger](docs/ax-assumption-ledger.md)
 - [AX public-reference delta watch](docs/ax-public-reference-delta-watch.md)
